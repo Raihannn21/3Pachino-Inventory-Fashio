@@ -22,7 +22,9 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  transactions Transaction[]
+  transactions       Transaction[]
+  stockAdjustments   StockAdjustment[]
+  approvedAdjustments StockAdjustment[] @relation("AdjustmentApprover")
 
   @@map("users")
 }
@@ -143,6 +145,7 @@ model ProductVariant {
   size    Size    @relation(fields: [sizeId], references: [id])
   color   Color   @relation(fields: [colorId], references: [id])
   stockMovements StockMovement[]
+  stockAdjustments StockAdjustment[]
   transactionItems TransactionItem[]
 
   @@unique([productId, sizeId, colorId])
@@ -166,10 +169,53 @@ model StockMovement {
   @@map("stock_movements")
 }
 
+// Stock Adjustment with detailed audit trail
+model StockAdjustment {
+  id              String              @id @default(cuid())
+  variantId       String
+  adjustmentType  AdjustmentType
+  reason          AdjustmentReason
+  quantity        Int                 // Positive for increase, negative for decrease
+  stockBefore     Int                 // Stock before adjustment
+  stockAfter      Int                 // Stock after adjustment
+  notes           String?
+  reference       String?             // Reference ID (e.g., production batch, damage report)
+  createdAt       DateTime            @default(now())
+  createdBy       String              // User who made the adjustment
+  approvedBy      String?             // For future approval workflow
+  approvedAt      DateTime?
+
+  // Relations
+  variant         ProductVariant      @relation(fields: [variantId], references: [id])
+  user            User                @relation(fields: [createdBy], references: [id])
+  approver        User?               @relation("AdjustmentApprover", fields: [approvedBy], references: [id])
+
+  @@map("stock_adjustments")
+}
+
 enum StockMovementType {
   IN
   OUT
   ADJUSTMENT
+}
+
+enum AdjustmentType {
+  INCREASE
+  DECREASE
+}
+
+enum AdjustmentReason {
+  PRODUCTION          // Auto-create production record
+  DAMAGE              // Items damaged/defective
+  RETURN_TO_SUPPLIER  // Return to supplier
+  RETURN_FROM_CUSTOMER // Customer return
+  STOCK_OPNAME        // Physical count correction
+  LOST_ITEMS          // Items lost/stolen
+  SAMPLE_PROMOTION    // Given as sample/promotion
+  DATA_CORRECTION     // Correction of input error
+  FOUND_ITEMS         // Items found during inventory
+  EXPIRED_ITEMS       // Items past expiration
+  OTHER               // Other reasons (must provide notes)
 }
 
 // Supplier Management
