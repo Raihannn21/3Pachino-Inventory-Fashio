@@ -1,0 +1,691 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import BarcodeDisplay from '@/components/ui/barcode-display';
+import { ArrowLeft, Plus, Edit, Package, Palette, Ruler } from 'lucide-react';
+
+interface ProductVariant {
+  id: string;
+  stock: number;
+  minStock: number;
+  barcode?: string;
+  size: {
+    id: string;
+    name: string;
+  };
+  color: {
+    id: string;
+    name: string;
+    hexCode?: string;
+  };
+}
+
+interface Product {
+  id: string;
+  name: string;
+  sku: string;
+  description?: string;
+  season?: string;
+  gender?: string;
+  costPrice: number;
+  sellingPrice: number;
+  category: {
+    name: string;
+  };
+  brand: {
+    name: string;
+  };
+  variants: ProductVariant[];
+}
+
+interface Size {
+  id: string;
+  name: string;
+}
+
+interface Color {
+  id: string;
+  name: string;
+  hexCode?: string;
+}
+
+export default function ProductDetailPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [sizes, setSizes] = useState<Size[]>([]);
+  const [colors, setColors] = useState<Color[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [addVariantOpen, setAddVariantOpen] = useState(false);
+  const [editVariantOpen, setEditVariantOpen] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+
+  const [variantForm, setVariantForm] = useState({
+    sizeId: '',
+    colorId: '',
+    minStock: '5'
+  });
+  const [stockAdjustmentReason, setStockAdjustmentReason] = useState('');
+  const [originalStock, setOriginalStock] = useState(0);
+
+  useEffect(() => {
+    fetchProduct();
+    fetchSizes();
+    fetchColors();
+  }, [params.id]);
+
+  const fetchProduct = async () => {
+    try {
+      const response = await fetch(`/api/products/${params.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setProduct(data);
+      }
+    } catch (error) {
+      console.error('Error fetching product:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSizes = async () => {
+    try {
+      const response = await fetch('/api/sizes');
+      if (response.ok) {
+        const data = await response.json();
+        setSizes(data);
+      }
+    } catch (error) {
+      console.error('Error fetching sizes:', error);
+    }
+  };
+
+  const fetchColors = async () => {
+    try {
+      const response = await fetch('/api/colors');
+      if (response.ok) {
+        const data = await response.json();
+        setColors(data);
+      }
+    } catch (error) {
+      console.error('Error fetching colors:', error);
+    }
+  };
+
+  const handleAddVariant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch(`/api/products/${params.id}/variants`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sizeId: variantForm.sizeId,
+          colorId: variantForm.colorId,
+          stock: 0, // Selalu mulai dari 0
+          minStock: parseInt(variantForm.minStock),
+        }),
+      });
+
+      if (response.ok) {
+        setVariantForm({
+          sizeId: '',
+          colorId: '',
+          minStock: '5'
+        });
+        setAddVariantOpen(false);
+        fetchProduct();
+      } else {
+        const errorData = await response.json();
+        alert(`Error: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Error adding variant:', error);
+      alert('Gagal menambahkan varian');
+    }
+  };
+
+  const handleEditVariant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedVariant) return;
+
+    try {
+      const response = await fetch(`/api/products/${params.id}/variants/${selectedVariant.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          minStock: parseInt(variantForm.minStock),
+        }),
+      });
+
+      if (response.ok) {
+        setEditVariantOpen(false);
+        setSelectedVariant(null);
+        fetchProduct();
+        alert('Minimum stok berhasil diupdate');
+      } else {
+        const errorData = await response.json();
+        alert(`Error: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Error updating variant:', error);
+      alert('Gagal mengupdate varian');
+    }
+  };
+
+  const openEditVariant = (variant: ProductVariant) => {
+    setSelectedVariant(variant);
+    setOriginalStock(variant.stock); // Save original stock for comparison
+    setVariantForm({
+      sizeId: variant.size.id,
+      colorId: variant.color.id,
+      minStock: variant.minStock.toString()
+    });
+    setStockAdjustmentReason(''); // Reset reason
+    setEditVariantOpen(true);
+  };
+
+  const getTotalStock = () => {
+    return product?.variants.reduce((total, variant) => total + variant.stock, 0) || 0;
+  };
+
+  const getSeasonText = (season?: string) => {
+    switch (season) {
+      case 'ALL_SEASON': return 'Semua Musim';
+      case 'SPRING_SUMMER': return 'Spring/Summer';
+      case 'FALL_WINTER': return 'Fall/Winter';
+      default: return season;
+    }
+  };
+
+  const getGenderText = (gender?: string) => {
+    switch (gender) {
+      case 'UNISEX': return 'Unisex';
+      case 'MALE': return 'Pria';
+      case 'FEMALE': return 'Wanita';
+      case 'KIDS': return 'Anak-anak';
+      default: return gender;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto p-8">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <Package className="h-16 w-16 animate-spin mx-auto mb-6 text-blue-600" />
+            <p className="text-lg font-medium text-gray-900">Memuat detail produk...</p>
+            <p className="text-sm text-muted-foreground mt-2">Mohon tunggu sebentar</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="max-w-7xl mx-auto p-8">
+        <div className="text-center py-16">
+          <Package className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
+          <h3 className="text-xl font-semibold mb-3">Produk tidak ditemukan</h3>
+          <p className="text-muted-foreground mb-6">Produk yang Anda cari tidak ada atau telah dihapus</p>
+          <Button onClick={() => router.push('/products')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Kembali ke Produk
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto p-8">
+      {/* Header */}
+      <div className="flex items-center mb-8">
+        <Button
+          variant="ghost"
+          onClick={() => router.push('/products')}
+          className="mr-4 hover:bg-blue-50"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Kembali
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">{product.name}</h1>
+          <p className="text-muted-foreground mt-2">
+            SKU: {product.sku} • {product.brand.name} • {product.category.name}
+          </p>
+        </div>
+      </div>
+
+      {/* Product Info */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <Card className="lg:col-span-2 bg-white shadow-sm border-0">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl font-semibold text-gray-900">Informasi Produk</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-0">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-600">Nama Produk</label>
+                <p className="text-lg font-semibold text-gray-900">{product.name}</p>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-600">SKU</label>
+                <p className="text-lg font-mono text-gray-900">{product.sku}</p>
+              </div>
+            </div>
+
+            {product.description && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-600">Deskripsi</label>
+                <p className="text-gray-900 leading-relaxed">{product.description}</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2 p-4 bg-red-50 rounded-lg border border-red-200">
+                <label className="text-sm font-medium text-red-700">Harga Modal</label>
+                <p className="text-xl font-bold text-red-600">Rp {product.costPrice.toLocaleString()}</p>
+              </div>
+              <div className="space-y-2 p-4 bg-green-50 rounded-lg border border-green-200">
+                <label className="text-sm font-medium text-green-700">Harga Jual</label>
+                <p className="text-xl font-bold text-green-600">Rp {product.sellingPrice.toLocaleString()}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              {product.season && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                  {getSeasonText(product.season)}
+                </span>
+              )}
+              {product.gender && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                  {getGenderText(product.gender)}
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white shadow-sm border-0">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl font-semibold text-gray-900">Ringkasan Stok</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-6">
+              <div className="text-center p-6 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-4xl font-bold text-blue-600">{getTotalStock()}</p>
+                <p className="text-blue-700 font-medium mt-2">Total Stok</p>
+              </div>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm font-medium text-gray-600">Total Varian:</span>
+                  <span className="font-bold text-gray-900">{product.variants.length}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                  <span className="text-sm font-medium text-red-600">Stok Rendah:</span>
+                  <span className="font-bold text-red-600">
+                    {product.variants.filter(v => v.stock <= v.minStock).length}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                  <span className="text-sm font-medium text-green-600">Profit Margin:</span>
+                  <span className="font-bold text-green-600">
+                    {product.sellingPrice > 0 ? Math.round(((product.sellingPrice - product.costPrice) / product.sellingPrice) * 100) : 0}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Variants Section */}
+      <Card className="shadow-sm border-0">
+        <CardHeader className="flex flex-row items-center justify-between pb-6">
+          <div>
+            <CardTitle className="text-xl font-semibold text-slate-800">Varian Produk</CardTitle>
+            <p className="text-sm text-slate-600 mt-1">Kelola ukuran dan warna untuk produk ini</p>
+          </div>
+          <Dialog open={addVariantOpen} onOpenChange={setAddVariantOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Tambah Varian
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-semibold text-slate-800">Tambah Varian Baru</DialogTitle>
+                <p className="text-sm text-slate-600">Buat varian baru dengan ukuran dan warna</p>
+              </DialogHeader>
+              <form onSubmit={handleAddVariant} className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Ukuran</label>
+                    <Select value={variantForm.sizeId} onValueChange={(value) => setVariantForm(prev => ({...prev, sizeId: value}))}>
+                      <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500">
+                        <SelectValue placeholder="Pilih ukuran" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sizes.map((size) => (
+                          <SelectItem key={size.id} value={size.id}>
+                            <div className="flex items-center">
+                              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                                <Ruler className="h-3 w-3 text-blue-600" />
+                              </div>
+                              {size.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Warna</label>
+                    <Select value={variantForm.colorId} onValueChange={(value) => setVariantForm(prev => ({...prev, colorId: value}))}>
+                      <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500">
+                        <SelectValue placeholder="Pilih warna" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {colors.map((color) => (
+                          <SelectItem key={color.id} value={color.id}>
+                            <div className="flex items-center">
+                              {color.hexCode && (
+                                <div 
+                                  className="w-4 h-4 rounded-full mr-2 border-2 border-white shadow-sm ring-1 ring-slate-200"
+                                  style={{ backgroundColor: color.hexCode }}
+                                />
+                              )}
+                              <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center mr-2">
+                                <Palette className="h-3 w-3 text-purple-600" />
+                              </div>
+                              {color.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Minimum Stok</label>
+                  <Input
+                    type="number"
+                    value={variantForm.minStock}
+                    onChange={(e) => setVariantForm(prev => ({...prev, minStock: e.target.value}))}
+                    placeholder="5"
+                    className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+                  <p className="font-medium text-amber-900 text-sm mb-3">Info Stok</p>
+                  <ul className="space-y-2 text-sm text-amber-700">
+                    <li className="flex items-start">
+                      <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                      Stok awal akan dimulai dari <strong>0</strong>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                      Stok akan bertambah melalui <strong>sistem produksi</strong>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                      Tidak perlu input stok manual saat membuat varian
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                  <p className="font-medium text-blue-900 text-sm mb-2">Info Barcode</p>
+                  <p className="text-sm text-blue-700">Barcode akan dibuat otomatis setelah varian ditambahkan.</p>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button type="button" variant="outline" onClick={() => setAddVariantOpen(false)}>
+                    Batal
+                  </Button>
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                    Tambah Varian
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent className="p-6">
+          {product.variants.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                  <Package className="h-8 w-8 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-700 mb-2">Belum ada varian</h3>
+                <p className="text-slate-500 mb-6 max-w-sm">
+                  Tambahkan varian ukuran dan warna untuk produk ini agar dapat dijual
+                </p>
+                <Button 
+                  onClick={() => setAddVariantOpen(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tambah Varian Pertama
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-4 px-4 font-semibold text-slate-700">Ukuran</th>
+                    <th className="text-left py-4 px-4 font-semibold text-slate-700">Warna</th>
+                    <th className="text-center py-4 px-4 font-semibold text-slate-700">Stok</th>
+                    <th className="text-center py-4 px-4 font-semibold text-slate-700">Min. Stok</th>
+                    <th className="text-left py-4 px-4 font-semibold text-slate-700">Barcode</th>
+                    <th className="text-center py-4 px-4 font-semibold text-slate-700">Status</th>
+                    <th className="text-center py-4 px-4 font-semibold text-slate-700">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {product.variants.map((variant) => (
+                    <tr key={variant.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                      <td className="py-4 px-4">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                            <Ruler className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <span className="font-medium text-slate-700">{variant.size.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center">
+                          {variant.color.hexCode && (
+                            <div 
+                              className="w-5 h-5 rounded-full mr-3 border-2 border-white shadow-sm ring-1 ring-slate-200"
+                              style={{ backgroundColor: variant.color.hexCode }}
+                            />
+                          )}
+                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                            <Palette className="h-4 w-4 text-purple-600" />
+                          </div>
+                          <span className="font-medium text-slate-700">{variant.color.name}</span>
+                        </div>
+                      </td>
+                      <td className="text-center py-4 px-4">
+                        <span className={`font-bold text-lg ${
+                          variant.stock <= variant.minStock ? 'text-red-600' : 'text-emerald-600'
+                        }`}>
+                          {variant.stock}
+                        </span>
+                      </td>
+                      <td className="text-center py-4 px-4">
+                        <span className="text-slate-600 font-medium">{variant.minStock}</span>
+                      </td>
+                      <td className="py-4 px-4 text-sm">
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs bg-slate-100 px-3 py-1.5 rounded-md font-mono text-slate-700">
+                            {variant.barcode || 'Auto-generated'}
+                          </code>
+                          {variant.barcode && (
+                            <BarcodeDisplay 
+                              variant={{
+                                ...variant,
+                                barcode: variant.barcode,
+                                product: {
+                                  name: product.name,
+                                  sku: product.sku,
+                                }
+                              }} 
+                            />
+                          )}
+                        </div>
+                      </td>
+                      <td className="text-center py-4 px-4">
+                        {variant.stock <= variant.minStock ? (
+                          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+                            <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                            Stok Rendah
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
+                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></div>
+                            Normal
+                          </span>
+                        )}
+                      </td>
+                      <td className="text-center py-4 px-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditVariant(variant)}
+                          className="hover:bg-slate-100"
+                        >
+                          <Edit className="h-4 w-4 text-slate-600" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit Variant Dialog */}
+      <Dialog open={editVariantOpen} onOpenChange={setEditVariantOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-slate-800">Edit Varian</DialogTitle>
+            <p className="text-sm text-slate-600">Ubah pengaturan untuk varian produk</p>
+          </DialogHeader>
+          {selectedVariant && (
+            <form onSubmit={handleEditVariant} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Ukuran</label>
+                  <div className="flex items-center p-3 border border-slate-200 rounded-lg bg-slate-50">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                      <Ruler className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <span className="font-medium text-slate-700">{selectedVariant.size.name}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Warna</label>
+                  <div className="flex items-center p-3 border border-slate-200 rounded-lg bg-slate-50">
+                    {selectedVariant.color.hexCode && (
+                      <div 
+                        className="w-5 h-5 rounded-full mr-3 border-2 border-white shadow-sm ring-1 ring-slate-200"
+                        style={{ backgroundColor: selectedVariant.color.hexCode }}
+                      />
+                    )}
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                      <Palette className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <span className="font-medium text-slate-700">{selectedVariant.color.name}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Stok Minimum</label>
+                <Input
+                  type="number"
+                  value={variantForm.minStock}
+                  onChange={(e) => setVariantForm(prev => ({...prev, minStock: e.target.value}))}
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                <p className="font-medium text-blue-900 text-sm mb-3">Info Stok Saat Ini</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center">
+                    <span className="text-sm text-blue-700 mr-2">Stok:</span>
+                    <span className={`font-bold text-lg ${
+                      selectedVariant?.stock <= selectedVariant?.minStock ? 'text-red-600' : 'text-emerald-600'
+                    }`}>
+                      {selectedVariant?.stock} pcs
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-sm text-blue-700 mr-2">Status:</span>
+                    <span className={`font-medium text-sm ${
+                      selectedVariant?.stock <= selectedVariant?.minStock ? 'text-red-600' : 'text-emerald-600'
+                    }`}>
+                      {selectedVariant?.stock <= selectedVariant?.minStock ? 'Stok Rendah' : 'Normal'}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs text-blue-600 mt-3">
+                  <strong>Catatan:</strong> Stok hanya dapat diubah melalui Sistem Produksi atau Stock Adjustments.
+                </p>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                <p className="font-medium text-slate-700 text-sm mb-2">Info Barcode</p>
+                <p className="text-xs text-slate-600 mb-2">Barcode tidak dapat diubah setelah varian dibuat.</p>
+                {selectedVariant?.barcode && (
+                  <div className="flex items-center">
+                    <span className="text-xs text-slate-600 mr-2">Current Barcode:</span>
+                    <code className="text-xs bg-slate-200 px-2 py-1 rounded font-mono">{selectedVariant.barcode}</code>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button type="button" variant="outline" onClick={() => setEditVariantOpen(false)}>
+                  Batal
+                </Button>
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                  Update Varian
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
