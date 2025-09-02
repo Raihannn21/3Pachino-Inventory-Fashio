@@ -31,22 +31,23 @@ interface StockAdjustment {
   notes?: string;
 }
 
-// Adjustment Categories
+// Adjustment Categories - Sesuai dengan AdjustmentReason enum di schema
 const ADJUSTMENT_CATEGORIES = {
   INCREASE: [
     { value: 'PRODUCTION', label: '🏭 Produksi', description: 'Barang hasil produksi baru' },
     { value: 'RETURN_FROM_CUSTOMER', label: '🔄 Return Customer', description: 'Barang dikembalikan customer' },
-    { value: 'STOCK_CORRECTION', label: '📊 Koreksi Stock', description: 'Perbaikan data stock' },
+    { value: 'DATA_CORRECTION', label: '📊 Koreksi Data', description: 'Perbaikan kesalahan input' },
     { value: 'FOUND_ITEMS', label: '🔍 Barang Ditemukan', description: 'Stock opname - barang lebih' },
-    { value: 'OTHER_INCREASE', label: '📦 Lainnya (+)', description: 'Alasan lain penambahan stock' }
+    { value: 'OTHER', label: '📦 Lainnya', description: 'Alasan lain (wajib isi catatan)' }
   ],
   DECREASE: [
-    { value: 'DAMAGED_ITEMS', label: '💥 Barang Rusak', description: 'Barang cacat/rusak' },
+    { value: 'DAMAGE', label: '💥 Barang Rusak', description: 'Barang cacat/rusak/defective' },
     { value: 'RETURN_TO_SUPPLIER', label: '📤 Return Supplier', description: 'Dikembalikan ke supplier' },
-    { value: 'LOST_ITEMS', label: '❌ Barang Hilang', description: 'Barang tidak ditemukan' },
+    { value: 'LOST_ITEMS', label: '❌ Barang Hilang', description: 'Barang hilang/dicuri' },
     { value: 'SAMPLE_PROMOTION', label: '🎁 Sample/Promosi', description: 'Diberikan sebagai sample' },
-    { value: 'STOCK_CORRECTION', label: '📊 Koreksi Stock', description: 'Perbaikan data stock' },
-    { value: 'OTHER_DECREASE', label: '📦 Lainnya (-)', description: 'Alasan lain pengurangan stock' }
+    { value: 'DATA_CORRECTION', label: '📊 Koreksi Data', description: 'Perbaikan kesalahan input' },
+    { value: 'EXPIRED_ITEMS', label: '⏰ Barang Kadaluarsa', description: 'Barang melewati masa berlaku' },
+    { value: 'OTHER', label: '📦 Lainnya', description: 'Alasan lain (wajib isi catatan)' }
   ]
 };
 
@@ -103,6 +104,7 @@ export default function StockAdjustmentPage() {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [newStock, setNewStock] = useState('');
   const [adjustmentType, setAdjustmentType] = useState<'INCREASE' | 'DECREASE' | ''>('');
+  const [stockDifference, setStockDifference] = useState(0);
   const [category, setCategory] = useState('');
   const [notes, setNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -147,6 +149,7 @@ export default function StockAdjustmentPage() {
     setSelectedVariant(variant);
     setNewStock(variant.stock.toString());
     setAdjustmentType('');
+    setStockDifference(0);
     setCategory('');
     setNotes('');
     setAdjustmentDialogOpen(true);
@@ -157,6 +160,7 @@ export default function StockAdjustmentPage() {
     setSelectedVariant(null);
     setNewStock('');
     setAdjustmentType('');
+    setStockDifference(0);
     setCategory('');
     setNotes('');
   };
@@ -268,8 +272,6 @@ export default function StockAdjustmentPage() {
     return category ? category.label : reason;
   };
 
-  const stockDifference = selectedVariant ? Math.abs((parseInt(newStock) || 0) - selectedVariant.stock) : 0;
-
   return (
     <div className="container mx-auto p-6">
       <div className="space-y-6">
@@ -312,12 +314,13 @@ export default function StockAdjustmentPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Tanggal</TableHead>
+                      <TableHead>Tanggal & Waktu</TableHead>
                       <TableHead>Produk</TableHead>
-                      <TableHead>Tipe</TableHead>
-                      <TableHead>Qty</TableHead>
+                      <TableHead>Varian</TableHead>
+                      <TableHead>Adjustment</TableHead>
                       <TableHead>Stock</TableHead>
                       <TableHead>Alasan</TableHead>
+                      <TableHead>Catatan</TableHead>
                       <TableHead>User</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -325,39 +328,63 @@ export default function StockAdjustmentPage() {
                     {adjustmentHistory.map((adjustment) => (
                       <TableRow key={adjustment.id}>
                         <TableCell>
-                          {new Date(adjustment.createdAt).toLocaleDateString('id-ID', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                          <div className="text-sm">
+                            <div className="font-medium">
+                              {new Date(adjustment.createdAt).toLocaleDateString('id-ID', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </div>
+                            <div className="text-muted-foreground">
+                              {new Date(adjustment.createdAt).toLocaleTimeString('id-ID', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <div>
-                            <div className="font-medium">{adjustment.variant.product.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {adjustment.variant.size.name}/{adjustment.variant.color.name}
-                            </div>
+                          <div className="font-medium">{adjustment.variant.product.name}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Badge variant="outline" className="text-xs">
+                              {adjustment.variant.size.name}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {adjustment.variant.color.name}
+                            </Badge>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {getAdjustmentIcon(adjustment.adjustmentType)}
-                            <span className={adjustment.adjustmentType === 'INCREASE' ? 'text-green-600' : 'text-red-600'}>
+                            <span className={`font-semibold ${adjustment.adjustmentType === 'INCREASE' ? 'text-green-600' : 'text-red-600'}`}>
                               {adjustment.adjustmentType === 'INCREASE' ? '+' : '-'}{adjustment.quantity}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="text-muted-foreground">{adjustment.previousStock}</span>
-                          <span className="mx-2">→</span>
-                          <span className="font-medium">{adjustment.newStock}</span>
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">{adjustment.previousStock}</span>
+                            <span className="mx-2 text-muted-foreground">→</span>
+                            <span className="font-semibold">{adjustment.newStock}</span>
+                          </div>
                         </TableCell>
                         <TableCell>
-                          {getCategoryLabel(adjustment.reason)}
+                          <Badge variant="secondary" className="text-xs">
+                            {getCategoryLabel(adjustment.reason)}
+                          </Badge>
                         </TableCell>
-                        <TableCell>{adjustment.user.name}</TableCell>
+                        <TableCell>
+                          <div className="text-sm text-muted-foreground max-w-[150px] truncate">
+                            {adjustment.notes || '-'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm font-medium">{adjustment.user.name}</div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -373,55 +400,95 @@ export default function StockAdjustmentPage() {
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
               Product Variants
+              <Badge variant="secondary" className="ml-auto">
+                {variants.length} variants
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
                 Memuat data...
               </div>
             ) : (
-              <div className="space-y-4">
-                {variants.map((variant) => (
-                  <div
-                    key={variant.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <div>
-                          <h3 className="font-medium">{variant.product.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {variant.size.name} / {variant.color.name} • SKU: {variant.product.sku}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <div className="font-semibold">Stock: {variant.stock}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Min: {variant.minStock}
-                        </div>
-                      </div>
-                      {getStockStatus(variant)}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openAdjustmentDialog(variant)}
-                      >
-                        <Settings className="h-4 w-4 mr-1" />
-                        Adjust
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[250px]">Produk</TableHead>
+                      <TableHead className="w-[150px]">Varian</TableHead>
+                      <TableHead className="w-[120px]">SKU/Barcode</TableHead>
+                      <TableHead className="w-[100px] text-center">Stock</TableHead>
+                      <TableHead className="w-[80px] text-center">Min</TableHead>
+                      <TableHead className="w-[100px] text-center">Status</TableHead>
+                      <TableHead className="w-[100px] text-center">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {variants.map((variant) => (
+                      <TableRow key={variant.id} className="hover:bg-gray-50">
+                        <TableCell>
+                          <div>
+                            <div className="font-medium text-gray-900">{variant.product.name}</div>
+                            <div className="text-sm text-gray-500">{variant.product.sku}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Badge variant="outline" className="text-xs font-medium">
+                              {variant.size.name}
+                            </Badge>
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs font-medium"
+                              style={{ 
+                                backgroundColor: variant.color.hexCode || '#e5e7eb',
+                                color: variant.color.hexCode ? '#ffffff' : '#374151',
+                                borderColor: variant.color.hexCode || '#d1d5db'
+                              }}
+                            >
+                              {variant.color.name}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-mono text-sm text-gray-600">
+                            {variant.barcode || '-'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="font-bold text-lg text-gray-900">{variant.stock}</span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="text-gray-500">{variant.minStock}</span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getStockStatus(variant)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openAdjustmentDialog(variant)}
+                            className="hover:bg-blue-50 hover:border-blue-300"
+                          >
+                            <Settings className="h-4 w-4 mr-1" />
+                            Adjust
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
 
-                {variants.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Belum ada data variant produk
-                  </div>
-                )}
+            {variants.length === 0 && !loading && (
+              <div className="text-center py-12 text-muted-foreground">
+                <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <div className="text-lg font-medium mb-2">Belum ada data variant produk</div>
+                <div className="text-sm">Tambahkan produk terlebih dahulu untuk melakukan stock adjustment</div>
               </div>
             )}
           </CardContent>
@@ -444,19 +511,68 @@ export default function StockAdjustmentPage() {
                   </p>
                 </div>
 
-                {/* New Stock Input */}
+                {/* Stock Information */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Current Stock (Read-only) */}
+                  <div className="space-y-2">
+                    <Label>Stock Sekarang</Label>
+                    <Input
+                      type="number"
+                      value={selectedVariant.stock}
+                      readOnly
+                      className="bg-gray-50"
+                    />
+                  </div>
+
+                  {/* New Stock (Calculated, Read-only) */}
+                  <div className="space-y-2">
+                    <Label>Stock Baru</Label>
+                    <Input
+                      type="number"
+                      value={newStock}
+                      readOnly
+                      className="bg-gray-50"
+                    />
+                  </div>
+                </div>
+
+                {/* Adjustment Quantity Input */}
                 <div className="space-y-2">
-                  <Label>Stock Baru</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={newStock}
-                    onChange={(e) => handleStockChange(e.target.value)}
-                    placeholder="Masukkan stock baru"
-                  />
+                  <Label>Jumlah Adjustment</Label>
+                  <div className="flex items-center space-x-2">
+                    <Select value={adjustmentType || ''} onValueChange={(value: 'INCREASE' | 'DECREASE') => {
+                      setAdjustmentType(value);
+                      setStockDifference(0);
+                      setNewStock(selectedVariant.stock.toString());
+                    }}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue placeholder="Tipe" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="INCREASE">+</SelectItem>
+                        <SelectItem value="DECREASE">-</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={stockDifference || ''}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 0;
+                        setStockDifference(value);
+                        if (adjustmentType === 'INCREASE') {
+                          setNewStock((selectedVariant.stock + value).toString());
+                        } else if (adjustmentType === 'DECREASE') {
+                          setNewStock(Math.max(0, selectedVariant.stock - value).toString());
+                        }
+                      }}
+                      placeholder="Masukkan jumlah"
+                      className="flex-1"
+                    />
+                  </div>
                   {stockDifference > 0 && adjustmentType && (
                     <div className={`text-sm ${adjustmentType === 'INCREASE' ? 'text-green-600' : 'text-red-600'}`}>
-                      {adjustmentType === 'INCREASE' ? '+' : '-'}{stockDifference} dari stock saat ini
+                      {adjustmentType === 'INCREASE' ? 'Menambah' : 'Mengurangi'} {stockDifference} item
                     </div>
                   )}
                 </div>

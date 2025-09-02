@@ -132,18 +132,34 @@ export async function POST(request: NextRequest) {
 
     // Mulai transaction
     const result = await prisma.$transaction(async (tx) => {
+      // 0. Cek atau buat user system jika belum ada
+      let systemUser = await tx.user.findFirst({
+        where: { email: 'system@3pachino.com' }
+      });
+
+      if (!systemUser) {
+        systemUser = await tx.user.create({
+          data: {
+            email: 'system@3pachino.com',
+            name: 'System User',
+            password: 'system123',
+            role: 'OWNER'
+          }
+        });
+      }
+
       // 1. Buat record stock adjustment
       const adjustment = await tx.stockAdjustment.create({
         data: {
           variantId,
-          adjustmentType,
-          reason,
+          adjustmentType: adjustmentType as 'INCREASE' | 'DECREASE',
+          reason: reason as any, // Cast to enum type
           quantity: Math.abs(adjustmentQuantity),
           stockBefore,
           stockAfter,
           notes: notes || '',
           reference: '',
-          createdBy: 'system-user' // TODO: Get from auth session
+          createdBy: systemUser.id
         }
       });
 
@@ -153,11 +169,43 @@ export async function POST(request: NextRequest) {
         data: { stock: stockAfter }
       });
 
+      // 3. Jika alasan adalah PRODUCTION, buat record produksi otomatis
+      if (reason === 'PRODUCTION' && adjustmentType === 'INCREASE') {
+        console.log('Creating auto production record...');
+        const costPrice = Number(variant.product.costPrice) || 0;
+        const totalCost = costPrice * Math.abs(adjustmentQuantity);
+        
+        // Generate invoice number untuk produksi
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0];
+        const invoiceNumber = `PROD-${timestamp}`;
+
+        const productionRecord = await tx.transaction.create({
+          data: {
+            invoiceNumber,
+            type: 'PURCHASE', // Menggunakan PURCHASE untuk produksi
+            totalAmount: totalCost,
+            notes: `Auto-generated dari stock adjustment produksi${notes ? ` - ${notes}` : ''}`,
+            userId: systemUser.id,
+            items: {
+              create: {
+                productId: variant.productId,
+                variantId,
+                quantity: Math.abs(adjustmentQuantity),
+                unitPrice: costPrice,
+                totalPrice: totalCost
+              }
+            }
+          }
+        });
+        
+        console.log('Production record created:', productionRecord.id);
+      }
+
       return adjustment;
     });
 
     const message = reason === 'PRODUCTION' && adjustmentType === 'INCREASE' ? 
-      'Stock adjustment berhasil! Untuk produksi, mohon buat record produksi manual di menu Produksi.' : 
+      'Stock adjustment berhasil dan record produksi telah dibuat secara otomatis! Cek di menu Produksi.' : 
       'Stock adjustment berhasil';
 
     return NextResponse.json({ 

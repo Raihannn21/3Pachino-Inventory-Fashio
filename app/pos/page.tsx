@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
+import { Logo } from '@/components/ui/logo';
 
 interface ProductVariant {
   id: string;
@@ -61,6 +62,7 @@ export default function POSPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isPageLoading, setIsPageLoading] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -86,6 +88,7 @@ export default function POSPage() {
       toast.error('Gagal memuat produk');
     } finally {
       setIsLoadingProducts(false);
+      setIsPageLoading(false); // Set page loading false when products are loaded
     }
   };
 
@@ -264,6 +267,65 @@ export default function POSPage() {
     }
   };
 
+  // Loading full page
+  if (isPageLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="h-8 w-40 bg-gray-200 rounded animate-pulse mb-2"></div>
+            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Loading Animation Center */}
+        <div className="flex items-center justify-center mb-8">
+          <div className="text-center">
+            <div className="relative mb-4">
+              <CreditCard className="h-16 w-16 mx-auto text-blue-600 animate-pulse" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Memuat Point of Sale</h2>
+            <p className="text-sm text-gray-600">Menyiapkan sistem kasir...</p>
+            <div className="flex items-center justify-center mt-4 space-x-1">
+              <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
+              <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+              <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Simple Skeleton Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <div className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                  <Search className="h-12 w-12 text-gray-300" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <div>
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <div className="h-6 w-20 bg-gray-200 rounded animate-pulse"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                  <ShoppingCart className="h-12 w-12 text-gray-300" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-6">
       {/* Header */}
@@ -296,12 +358,31 @@ export default function POSPage() {
                 />
 
                 {isLoadingProducts ? (
-                  <div className="text-center py-8">
-                    <div className="text-sm text-muted-foreground">Memuat produk...</div>
+                  <div className="text-center py-12">
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="animate-pulse">
+                        <Logo size="lg" showText={true} usePng={true} />
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Memuat Produk</h3>
+                    <p className="text-sm text-gray-600">Sedang mengambil data produk terbaru...</p>
+                    <div className="flex items-center justify-center mt-4 space-x-1">
+                      <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
+                      <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                      <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    </div>
                   </div>
                 ) : isSearching ? (
-                  <div className="text-center py-4">
-                    <div className="text-sm text-muted-foreground">Mencari produk...</div>
+                  <div className="text-center py-8">
+                    <div className="flex items-center justify-center mb-3">
+                      <Search className="h-8 w-8 text-blue-600 animate-pulse" />
+                    </div>
+                    <p className="text-sm text-gray-600">Mencari produk...</p>
+                    <div className="flex items-center justify-center mt-3 space-x-1">
+                      <div className="h-1.5 w-1.5 bg-blue-600 rounded-full animate-bounce"></div>
+                      <div className="h-1.5 w-1.5 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                      <div className="h-1.5 w-1.5 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    </div>
                   </div>
                 ) : (
                   <>

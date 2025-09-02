@@ -18,7 +18,8 @@ import {
   Users,
   RefreshCw,
   Calendar,
-  Download
+  Download,
+  LayoutDashboard
 } from 'lucide-react';
 
 interface AnalyticsData {
@@ -225,18 +226,118 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
-            <p>Loading dashboard...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header Skeleton */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
+              <div className="h-4 w-80 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="flex gap-2">
+              <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
+            </div>
           </div>
+
+          {/* Loading Animation Center */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="text-center">
+              <div className="relative mb-4">
+                <LayoutDashboard className="h-16 w-16 mx-auto text-blue-600 animate-pulse" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Memuat Dashboard</h2>
+              <p className="text-sm text-gray-600">Mengumpulkan data analytics terbaru...</p>
+              <div className="flex items-center justify-center mt-4 space-x-1">
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map((item) => (
+              <Card key={item} className="border-0 shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="h-8 w-20 bg-gray-200 rounded animate-pulse mb-2"></div>
+                  <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Charts Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                  <LayoutDashboard className="h-12 w-12 text-gray-300" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                  <LayoutDashboard className="h-12 w-12 text-gray-300" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Table Skeleton */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <div className="h-6 w-40 bg-gray-200 rounded animate-pulse"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((item) => (
+                  <div key={item} className="flex items-center space-x-4">
+                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 relative">
+      {/* Refreshing Overlay */}
+      {refreshing && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center bg-white p-6 rounded-lg shadow-lg border">
+            <div className="relative mb-4">
+              <RefreshCw className="h-8 w-8 mx-auto text-blue-600 animate-spin" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Memperbarui Data</h3>
+            <p className="text-sm text-gray-600">Sedang mengambil data terbaru...</p>
+            <div className="flex items-center justify-center mt-3 space-x-1">
+              <div className="h-1.5 w-1.5 bg-blue-600 rounded-full animate-bounce"></div>
+              <div className="h-1.5 w-1.5 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+              <div className="h-1.5 w-1.5 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
