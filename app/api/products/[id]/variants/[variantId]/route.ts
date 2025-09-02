@@ -56,15 +56,41 @@ export async function DELETE(
 ) {
   try {
     const { variantId } = await params;
+
+    // Check if variant has any transactions
+    const transactionCount = await prisma.transactionItem.count({
+      where: { variantId: variantId }
+    });
+
+    if (transactionCount > 0) {
+      return NextResponse.json(
+        { error: 'Tidak dapat menghapus varian yang sudah memiliki riwayat transaksi' },
+        { status: 400 }
+      );
+    }
+
+    // Check if variant has any stock adjustments
+    const adjustmentCount = await prisma.stockAdjustment.count({
+      where: { variantId: variantId }
+    });
+
+    if (adjustmentCount > 0) {
+      return NextResponse.json(
+        { error: 'Tidak dapat menghapus varian yang sudah memiliki riwayat adjustment' },
+        { status: 400 }
+      );
+    }
+
+    // If no related records, delete the variant
     await prisma.productVariant.delete({
       where: { id: variantId },
     });
 
-    return NextResponse.json({ message: 'Variant deleted successfully' });
+    return NextResponse.json({ message: 'Varian berhasil dihapus' });
   } catch (error) {
     console.error('Error deleting variant:', error);
     return NextResponse.json(
-      { error: 'Failed to delete variant' },
+      { error: 'Gagal menghapus varian' },
       { status: 500 }
     );
   }

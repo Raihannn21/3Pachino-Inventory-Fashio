@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import BarcodeDisplay from '@/components/ui/barcode-display';
-import { ArrowLeft, Plus, Edit, Package, Palette, Ruler } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Package, Palette, Ruler, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ProductVariant {
   id: string;
@@ -65,12 +66,23 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const [loading, setLoading] = useState(true);
   const [addVariantOpen, setAddVariantOpen] = useState(false);
   const [editVariantOpen, setEditVariantOpen] = useState(false);
+  const [deleteVariantOpen, setDeleteVariantOpen] = useState(false);
+  const [editProductOpen, setEditProductOpen] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [variantToDelete, setVariantToDelete] = useState<ProductVariant | null>(null);
 
   const [variantForm, setVariantForm] = useState({
     sizeId: '',
     colorId: '',
     minStock: '5'
+  });
+  const [productForm, setProductForm] = useState({
+    name: '',
+    description: '',
+    season: '',
+    gender: '',
+    costPrice: '',
+    sellingPrice: ''
   });
   const [stockAdjustmentReason, setStockAdjustmentReason] = useState('');
   const [originalStock, setOriginalStock] = useState(0);
@@ -184,6 +196,99 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     }
   };
 
+  const handleDeleteVariant = (variant: ProductVariant) => {
+    setVariantToDelete(variant);
+    setDeleteVariantOpen(true);
+  };
+
+  const confirmDeleteVariant = async () => {
+    if (!variantToDelete) return;
+
+    try {
+      const response = await fetch(`/api/products/${params.id}/variants/${variantToDelete.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Varian berhasil dihapus');
+        setDeleteVariantOpen(false);
+        setVariantToDelete(null);
+        fetchProduct();
+      } else {
+        toast.error(data.error || 'Gagal menghapus varian');
+      }
+    } catch (error) {
+      console.error('Error deleting variant:', error);
+      toast.error('Gagal menghapus varian');
+    }
+  };
+
+  const closeDeleteDialog = () => {
+    setDeleteVariantOpen(false);
+    setVariantToDelete(null);
+  };
+
+  const openEditProduct = () => {
+    if (product) {
+      setProductForm({
+        name: product.name,
+        description: product.description || '',
+        season: product.season || '',
+        gender: product.gender || '',
+        costPrice: product.costPrice.toString(),
+        sellingPrice: product.sellingPrice.toString()
+      });
+      setEditProductOpen(true);
+    }
+  };
+
+  const handleEditProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch(`/api/products/${params.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: productForm.name,
+          description: productForm.description,
+          season: productForm.season,
+          gender: productForm.gender,
+          costPrice: parseFloat(productForm.costPrice),
+          sellingPrice: parseFloat(productForm.sellingPrice)
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Produk berhasil diperbarui');
+        setEditProductOpen(false);
+        fetchProduct();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Gagal memperbarui produk');
+      }
+    } catch (error) {
+      console.error('Error updating product:', error);
+      toast.error('Gagal memperbarui produk');
+    }
+  };
+
+  const closeEditProduct = () => {
+    setEditProductOpen(false);
+    setProductForm({
+      name: '',
+      description: '',
+      season: '',
+      gender: '',
+      costPrice: '',
+      sellingPrice: ''
+    });
+  };
+
   const openEditVariant = (variant: ProductVariant) => {
     setSelectedVariant(variant);
     setOriginalStock(variant.stock); // Save original stock for comparison
@@ -261,12 +366,19 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           <ArrowLeft className="h-4 w-4 mr-2" />
           Kembali
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">{product.name}</h1>
           <p className="text-muted-foreground mt-2">
             SKU: {product.sku} • {product.brand.name} • {product.category.name}
           </p>
         </div>
+        <Button
+          onClick={openEditProduct}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Edit className="h-4 w-4 mr-2" />
+          Edit Produk
+        </Button>
       </div>
 
       {/* Product Info */}
@@ -572,14 +684,26 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                         )}
                       </td>
                       <td className="text-center py-4 px-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditVariant(variant)}
-                          className="hover:bg-slate-100"
-                        >
-                          <Edit className="h-4 w-4 text-slate-600" />
-                        </Button>
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditVariant(variant)}
+                            className="hover:bg-slate-100"
+                            title="Edit Varian"
+                          >
+                            <Edit className="h-4 w-4 text-slate-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteVariant(variant)}
+                            className="hover:bg-red-100"
+                            title="Hapus Varian"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -684,6 +808,175 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
               </div>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Variant Confirmation Dialog */}
+      <Dialog open={deleteVariantOpen} onOpenChange={setDeleteVariantOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-red-700 flex items-center gap-2">
+              <Trash2 className="h-5 w-5" />
+              Konfirmasi Hapus Varian
+            </DialogTitle>
+          </DialogHeader>
+          {variantToDelete && (
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800 mb-3">
+                  Anda akan menghapus varian berikut:
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Ruler className="h-4 w-4 text-red-600" />
+                    <span className="font-medium text-red-700">Size: {variantToDelete.size.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Palette className="h-4 w-4 text-red-600" />
+                    <span className="font-medium text-red-700">Color: {variantToDelete.color.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Package className="h-4 w-4 text-red-600" />
+                    <span className="font-medium text-red-700">Stock: {variantToDelete.stock} pcs</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-sm text-yellow-800">
+                  <strong>⚠️ Peringatan:</strong> Aksi ini tidak dapat dibatalkan. Varian akan dihapus permanen dari sistem.
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={closeDeleteDialog}
+                >
+                  Batal
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="destructive"
+                  onClick={confirmDeleteVariant}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Ya, Hapus Varian
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={editProductOpen} onOpenChange={setEditProductOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Produk</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditProduct} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="productName">Nama Produk</Label>
+              <Input
+                id="productName"
+                value={productForm.name}
+                onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                placeholder="Masukkan nama produk"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="productDescription">Deskripsi</Label>
+              <Textarea
+                id="productDescription"
+                value={productForm.description}
+                onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                placeholder="Masukkan deskripsi produk"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="season">Season</Label>
+                <Select value={productForm.season} onValueChange={(value) => setProductForm({...productForm, season: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih season" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tidak ada</SelectItem>
+                    <SelectItem value="SPRING">Spring</SelectItem>
+                    <SelectItem value="SUMMER">Summer</SelectItem>
+                    <SelectItem value="FALL">Fall</SelectItem>
+                    <SelectItem value="WINTER">Winter</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gender">Gender</Label>
+                <Select value={productForm.gender} onValueChange={(value) => setProductForm({...productForm, gender: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tidak ada</SelectItem>
+                    <SelectItem value="MALE">Male</SelectItem>
+                    <SelectItem value="FEMALE">Female</SelectItem>
+                    <SelectItem value="UNISEX">Unisex</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="costPrice">Harga Modal (Rp)</Label>
+                <Input
+                  id="costPrice"
+                  type="number"
+                  value={productForm.costPrice}
+                  onChange={(e) => setProductForm({...productForm, costPrice: e.target.value})}
+                  placeholder="0"
+                  min="0"
+                  step="1000"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="sellingPrice">Harga Jual (Rp)</Label>
+                <Input
+                  id="sellingPrice"
+                  type="number"
+                  value={productForm.sellingPrice}
+                  onChange={(e) => setProductForm({...productForm, sellingPrice: e.target.value})}
+                  placeholder="0"
+                  min="0"
+                  step="1000"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={closeEditProduct}
+              >
+                Batal
+              </Button>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                <Edit className="h-4 w-4 mr-2" />
+                Simpan Perubahan
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
