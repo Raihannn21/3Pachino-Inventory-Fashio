@@ -240,6 +240,26 @@ export default function PurchasesPage() {
     }
   };
 
+  // Complete purchase (change status from PENDING to COMPLETED)
+  const completePurchase = async (purchaseId: string) => {
+    try {
+      const response = await fetch(`/api/purchases/${purchaseId}/complete`, {
+        method: 'PATCH',
+      });
+
+      if (response.ok) {
+        toast.success('Production order berhasil diselesaikan');
+        fetchPurchases(); // Refresh data
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Gagal menyelesaikan production order');
+      }
+    } catch (error) {
+      console.error('Error completing purchase:', error);
+      toast.error('Gagal menyelesaikan production order');
+    }
+  };
+
   // Create production order
   const createPurchaseOrder = async () => {
     if (purchaseItems.length === 0) {
@@ -303,8 +323,59 @@ export default function PurchasesPage() {
   if (loading) {
     return (
       <div className="container mx-auto p-6">
-        <div className="text-center py-8">
-          <div className="text-sm text-muted-foreground">Memuat data...</div>
+        {/* Header Skeleton */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
+              <div className="h-4 w-64 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+
+          {/* Loading Animation Center */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="text-center">
+              <div className="relative mb-4">
+                <Truck className="h-16 w-16 mx-auto text-blue-600 animate-pulse" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Memuat Data Produksi</h2>
+              <p className="text-sm text-gray-600">Mengambil data order produksi...</p>
+              <div className="flex items-center justify-center mt-4 space-x-1">
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Summary Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((item) => (
+              <Card key={item} className="border-0 shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-8 w-20 bg-gray-200 rounded animate-pulse mb-2"></div>
+                  <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Table Skeleton */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                <Package className="h-12 w-12 text-gray-300" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -553,6 +624,15 @@ export default function PurchasesPage() {
                           <Eye className="h-4 w-4 mr-1" />
                           Detail
                         </Button>
+                        {purchase.status === 'PENDING' && (
+                          <Button 
+                            variant="default" 
+                            size="sm"
+                            onClick={() => completePurchase(purchase.id)}
+                          >
+                            ✅ Complete
+                          </Button>
+                        )}
                         <Button 
                           variant="destructive" 
                           size="sm"

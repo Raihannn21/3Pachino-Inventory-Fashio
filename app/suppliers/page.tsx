@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Building2, Phone, Mail, MapPin, Eye, Search } from 'lucide-react';
+import { Plus, Building2, Phone, Mail, MapPin, Eye, Search, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Customer {
@@ -34,6 +34,9 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -170,11 +173,104 @@ export default function CustomersPage() {
     setAddress('');
   };
 
+  // Open edit dialog
+  const openEditDialog = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setName(customer.name);
+    setContact(customer.contact || '');
+    setPhone(customer.phone || '');
+    setAddress(customer.address || '');
+    setIsEditOpen(true);
+  };
+
+  // Update customer
+  const updateCustomer = async () => {
+    if (!name.trim()) {
+      toast.error('Nama customer wajib diisi');
+      return;
+    }
+
+    if (!editingCustomer) return;
+
+    setIsEditing(true);
+    try {
+      const response = await fetch(`/api/customers/${editingCustomer.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          contact: contact.trim() || null,
+          phone: phone.trim() || null,
+          address: address.trim() || null,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Customer berhasil diperbarui!');
+        setIsEditOpen(false);
+        resetForm();
+        setEditingCustomer(null);
+        fetchCustomers();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Gagal memperbarui customer');
+      }
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      toast.error('Gagal memperbarui customer');
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto p-6">
-        <div className="text-center py-8">
-          <div className="text-sm text-muted-foreground">Memuat data...</div>
+        {/* Header Skeleton */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="h-8 w-40 bg-gray-200 rounded animate-pulse mb-2"></div>
+              <div className="h-4 w-56 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+
+          {/* Loading Animation Center */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="text-center">
+              <div className="relative mb-4">
+                <Building2 className="h-16 w-16 mx-auto text-blue-600 animate-pulse" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Memuat Data Customer</h2>
+              <p className="text-sm text-gray-600">Mengambil data customer terbaru...</p>
+              <div className="flex items-center justify-center mt-4 space-x-1">
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Search and Stats Skeleton */}
+          <div className="flex items-center justify-between">
+            <div className="h-10 w-64 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+
+          {/* Table Skeleton */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                <Building2 className="h-12 w-12 text-gray-300" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -245,6 +341,72 @@ export default function CustomersPage() {
                   disabled={isCreating}
                 >
                   {isCreating ? 'Menambahkan...' : 'Tambah Customer'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Customer Dialog */}
+          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Customer</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-name">Nama Customer</Label>
+                  <Input
+                    id="edit-name"
+                    placeholder="Masukkan nama customer"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-contact">Kontak</Label>
+                  <Input
+                    id="edit-contact"
+                    placeholder="Masukkan kontak"
+                    value={contact}
+                    onChange={(e) => setContact(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-phone">No. Telepon</Label>
+                  <Input
+                    id="edit-phone"
+                    placeholder="Masukkan no. telepon"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-address">Alamat</Label>
+                  <Textarea
+                    id="edit-address"
+                    placeholder="Masukkan alamat"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2 mt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditOpen(false);
+                    resetForm();
+                    setEditingCustomer(null);
+                  }}
+                >
+                  Batal
+                </Button>
+                <Button 
+                  onClick={updateCustomer}
+                  disabled={isEditing}
+                >
+                  {isEditing ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </Button>
               </div>
             </DialogContent>
@@ -397,14 +559,24 @@ export default function CustomersPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.location.href = `/customers/${customer.id}`}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View History
-                        </Button>
+                        <div className="flex items-center gap-2 justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditDialog(customer)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.location.href = `/customers/${customer.id}`}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View History
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

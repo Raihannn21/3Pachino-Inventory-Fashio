@@ -74,12 +74,60 @@ export default function ProductsPage() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto p-8">
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <Package className="h-16 w-16 animate-spin mx-auto mb-6 text-blue-600" />
-            <p className="text-lg font-medium text-gray-900">Memuat produk...</p>
-            <p className="text-sm text-muted-foreground mt-2">Mohon tunggu sebentar</p>
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="h-8 w-32 bg-gray-200 rounded animate-pulse mb-2"></div>
+            <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
           </div>
+          <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+
+        {/* Loading Animation Center */}
+        <div className="flex items-center justify-center mb-8">
+          <div className="text-center">
+            <div className="relative mb-4">
+              <Package className="h-16 w-16 mx-auto text-blue-600 animate-pulse" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Memuat Produk</h2>
+            <p className="text-sm text-gray-600">Mengambil data produk terbaru...</p>
+            <div className="flex items-center justify-center mt-4 space-x-1">
+              <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
+              <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+              <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search and Filters Skeleton */}
+        <div className="flex items-center space-x-4 mb-8">
+          <div className="relative flex-1">
+            <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+
+        {/* Product Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
+            <Card key={item} className="border-0 shadow-sm">
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="h-5 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="space-y-2">
+                    <div className="h-3 w-24 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-3 w-28 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="h-6 w-20 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                  <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );

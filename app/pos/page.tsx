@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { Logo } from '@/components/ui/logo';
@@ -66,10 +67,12 @@ export default function POSPage() {
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [discount, setDiscount] = useState(0);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [sendWhatsApp, setSendWhatsApp] = useState(false);
 
   // Load all products on component mount
   const loadAllProducts = async () => {
@@ -202,8 +205,10 @@ export default function POSPage() {
     setSelectedCustomer('');
     setCustomerName('');
     setCustomerPhone('');
+    setCustomerAddress('');
     setNotes('');
     setDiscount(0);
+    setSendWhatsApp(false);
   };
 
   // Handle customer selection
@@ -213,6 +218,7 @@ export default function POSPage() {
     if (customer) {
       setCustomerName(customer.name);
       setCustomerPhone(customer.phone || '');
+      setCustomerAddress(customer.address || '');
     }
   };
 
@@ -220,6 +226,56 @@ export default function POSPage() {
   const subtotal = cart.reduce((sum, item) => sum + (item.variant.product.sellingPrice * item.quantity), 0);
   const discountAmount = (subtotal * discount) / 100;
   const total = subtotal - discountAmount;
+
+  // Handle WhatsApp send
+  const handleSendWhatsApp = async (transaction: any) => {
+    try {
+      // Format phone number (remove non-digits and ensure starts with 62)
+      let phoneNumber = customerPhone.replace(/\D/g, '');
+      if (phoneNumber.startsWith('0')) {
+        phoneNumber = '62' + phoneNumber.substring(1);
+      } else if (!phoneNumber.startsWith('62')) {
+        phoneNumber = '62' + phoneNumber;
+      }
+
+      // Create receipt URL
+      const receiptUrl = `${window.location.origin}/sales/${transaction.id}`;
+      
+      // Create WhatsApp message
+      const message = `Halo! Terima kasih sudah berbelanja di 3PACHINO! 🛍️
+
+📧 Invoice: ${transaction.invoiceNumber}
+📅 Tanggal: ${new Date(transaction.transactionDate).toLocaleDateString('id-ID')}
+${customerName ? `👤 Customer: ${customerName}` : ''}
+
+🛍️ Items:
+${cart.map(item => {
+  const price = item.variant.product.sellingPrice;
+  const itemTotal = price * item.quantity;
+  return `• ${item.variant.product.name} (${item.quantity}x) ${item.variant.size.name} • ${item.variant.color.name}
+  @Rp ${price.toLocaleString('id-ID')} = Rp ${itemTotal.toLocaleString('id-ID')}`;
+}).join('\n')}
+
+💰 Subtotal: Rp ${subtotal.toLocaleString('id-ID')}
+${discount > 0 ? `🏷️ Diskon: ${discount}% (-Rp ${discountAmount.toLocaleString('id-ID')})` : ''}
+💰 Total: Rp ${total.toLocaleString('id-ID')}
+
+🧾 Lihat struk lengkap: ${receiptUrl}
+
+Terima kasih telah berbelanja di 3PACHINO! 🙏`;
+
+      // Create WhatsApp URL
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+      
+      // Open WhatsApp
+      window.open(whatsappUrl, '_blank');
+      
+      toast.success('WhatsApp dibuka! Tinggal klik "Send" untuk kirim ke customer');
+    } catch (error) {
+      console.error('Error sending WhatsApp:', error);
+      toast.error('Gagal membuka WhatsApp');
+    }
+  };
 
   // Process payment
   const processPayment = async () => {
@@ -252,6 +308,12 @@ export default function POSPage() {
 
       if (response.ok) {
         toast.success('Transaksi berhasil diproses!');
+        
+        // Send WhatsApp if enabled
+        if (sendWhatsApp && customerPhone.trim()) {
+          await handleSendWhatsApp(data.transaction);
+        }
+        
         clearCart();
         setIsCheckoutOpen(false);
         
@@ -569,6 +631,39 @@ export default function POSPage() {
                               onChange={(e) => setCustomerPhone(e.target.value)}
                               disabled={selectedCustomer !== '' && selectedCustomer !== 'manual'}
                             />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="customerAddress">Alamat</Label>
+                            <Input
+                              id="customerAddress"
+                              placeholder="Masukkan alamat pelanggan"
+                              value={customerAddress}
+                              onChange={(e) => setCustomerAddress(e.target.value)}
+                              disabled={selectedCustomer !== '' && selectedCustomer !== 'manual'}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox 
+                                id="sendWhatsApp"
+                                checked={sendWhatsApp}
+                                onCheckedChange={(checked) => setSendWhatsApp(checked as boolean)}
+                                disabled={!customerPhone.trim()}
+                              />
+                              <Label htmlFor="sendWhatsApp" className="text-sm font-medium">
+                                📱 Kirim struk ke WhatsApp customer
+                              </Label>
+                            </div>
+                            {!customerPhone.trim() && (
+                              <p className="text-xs text-muted-foreground">
+                                * Masukkan nomor telepon untuk mengaktifkan fitur ini
+                              </p>
+                            )}
+                            {customerPhone.trim() && sendWhatsApp && (
+                              <p className="text-xs text-green-600">
+                                ✅ WhatsApp akan terbuka dengan pesan siap kirim
+                              </p>
+                            )}
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="discount">Diskon (%)</Label>

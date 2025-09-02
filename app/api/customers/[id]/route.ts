@@ -145,3 +145,96 @@ export async function GET(
     );
   }
 }
+
+// PUT - Update customer
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { name, contact, phone, address } = body;
+
+    // Validasi input
+    if (!name || name.trim() === '') {
+      return NextResponse.json(
+        { error: 'Nama customer harus diisi' },
+        { status: 400 }
+      );
+    }
+
+    // Update customer
+    const updatedCustomer = await prisma.supplier.update({
+      where: { id },
+      data: {
+        name: name.trim(),
+        contact: contact?.trim() || null,
+        phone: phone?.trim() || null,
+        address: address?.trim() || null,
+      }
+    });
+
+    return NextResponse.json({
+      message: 'Customer berhasil diupdate',
+      customer: updatedCustomer
+    });
+
+  } catch (error) {
+    console.error('Error updating customer:', error);
+    return NextResponse.json(
+      { error: 'Gagal mengupdate customer' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE - Delete customer
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    // Cek apakah customer memiliki transaksi
+    const customerWithTransactions = await prisma.supplier.findUnique({
+      where: { id },
+      include: {
+        transactions: {
+          where: { type: 'SALE' }
+        }
+      }
+    });
+
+    if (!customerWithTransactions) {
+      return NextResponse.json(
+        { error: 'Customer tidak ditemukan' },
+        { status: 404 }
+      );
+    }
+
+    if (customerWithTransactions.transactions.length > 0) {
+      return NextResponse.json(
+        { error: 'Tidak dapat menghapus customer yang memiliki riwayat transaksi' },
+        { status: 400 }
+      );
+    }
+
+    // Delete customer
+    await prisma.supplier.delete({
+      where: { id }
+    });
+
+    return NextResponse.json({
+      message: 'Customer berhasil dihapus'
+    });
+
+  } catch (error) {
+    console.error('Error deleting customer:', error);
+    return NextResponse.json(
+      { error: 'Gagal menghapus customer' },
+      { status: 500 }
+    );
+  }
+}

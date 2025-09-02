@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Package, AlertTriangle, TrendingUp, TrendingDown, Settings, History, Plus, Minus } from 'lucide-react';
+import { Package, AlertTriangle, TrendingUp, TrendingDown, Settings, History, Plus, Minus, ArrowUpDown, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface StockAdjustment {
@@ -109,6 +109,9 @@ export default function StockAdjustmentPage() {
   const [notes, setNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [reasonFilter, setReasonFilter] = useState('ALL');
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchVariants();
@@ -143,6 +146,42 @@ export default function StockAdjustmentPage() {
     } finally {
       setHistoryLoading(false);
     }
+  };
+
+  // Filter adjustment history based on type and reason
+  const filteredAdjustmentHistory = adjustmentHistory.filter(item => {
+    if (typeFilter !== 'ALL' && item.adjustmentType !== typeFilter) {
+      return false;
+    }
+    if (reasonFilter !== 'ALL' && item.reason !== reasonFilter) {
+      return false;
+    }
+    return true;
+  });
+
+  // Filter variants based on search query
+  const filteredVariants = variants.filter(variant => {
+    if (!searchQuery) return true;
+    
+    const searchLower = searchQuery.toLowerCase();
+    const productName = variant.product.name.toLowerCase();
+    const sizeName = variant.size.name.toLowerCase();
+    const colorName = variant.color.name.toLowerCase();
+    const barcode = variant.barcode?.toLowerCase() || '';
+    
+    return productName.includes(searchLower) ||
+           sizeName.includes(searchLower) ||
+           colorName.includes(searchLower) ||
+           barcode.includes(searchLower) ||
+           `${productName} ${sizeName} ${colorName}`.includes(searchLower);
+  });
+
+  // Get all unique reasons for filter options
+  const getAllReasons = () => {
+    const allReasons = [...ADJUSTMENT_CATEGORIES.INCREASE, ...ADJUSTMENT_CATEGORIES.DECREASE];
+    return allReasons.filter((reason, index, self) => 
+      index === self.findIndex(r => r.value === reason.value)
+    );
   };
 
   const openAdjustmentDialog = (variant: ProductVariant) => {
@@ -272,6 +311,52 @@ export default function StockAdjustmentPage() {
     return category ? category.label : reason;
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6">
+        {/* Header Skeleton */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
+              <div className="h-4 w-64 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+
+          {/* Loading Animation Center */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="text-center">
+              <div className="relative mb-4">
+                <ArrowUpDown className="h-16 w-16 mx-auto text-blue-600 animate-pulse" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Memuat Stock Adjustments</h2>
+              <p className="text-sm text-gray-600">Mengambil data penyesuaian stock...</p>
+              <div className="flex items-center justify-center mt-4 space-x-1">
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Cards Skeleton */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <div className="h-6 w-40 bg-gray-200 rounded animate-pulse"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                <Settings className="h-12 w-12 text-gray-300" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-6">
       <div className="space-y-6">
@@ -300,15 +385,51 @@ export default function StockAdjustmentPage() {
                 <History className="h-5 w-5" />
                 Riwayat Adjustment
               </CardTitle>
+              <div className="flex gap-4 mt-4">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="typeFilter" className="text-sm font-medium">Tipe:</Label>
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Pilih tipe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">🔄 Semua Tipe</SelectItem>
+                      <SelectItem value="INCREASE">📈 Penambahan (+)</SelectItem>
+                      <SelectItem value="DECREASE">📉 Pengurangan (-)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="reasonFilter" className="text-sm font-medium">Alasan:</Label>
+                  <Select value={reasonFilter} onValueChange={setReasonFilter}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Pilih alasan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">📋 Semua Alasan</SelectItem>
+                      {getAllReasons().map((reason) => (
+                        <SelectItem key={reason.value} value={reason.value}>
+                          {reason.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2 ml-auto">
+                  <Badge variant="outline" className="text-xs">
+                    {filteredAdjustmentHistory.length} dari {adjustmentHistory.length} record
+                  </Badge>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {historyLoading ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Memuat riwayat...
                 </div>
-              ) : adjustmentHistory.length === 0 ? (
+              ) : filteredAdjustmentHistory.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Belum ada riwayat adjustment
+                  {adjustmentHistory.length === 0 ? 'Belum ada riwayat adjustment' : 'Tidak ada data yang sesuai dengan filter'}
                 </div>
               ) : (
                 <Table>
@@ -325,7 +446,7 @@ export default function StockAdjustmentPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {adjustmentHistory.map((adjustment) => (
+                    {filteredAdjustmentHistory.map((adjustment) => (
                       <TableRow key={adjustment.id}>
                         <TableCell>
                           <div className="text-sm">
@@ -401,9 +522,29 @@ export default function StockAdjustmentPage() {
               <Package className="h-5 w-5" />
               Product Variants
               <Badge variant="secondary" className="ml-auto">
-                {variants.length} variants
+                {filteredVariants.length} dari {variants.length} variants
               </Badge>
             </CardTitle>
+            <div className="flex items-center gap-4 mt-4">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Cari nama produk, size, warna, atau barcode..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              {searchQuery && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSearchQuery('')}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -426,7 +567,26 @@ export default function StockAdjustmentPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {variants.map((variant) => (
+                    {filteredVariants.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8">
+                          {variants.length === 0 ? (
+                            <div className="text-muted-foreground">
+                              <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                              <div className="text-lg font-medium">Belum ada produk</div>
+                              <div className="text-sm">Tambahkan produk terlebih dahulu untuk melakukan stock adjustment</div>
+                            </div>
+                          ) : (
+                            <div className="text-muted-foreground">
+                              <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                              <div className="text-lg font-medium">Tidak ada hasil</div>
+                              <div className="text-sm">Tidak ditemukan produk yang sesuai dengan pencarian "{searchQuery}"</div>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredVariants.map((variant) => (
                       <TableRow key={variant.id} className="hover:bg-gray-50">
                         <TableCell>
                           <div>
@@ -478,17 +638,9 @@ export default function StockAdjustmentPage() {
                           </Button>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )))}
                   </TableBody>
                 </Table>
-              </div>
-            )}
-
-            {variants.length === 0 && !loading && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <div className="text-lg font-medium mb-2">Belum ada data variant produk</div>
-                <div className="text-sm">Tambahkan produk terlebih dahulu untuk melakukan stock adjustment</div>
               </div>
             )}
           </CardContent>

@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, Eye, Calendar, TrendingUp, Package, Users, Receipt as ReceiptIcon } from 'lucide-react';
+import { Search, Eye, Calendar, TrendingUp, Package, Users, Receipt as ReceiptIcon, ShoppingCart } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import Receipt from '@/components/receipt/Receipt';
@@ -146,6 +146,65 @@ export default function SalesPage() {
   const totalSales = salesData?.sales.reduce((sum, sale) => sum + Number(sale.totalAmount), 0) || 0;
   const totalTransactions = salesData?.pagination.total || 0;
   const averageTransaction = totalTransactions > 0 ? totalSales / totalTransactions : 0;
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6">
+        {/* Header Skeleton */}
+        <div className="space-y-6">
+          <div>
+            <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
+            <div className="h-4 w-64 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+
+          {/* Loading Animation Center */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="text-center">
+              <div className="relative mb-4">
+                <ShoppingCart className="h-16 w-16 mx-auto text-blue-600 animate-pulse" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Memuat Data Penjualan</h2>
+              <p className="text-sm text-gray-600">Mengambil data transaksi terbaru...</p>
+              <div className="flex items-center justify-center mt-4 space-x-1">
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Summary Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((item) => (
+              <Card key={item} className="border-0 shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-8 w-20 bg-gray-200 rounded animate-pulse mb-2"></div>
+                  <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Search and Table Skeleton */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                <TrendingUp className="h-12 w-12 text-gray-300" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6">
@@ -365,18 +424,19 @@ export default function SalesPage() {
 
                 <div>
                   <label className="text-sm font-medium text-muted-foreground mb-2 block">Items</label>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Produk</TableHead>
-                        <TableHead>Varian</TableHead>
-                        <TableHead>Qty</TableHead>
-                        <TableHead>Harga</TableHead>
-                        <TableHead>Total</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {selectedTransaction.items.map((item) => (
+                  <div className="max-h-64 overflow-y-auto border rounded-md">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Produk</TableHead>
+                          <TableHead>Varian</TableHead>
+                          <TableHead>Qty</TableHead>
+                          <TableHead>Harga</TableHead>
+                          <TableHead>Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedTransaction.items.map((item) => (
                         <TableRow key={item.id}>
                           <TableCell>
                             <div>
@@ -405,6 +465,7 @@ export default function SalesPage() {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 </div>
               </div>
             )}

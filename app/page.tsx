@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SimpleLineChart, SimpleBarChart, SimplePieChart, SimpleComposedChart } from '@/components/charts/ChartComponents';
 import { exportTransactionsToExcel } from '@/lib/excel-export';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
@@ -108,6 +109,7 @@ export default function Dashboard() {
   const [period, setPeriod] = useState('30');
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [transactionFilter, setTransactionFilter] = useState<string>('ALL'); // ALL, SALE, PURCHASE
 
   const fetchAnalytics = async () => {
     try {
@@ -145,6 +147,11 @@ export default function Dashboard() {
         params.append('period', period);
       }
 
+      // Add transaction filter
+      if (transactionFilter !== 'ALL') {
+        params.append('type', transactionFilter);
+      }
+
       const response = await fetch(`/api/transactions?${params}`);
       if (response.ok) {
         const data = await response.json();
@@ -158,7 +165,7 @@ export default function Dashboard() {
   useEffect(() => {
     fetchAnalytics();
     fetchTransactions();
-  }, [period, dateRange]);
+  }, [period, dateRange, transactionFilter]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -172,6 +179,24 @@ export default function Dashboard() {
   const handleExportExcel = () => {
     if (transactionData && transactionData.transactions.length > 0) {
       exportTransactionsToExcel(transactionData.transactions, transactionData.period);
+    }
+  };
+
+  const handleExportSalesExcel = () => {
+    if (transactionData && transactionData.transactions.length > 0) {
+      const salesData = transactionData.transactions.filter(t => t.type === 'SALE');
+      if (salesData.length > 0) {
+        exportTransactionsToExcel(salesData, transactionData.period, 'Penjualan');
+      }
+    }
+  };
+
+  const handleExportPurchasesExcel = () => {
+    if (transactionData && transactionData.transactions.length > 0) {
+      const purchaseData = transactionData.transactions.filter(t => t.type === 'PURCHASE');
+      if (purchaseData.length > 0) {
+        exportTransactionsToExcel(purchaseData, transactionData.period, 'Pembelian');
+      }
     }
   };
 
@@ -674,19 +699,55 @@ export default function Dashboard() {
             {transactionData ? (
               <Card className="bg-white shadow-sm border-0">
                 <CardHeader className="pb-4">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-xl font-semibold text-gray-900">
-                      Laporan Transaksi ({transactionData.totalCount} transaksi)
-                    </CardTitle>
-                    <Button 
-                      onClick={handleExportExcel}
-                      variant="outline" 
-                      size="sm"
-                      className="flex items-center gap-2 hover:bg-green-50 hover:text-green-700 hover:border-green-300"
-                    >
-                      <Download className="h-4 w-4" />
-                      Export Excel
-                    </Button>
+                  <div className="flex justify-between items-center flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
+                      <CardTitle className="text-xl font-semibold text-gray-900">
+                        Laporan Transaksi ({transactionData.totalCount} transaksi)
+                      </CardTitle>
+                      <Select value={transactionFilter} onValueChange={setTransactionFilter}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Filter transaksi" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">Semua Transaksi</SelectItem>
+                          <SelectItem value="SALE">Penjualan</SelectItem>
+                          <SelectItem value="PURCHASE">Pembelian</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {transactionFilter === 'ALL' && (
+                        <>
+                          <Button 
+                            onClick={handleExportSalesExcel}
+                            variant="outline" 
+                            size="sm"
+                            className="flex items-center gap-2 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
+                          >
+                            <Download className="h-4 w-4" />
+                            Export Penjualan
+                          </Button>
+                          <Button 
+                            onClick={handleExportPurchasesExcel}
+                            variant="outline" 
+                            size="sm"
+                            className="flex items-center gap-2 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300"
+                          >
+                            <Download className="h-4 w-4" />
+                            Export Pembelian
+                          </Button>
+                        </>
+                      )}
+                      <Button 
+                        onClick={handleExportExcel}
+                        variant="outline" 
+                        size="sm"
+                        className="flex items-center gap-2 hover:bg-green-50 hover:text-green-700 hover:border-green-300"
+                      >
+                        <Download className="h-4 w-4" />
+                        Export Excel
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">

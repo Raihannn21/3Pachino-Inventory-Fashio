@@ -35,10 +35,26 @@ const printStyles = `
       left: 0;
       top: 0;
       width: 100%;
+      min-height: 100vh;
       background: white;
+      overflow: visible;
     }
     .no-print {
       display: none !important;
+    }
+    
+    /* Ensure content doesn't break across pages inappropriately */
+    .receipt-content {
+      page-break-inside: avoid;
+    }
+    
+    /* Allow tables to break across pages if needed */
+    .receipt-items {
+      page-break-inside: auto;
+    }
+    
+    .receipt-item {
+      page-break-inside: avoid;
     }
   }
 `;
@@ -114,21 +130,75 @@ export default function Receipt({ transaction, customerName, onClose }: ReceiptP
       const canvas = await html2canvas(receiptRef.current, {
         scale: 2,
         backgroundColor: '#ffffff',
-        logging: false
-      });
-
-      // Create PDF
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: [80, 120] // Thermal printer size
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        height: receiptRef.current.scrollHeight,
+        width: receiptRef.current.scrollWidth
       });
 
       const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 76;
+      
+      // Calculate dimensions
+      const imgWidth = 76; // PDF width in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Calculate dynamic PDF height based on content
+      const pdfHeight = Math.max(120, imgHeight + 10); // Minimum 120mm or content height + margin
+      
+      // Create PDF with dynamic height
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [80, pdfHeight] // Dynamic height based on content
+      });
 
-      pdf.addImage(imgData, 'PNG', 2, 2, imgWidth, imgHeight);
+      // Check if content needs multiple pages
+      const maxHeightPerPage = 280; // Maximum height per page in mm
+      
+      if (imgHeight <= maxHeightPerPage) {
+        // Single page
+        pdf.addImage(imgData, 'PNG', 2, 2, imgWidth, imgHeight);
+      } else {
+        // Multiple pages needed
+        let currentY = 0;
+        let pageNumber = 1;
+        
+        while (currentY < imgHeight) {
+          if (pageNumber > 1) {
+            pdf.addPage([80, Math.min(maxHeightPerPage + 10, imgHeight - currentY + 10)]);
+          }
+          
+          const remainingHeight = Math.min(maxHeightPerPage, imgHeight - currentY);
+          
+          // Create a temporary canvas for this page section
+          const pageCanvas = document.createElement('canvas');
+          const pageCtx = pageCanvas.getContext('2d')!;
+          
+          const scaleFactor = canvas.width / imgWidth;
+          const sourceY = currentY * scaleFactor;
+          const sourceHeight = remainingHeight * scaleFactor;
+          
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = sourceHeight;
+          
+          // Draw the section of the original canvas
+          pageCtx.drawImage(
+            canvas,
+            0, sourceY, // Source x, y
+            canvas.width, sourceHeight, // Source width, height
+            0, 0, // Destination x, y
+            canvas.width, sourceHeight // Destination width, height
+          );
+          
+          const pageImgData = pageCanvas.toDataURL('image/png');
+          pdf.addImage(pageImgData, 'PNG', 2, 2, imgWidth, remainingHeight);
+          
+          currentY += maxHeightPerPage;
+          pageNumber++;
+        }
+      }
+
       pdf.save(`Struk-${transaction.invoiceNumber}.pdf`);
       
       toast.success('PDF berhasil didownload!');
@@ -316,7 +386,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
             </div>
             
             {/* Content with z-index to appear above watermark */}
-            <div className="relative z-10 bg-white/80">
+            <div className="receipt-content relative z-10 bg-white/80">
               {/* Header */}
               <div className="header text-center mb-6 bg-white p-4 rounded">
                 <h1 className="store-name text-2xl font-bold">3PACHINO</h1>
@@ -360,12 +430,12 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
             <Separator className="my-4" />
 
             {/* Items */}
-            <div className="items space-y-3 mb-4">
+            <div className="receipt-items space-y-3 mb-4">
               <h3 className="font-medium text-sm">ITEM PEMBELIAN:</h3>
               {transaction.items.map((item, index) => {
                 const product = item.variant?.product || item.product;
                 return (
-                  <div key={index} className="item">
+                  <div key={index} className="receipt-item item">
                     <div className="item-details flex-1">
                       <div className="item-name font-medium text-sm">
                         {product?.name}

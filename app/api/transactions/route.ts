@@ -16,31 +16,33 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period') || '30';
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const type = searchParams.get('type'); // Filter by transaction type
     
     // Calculate date range
-    let dateFilter: any = {};
+    let whereFilter: any = {};
     if (startDate && endDate) {
-      dateFilter = {
-        transactionDate: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
-        },
+      whereFilter.transactionDate = {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
       };
     } else {
       const currentDate = new Date();
       const pastDate = new Date();
       pastDate.setDate(currentDate.getDate() - parseInt(period));
-      dateFilter = {
-        transactionDate: {
-          gte: pastDate,
-          lte: currentDate,
-        },
+      whereFilter.transactionDate = {
+        gte: pastDate,
+        lte: currentDate,
       };
+    }
+
+    // Add type filter if specified
+    if (type && type !== 'ALL') {
+      whereFilter.type = type;
     }
 
     // Get all transactions with details
     const transactions = await prisma.transaction.findMany({
-      where: dateFilter,
+      where: whereFilter,
       include: {
         supplier: true,
         user: true,

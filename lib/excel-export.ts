@@ -13,7 +13,7 @@ export interface TransactionForExport {
   invoiceNumber: string;
 }
 
-export const exportTransactionsToExcel = (transactions: TransactionForExport[], period: number) => {
+export const exportTransactionsToExcel = (transactions: TransactionForExport[], period: number, filePrefix: string = 'Transaksi') => {
   // Format data for Excel
   const excelData = transactions.map((transaction, index) => ({
     'No': index + 1,
@@ -89,11 +89,11 @@ export const exportTransactionsToExcel = (transactions: TransactionForExport[], 
   ws['!cols'] = colWidths;
 
   // Add worksheet to workbook
-  XLSX.utils.book_append_sheet(wb, ws, 'Laporan Transaksi');
+  XLSX.utils.book_append_sheet(wb, ws, `Laporan ${filePrefix}`);
 
   // Generate filename with current date
   const currentDate = new Date().toISOString().split('T')[0];
-  const filename = `Laporan_Transaksi_${period}hari_${currentDate}.xlsx`;
+  const filename = `Laporan_${filePrefix}_${period}hari_${currentDate}.xlsx`;
 
   // Save file
   XLSX.writeFile(wb, filename);
