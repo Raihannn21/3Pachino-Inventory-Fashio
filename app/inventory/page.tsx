@@ -30,6 +30,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Package, 
   AlertTriangle, 
@@ -42,7 +43,10 @@ import {
   RefreshCw,
   Calendar,
   BarChart3,
-  Store
+  Store,
+  Settings,
+  History,
+  ArrowUpDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -79,6 +83,38 @@ interface InventorySummary {
   totalReorderSuggestions: number;
 }
 
+interface AdjustmentHistoryItem {
+  id: string;
+  adjustmentType: 'INCREASE' | 'DECREASE';
+  quantity: number;
+  reason: string;
+  notes?: string;
+  createdAt: string;
+  user: {
+    name: string;
+  };
+}
+
+// Adjustment Categories - Sesuai dengan AdjustmentReason enum di schema
+const ADJUSTMENT_CATEGORIES = {
+  INCREASE: [
+    { value: 'PRODUCTION', label: '🏭 Produksi', description: 'Barang hasil produksi baru' },
+    { value: 'RETURN_FROM_CUSTOMER', label: '🔄 Return Customer', description: 'Barang dikembalikan customer' },
+    { value: 'DATA_CORRECTION', label: '📊 Koreksi Data', description: 'Perbaikan kesalahan input' },
+    { value: 'FOUND_ITEMS', label: '🔍 Barang Ditemukan', description: 'Stock opname - barang lebih' },
+    { value: 'OTHER', label: '📦 Lainnya', description: 'Alasan lain (wajib isi catatan)' }
+  ],
+  DECREASE: [
+    { value: 'DAMAGE', label: '💥 Barang Rusak', description: 'Barang cacat/rusak/defective' },
+    { value: 'RETURN_TO_SUPPLIER', label: '📤 Return Supplier', description: 'Dikembalikan ke supplier' },
+    { value: 'LOST_ITEMS', label: '❌ Barang Hilang', description: 'Barang hilang/dicuri' },
+    { value: 'SAMPLE_PROMOTION', label: '🎁 Sample/Promosi', description: 'Diberikan sebagai sample' },
+    { value: 'DATA_CORRECTION', label: '📊 Koreksi Data', description: 'Perbaikan kesalahan input' },
+    { value: 'EXPIRED_ITEMS', label: '⏰ Barang Kadaluarsa', description: 'Barang melewati masa berlaku' },
+    { value: 'OTHER', label: '📦 Lainnya', description: 'Alasan lain (wajib isi catatan)' }
+  ]
+};
+
 export default function InventoryPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [summary, setSummary] = useState<InventorySummary | null>(null);
@@ -92,6 +128,11 @@ export default function InventoryPage() {
   const [adjustmentDialog, setAdjustmentDialog] = useState({ open: false, item: null as InventoryItem | null });
   const [adjustmentAmount, setAdjustmentAmount] = useState('');
   const [adjustmentReason, setAdjustmentReason] = useState('');
+  const [adjustmentNotes, setAdjustmentNotes] = useState('');
+  const [adjustmentType, setAdjustmentType] = useState<'INCREASE' | 'DECREASE' | ''>('');
+  const [isProcessingAdjustment, setIsProcessingAdjustment] = useState(false);
+  const [historyDialog, setHistoryDialog] = useState({ open: false, item: null as InventoryItem | null });
+  const [adjustmentHistory, setAdjustmentHistory] = useState<AdjustmentHistoryItem[]>([]);
 
   useEffect(() => {
     fetchInventoryData();
@@ -161,29 +202,42 @@ export default function InventoryPage() {
   };
 
   const handleStockAdjustment = async () => {
-    if (!adjustmentDialog.item || !adjustmentAmount) {
-      toast.error('Jumlah adjustment wajib diisi');
+    if (!adjustmentDialog.item || !adjustmentAmount || !adjustmentReason || !adjustmentType) {
+      toast.error('Mohon lengkapi semua field yang diperlukan');
       return;
     }
 
+    const currentStock = adjustmentDialog.item.stock;
+    const newStock = parseInt(adjustmentAmount) || 0;
+    const quantity = Math.abs(newStock - currentStock);
+
+    if (quantity === 0) {
+      toast.error('Stock tidak berubah');
+      return;
+    }
+
+    if (newStock < 0) {
+      toast.error('Stock tidak boleh negatif');
+      return;
+    }
+
+    setIsProcessingAdjustment(true);
     try {
-      const response = await fetch('/api/inventory', {
+      const response = await fetch('/api/inventory/adjustments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           variantId: adjustmentDialog.item.id,
-          adjustment: parseInt(adjustmentAmount),
-          type: 'MANUAL_ADJUSTMENT',
-          reason: adjustmentReason || 'Manual stock adjustment',
-          reference: `ADJ-${Date.now()}`
+          adjustmentType,
+          quantity,
+          reason: adjustmentReason,
+          notes: adjustmentNotes || undefined
         }),
       });
 
       if (response.ok) {
-        toast.success('Stock adjustment berhasil disimpan');
-        setAdjustmentDialog({ open: false, item: null });
-        setAdjustmentAmount('');
-        setAdjustmentReason('');
+        toast.success(`Stock adjustment berhasil! Stock ${adjustmentType === 'INCREASE' ? 'bertambah' : 'berkurang'} ${quantity} unit`);
+        closeAdjustmentDialog();
         fetchInventoryData();
       } else {
         const errorData = await response.json();
@@ -192,7 +246,47 @@ export default function InventoryPage() {
     } catch (error) {
       console.error('Error adjusting stock:', error);
       toast.error('Gagal melakukan stock adjustment');
+    } finally {
+      setIsProcessingAdjustment(false);
     }
+  };
+
+  const openAdjustmentDialog = (item: InventoryItem) => {
+    setAdjustmentDialog({ open: true, item });
+    setAdjustmentAmount(item.stock.toString());
+    setAdjustmentReason('');
+    setAdjustmentNotes('');
+    setAdjustmentType('');
+  };
+
+  const closeAdjustmentDialog = () => {
+    setAdjustmentDialog({ open: false, item: null });
+    setAdjustmentAmount('');
+    setAdjustmentReason('');
+    setAdjustmentNotes('');
+    setAdjustmentType('');
+  };
+
+  const fetchAdjustmentHistory = async (variantId: string) => {
+    try {
+      const response = await fetch(`/api/inventory/adjustments?variantId=${variantId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAdjustmentHistory(data.adjustments || []);
+      }
+    } catch (error) {
+      console.error('Error fetching adjustment history:', error);
+    }
+  };
+
+  const openHistoryDialog = (item: InventoryItem) => {
+    setHistoryDialog({ open: true, item });
+    fetchAdjustmentHistory(item.id);
+  };
+
+  const closeHistoryDialog = () => {
+    setHistoryDialog({ open: false, item: null });
+    setAdjustmentHistory([]);
   };
 
   const getStatusBadge = (status: string) => {
@@ -532,66 +626,24 @@ export default function InventoryPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Dialog 
-                            open={adjustmentDialog.open && adjustmentDialog.item?.id === item.id}
-                            onOpenChange={(open) => setAdjustmentDialog({ 
-                              open, 
-                              item: open ? item : null 
-                            })}
-                          >
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="hover:bg-slate-100">
-                                <BarChart3 className="h-4 w-4 mr-1" />
-                                Adjust
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => openAdjustmentDialog(item)}
+                              className="hover:bg-blue-50 hover:border-blue-300"
+                            >
+                              <ArrowUpDown className="h-4 w-4 mr-1" />
+                              Adjust
                             </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-md">
-                            <DialogHeader>
-                              <DialogTitle className="text-lg font-semibold text-slate-800">Stock Adjustment</DialogTitle>
-                              <DialogDescription className="text-slate-600">
-                                Adjust stock untuk {item.product.name} - {item.size.name} {item.color.name}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div className="bg-slate-50 p-3 rounded-lg">
-                                <Label className="text-sm font-medium text-slate-700">Current Stock</Label>
-                                <div className={`text-2xl font-bold mt-1 ${
-                                  item.stock <= item.minStock ? 'text-red-600' : 'text-emerald-600'
-                                }`}>
-                                  {item.stock} pcs
-                                </div>
-                              </div>
-                              <div>
-                                <Label htmlFor="adjustment" className="text-sm font-medium text-slate-700">Adjustment Amount</Label>
-                                <Input
-                                  id="adjustment"
-                                  type="number"
-                                  placeholder="e.g., +10 or -5"
-                                  value={adjustmentAmount}
-                                  onChange={(e) => setAdjustmentAmount(e.target.value)}
-                                  className="mt-1 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
-                                />
-                                <p className="text-xs text-slate-500 mt-1">Use + for increase, - for decrease</p>
-                              </div>
-                              <div>
-                                <Label htmlFor="reason" className="text-sm font-medium text-slate-700">Reason</Label>
-                                <Input
-                                  id="reason"
-                                  placeholder="Reason for adjustment"
-                                  value={adjustmentReason}
-                                  onChange={(e) => setAdjustmentReason(e.target.value)}
-                                  className="mt-1 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
-                                />
-                              </div>
-                              <Button 
-                                onClick={handleStockAdjustment} 
-                                className="w-full bg-blue-600 hover:bg-blue-700"
-                              >
-                                Save Adjustment
-                              </Button>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => openHistoryDialog(item)}
+                              className="hover:bg-green-50 hover:border-green-300 ml-2"
+                            >
+                              <History className="h-4 w-4 mr-1" />
+                              History
+                            </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -601,6 +653,209 @@ export default function InventoryPage() {
           )}
         </CardContent>
       </Card>
+      
+      {/* Stock Adjustment Dialog */}
+      <Dialog open={adjustmentDialog.open} onOpenChange={closeAdjustmentDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowUpDown className="h-5 w-5" />
+              Stock Adjustment
+            </DialogTitle>
+            <DialogDescription>
+              {adjustmentDialog.item && (
+                <>Adjust stock untuk {adjustmentDialog.item.product.name} - {adjustmentDialog.item.size.name} {adjustmentDialog.item.color.name}</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {adjustmentDialog.item && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Stock Sekarang</Label>
+                  <Input
+                    type="number"
+                    value={adjustmentDialog.item.stock}
+                    readOnly
+                    className="bg-gray-50 font-semibold text-lg"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Stock Baru</Label>
+                  <Input
+                    type="number"
+                    value={adjustmentAmount}
+                    readOnly
+                    className="bg-gray-50 font-semibold text-lg"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Jumlah Adjustment</Label>
+                <div className="flex items-center space-x-2">
+                  <Select value={adjustmentType || ''} onValueChange={(value: 'INCREASE' | 'DECREASE') => {
+                    setAdjustmentType(value);
+                    if (adjustmentDialog.item) {
+                      setAdjustmentAmount(adjustmentDialog.item.stock.toString());
+                    }
+                    setAdjustmentReason('');
+                  }}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue placeholder="Tipe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="INCREASE">+ Tambah</SelectItem>
+                      <SelectItem value="DECREASE">- Kurang</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="Jumlah"
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      if (adjustmentDialog.item) {
+                        if (adjustmentType === 'INCREASE') {
+                          setAdjustmentAmount((adjustmentDialog.item.stock + value).toString());
+                        } else if (adjustmentType === 'DECREASE') {
+                          setAdjustmentAmount(Math.max(0, adjustmentDialog.item.stock - value).toString());
+                        }
+                      }
+                    }}
+                    className="flex-1"
+                    disabled={!adjustmentType}
+                  />
+                </div>
+                {!adjustmentType && (
+                  <p className="text-xs text-muted-foreground">Pilih tipe adjustment terlebih dahulu</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="adjustmentReason" className="text-sm font-medium">Alasan</Label>
+                <Select value={adjustmentReason} onValueChange={setAdjustmentReason}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Pilih alasan adjustment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {adjustmentType && ADJUSTMENT_CATEGORIES[adjustmentType].map((category) => (
+                      <SelectItem key={category.value} value={category.value}>
+                        <div>
+                          <div className="font-medium">{category.label}</div>
+                          <div className="text-xs text-muted-foreground">{category.description}</div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {(adjustmentReason === 'OTHER' || adjustmentReason === 'DATA_CORRECTION') && (
+                <div>
+                  <Label htmlFor="adjustmentNotes" className="text-sm font-medium">Catatan</Label>
+                  <Textarea
+                    id="adjustmentNotes"
+                    placeholder="Jelaskan detail adjustment..."
+                    value={adjustmentNotes}
+                    onChange={(e) => setAdjustmentNotes(e.target.value)}
+                    className="mt-1"
+                    rows={3}
+                  />
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={closeAdjustmentDialog} className="flex-1">
+                  Batal
+                </Button>
+                <Button 
+                  onClick={handleStockAdjustment} 
+                  disabled={!adjustmentType || !adjustmentReason || isProcessingAdjustment || 
+                           parseInt(adjustmentAmount) === adjustmentDialog.item?.stock}
+                  className="flex-1"
+                >
+                  {isProcessingAdjustment ? 'Processing...' : 'Simpan Adjustment'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Adjustment History Dialog */}
+      <Dialog open={historyDialog.open} onOpenChange={closeHistoryDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Riwayat Adjustment
+            </DialogTitle>
+            <DialogDescription>
+              {historyDialog.item && (
+                <>Riwayat adjustment untuk {historyDialog.item.product.name} - {historyDialog.item.size.name} {historyDialog.item.color.name}</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="max-h-96 overflow-y-auto">
+            {adjustmentHistory.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Belum ada riwayat adjustment untuk variant ini
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tanggal</TableHead>
+                    <TableHead>Tipe</TableHead>
+                    <TableHead>Jumlah</TableHead>
+                    <TableHead>Alasan</TableHead>
+                    <TableHead>User</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {adjustmentHistory.map((history) => (
+                    <TableRow key={history.id}>
+                      <TableCell className="text-sm">
+                        {new Date(history.createdAt).toLocaleDateString('id-ID', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={history.adjustmentType === 'INCREASE' ? 'default' : 'secondary'}>
+                          {history.adjustmentType === 'INCREASE' ? (
+                            <><Plus className="h-3 w-3 mr-1" /> Tambah</>
+                          ) : (
+                            <><Minus className="h-3 w-3 mr-1" /> Kurang</>
+                          )}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {history.adjustmentType === 'INCREASE' ? '+' : '-'}{history.quantity}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <div>
+                          {ADJUSTMENT_CATEGORIES[history.adjustmentType].find(cat => cat.value === history.reason)?.label || history.reason}
+                        </div>
+                        {history.notes && (
+                          <div className="text-xs text-muted-foreground mt-1">{history.notes}</div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">{history.user.name}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
       </div>
     </div>
   );
