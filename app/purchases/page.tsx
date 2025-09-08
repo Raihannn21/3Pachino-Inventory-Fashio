@@ -322,24 +322,24 @@ export default function PurchasesPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 sm:p-6">
         {/* Header Skeleton */}
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
-              <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
-              <div className="h-4 w-64 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-6 sm:h-8 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
+              <div className="h-3 sm:h-4 w-64 bg-gray-200 rounded animate-pulse"></div>
             </div>
-            <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-9 sm:h-10 w-full sm:w-32 bg-gray-200 rounded animate-pulse"></div>
           </div>
 
           {/* Loading Animation Center */}
-          <div className="flex items-center justify-center mb-8">
+          <div className="flex items-center justify-center mb-6 sm:mb-8">
             <div className="text-center">
               <div className="relative mb-4">
-                <Truck className="h-16 w-16 mx-auto text-blue-600 animate-pulse" />
+                <Truck className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-blue-600 animate-pulse" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Memuat Data Produksi</h2>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Memuat Data Produksi</h2>
               <p className="text-sm text-gray-600">Mengambil data order produksi...</p>
               <div className="flex items-center justify-center mt-4 space-x-1">
                 <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
@@ -350,16 +350,16 @@ export default function PurchasesPage() {
           </div>
 
           {/* Summary Cards Skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[1, 2, 3].map((item) => (
               <Card key={item} className="border-0 shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-3 sm:h-4 w-20 sm:w-24 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-3 sm:h-4 w-3 sm:w-4 bg-gray-200 rounded animate-pulse"></div>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-8 w-20 bg-gray-200 rounded animate-pulse mb-2"></div>
-                  <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-6 sm:h-8 w-16 sm:w-20 bg-gray-200 rounded animate-pulse mb-2"></div>
+                  <div className="h-2 sm:h-3 w-24 sm:w-32 bg-gray-200 rounded animate-pulse"></div>
                 </CardContent>
               </Card>
             ))}
@@ -368,11 +368,11 @@ export default function PurchasesPage() {
           {/* Table Skeleton */}
           <Card className="border-0 shadow-sm">
             <CardHeader>
-              <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-5 sm:h-6 w-28 sm:w-32 bg-gray-200 rounded animate-pulse"></div>
             </CardHeader>
             <CardContent>
-              <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
-                <Package className="h-12 w-12 text-gray-300" />
+              <div className="h-48 sm:h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                <Package className="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
               </div>
             </CardContent>
           </Card>
@@ -382,29 +382,29 @@ export default function PurchasesPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="space-y-6">
+    <div className="container mx-auto p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Production Orders</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Production Orders</h1>
+            <p className="text-sm text-muted-foreground">
               Kelola produksi dan manufacturing
             </p>
           </div>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button size="lg">
+              <Button size="lg" className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
-                Buat Production Order
+                <span className="sm:inline">Buat Production Order</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Buat Production Order Baru</DialogTitle>
+                <DialogTitle className="text-lg sm:text-xl">Buat Production Order Baru</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Target Produksi</Label>
                     <div className="text-sm text-muted-foreground">
@@ -417,6 +417,7 @@ export default function PurchasesPage() {
                       placeholder="Catatan untuk produksi ini..."
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
+                      className="min-h-[80px]"
                     />
                   </div>
                 </div>
@@ -431,10 +432,10 @@ export default function PurchasesPage() {
                     onChange={(e) => setProductSearch(e.target.value)}
                   />
                   
-                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded p-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded p-2">
                     {filteredProducts.slice(0, 20).map((variant) => (
                       <Card key={variant.id} className="cursor-pointer hover:bg-gray-50" onClick={() => addItemToPurchase(variant)}>
-                        <CardContent className="p-2">
+                        <CardContent className="p-3">
                           <div className="text-sm">
                             <div className="font-medium">{variant.product.name}</div>
                             <div className="text-xs text-muted-foreground">
@@ -455,64 +456,124 @@ export default function PurchasesPage() {
                     <Separator />
                     <div className="space-y-4">
                       <Label>Items Production Order</Label>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Produk</TableHead>
-                            <TableHead>Qty Produksi</TableHead>
-                            <TableHead>Biaya Per Unit</TableHead>
-                            <TableHead>Total Biaya</TableHead>
-                            <TableHead>Aksi</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {purchaseItems.map((item) => (
-                            <TableRow key={item.variantId}>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">{item.variant?.product?.name}</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {item.variant?.size?.name} • {item.variant?.color?.name}
+                      
+                      {/* Mobile Card Layout */}
+                      <div className="block lg:hidden space-y-3">
+                        {purchaseItems.map((item) => (
+                          <Card key={item.variantId} className="border border-gray-200">
+                            <CardContent className="p-4">
+                              <div className="space-y-3">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <div className="font-medium text-sm">{item.variant?.product?.name}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {item.variant?.size?.name} • {item.variant?.color?.name}
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => updateItemQuantity(item.variantId!, 0)}
+                                  >
+                                    <Minus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <Label className="text-xs">Qty Produksi</Label>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      value={item.quantity}
+                                      onChange={(e) => updateItemQuantity(item.variantId!, parseInt(e.target.value) || 0)}
+                                      className="mt-1"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs">Biaya Per Unit</Label>
+                                    <Input
+                                      type="number"
+                                      value={item.unitPrice}
+                                      onChange={(e) => updateItemPrice(item.variantId!, parseFloat(e.target.value) || 0)}
+                                      className="mt-1"
+                                    />
                                   </div>
                                 </div>
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  value={item.quantity}
-                                  onChange={(e) => updateItemQuantity(item.variantId!, parseInt(e.target.value) || 0)}
-                                  className="w-20"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  value={item.unitPrice}
-                                  onChange={(e) => updateItemPrice(item.variantId!, parseFloat(e.target.value) || 0)}
-                                  className="w-32"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                Rp {(item.quantity * item.unitPrice).toLocaleString('id-ID')}
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => updateItemQuantity(item.variantId!, 0)}
-                                >
-                                  <Minus className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                                
+                                <div className="text-center p-2 bg-gray-50 rounded">
+                                  <div className="text-xs text-gray-600">Total Biaya</div>
+                                  <div className="font-semibold text-blue-600">
+                                    Rp {(item.quantity * item.unitPrice).toLocaleString('id-ID')}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
 
-                      <div className="flex justify-between items-center p-4 bg-gray-50 rounded">
-                        <span className="font-bold">Total Biaya Produksi:</span>
-                        <span className="font-bold text-lg">
+                      {/* Desktop Table Layout */}
+                      <div className="hidden lg:block">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Produk</TableHead>
+                              <TableHead>Qty Produksi</TableHead>
+                              <TableHead>Biaya Per Unit</TableHead>
+                              <TableHead>Total Biaya</TableHead>
+                              <TableHead>Aksi</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {purchaseItems.map((item) => (
+                              <TableRow key={item.variantId}>
+                                <TableCell>
+                                  <div>
+                                    <div className="font-medium">{item.variant?.product?.name}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {item.variant?.size?.name} • {item.variant?.color?.name}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    value={item.quantity}
+                                    onChange={(e) => updateItemQuantity(item.variantId!, parseInt(e.target.value) || 0)}
+                                    className="w-20"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    value={item.unitPrice}
+                                    onChange={(e) => updateItemPrice(item.variantId!, parseFloat(e.target.value) || 0)}
+                                    className="w-32"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  Rp {(item.quantity * item.unitPrice).toLocaleString('id-ID')}
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => updateItemQuantity(item.variantId!, 0)}
+                                  >
+                                    <Minus className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row justify-between items-center p-4 bg-gray-50 rounded gap-2">
+                        <span className="font-bold text-sm sm:text-base">Total Biaya Produksi:</span>
+                        <span className="font-bold text-lg sm:text-xl text-blue-600">
                           Rp {calculateTotal().toLocaleString('id-ID')}
                         </span>
                       </div>
@@ -534,39 +595,39 @@ export default function PurchasesPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Biaya Produksi</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <DollarSign className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Rp {totalPurchases.toLocaleString('id-ID')}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">Rp {totalPurchases.toLocaleString('id-ID')}</div>
+              <p className="text-xs text-gray-600">
                 {purchases.length} production orders
               </p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Produksi Pending</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <Package className="h-4 w-4 text-orange-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{pendingCount}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{pendingCount}</div>
+              <p className="text-xs text-gray-600">
                 Menunggu produksi
               </p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-0 shadow-sm sm:col-span-2 lg:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Items Diproduksi</CardTitle>
-              <Truck className="h-4 w-4 text-muted-foreground" />
+              <Truck className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{purchases.reduce((sum, p) => sum + p.items.length, 0)}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{purchases.reduce((sum, p) => sum + p.items.length, 0)}</div>
+              <p className="text-xs text-gray-600">
                 Total items
               </p>
             </CardContent>
@@ -574,86 +635,168 @@ export default function PurchasesPage() {
         </div>
 
         {/* Production Orders List */}
-        <Card>
+        <Card className="border-0 shadow-sm">
           <CardHeader>
-            <CardTitle>Daftar Production Orders</CardTitle>
+            <CardTitle className="text-lg font-semibold">Daftar Production Orders</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>No. Production</TableHead>
-                  <TableHead>Tanggal</TableHead>
-                  <TableHead>Total Biaya</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {purchases.map((purchase) => (
-                  <TableRow key={purchase.id}>
-                    <TableCell className="font-medium">
-                      {purchase.invoiceNumber.replace('PO-', 'PROD-')}
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(purchase.transactionDate), 'dd MMM yyyy', { locale: id })}
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-semibold text-blue-600">
-                        Rp {Number(purchase.totalAmount).toLocaleString('id-ID')}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {purchase.items.length} item{purchase.items.length > 1 ? 's' : ''}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={purchase.status === 'PENDING' ? 'secondary' : 'default'}>
-                        {purchase.status === 'PENDING' ? 'PRODUKSI' : purchase.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => openPurchaseDetail(purchase)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Detail
-                        </Button>
-                        {purchase.status === 'PENDING' && (
-                          <Button 
-                            variant="default" 
-                            size="sm"
-                            onClick={() => completePurchase(purchase.id)}
-                          >
-                            ✅ Complete
-                          </Button>
-                        )}
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={() => openDeletePurchase(purchase)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Hapus
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            {purchases.length === 0 && (
+            {purchases.length === 0 ? (
               <div className="text-center py-8">
-                <div className="text-sm text-muted-foreground">
+                <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <div className="text-sm text-gray-600">
                   Belum ada production orders
                 </div>
               </div>
+            ) : (
+              <>
+                {/* Mobile Card Layout */}
+                <div className="block lg:hidden space-y-3">
+                  {purchases.map((purchase) => (
+                    <Card key={purchase.id} className="border border-gray-200">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          {/* Header */}
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="font-semibold text-gray-900 text-sm">
+                                {purchase.invoiceNumber.replace('PO-', 'PROD-')}
+                              </div>
+                              <div className="text-xs text-gray-600 mt-1">
+                                {format(new Date(purchase.transactionDate), 'dd MMM yyyy', { locale: id })}
+                              </div>
+                            </div>
+                            <Badge 
+                              variant={purchase.status === 'PENDING' ? 'secondary' : 'default'}
+                              className="text-xs"
+                            >
+                              {purchase.status === 'PENDING' ? 'PRODUKSI' : purchase.status}
+                            </Badge>
+                          </div>
+
+                          {/* Content */}
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <div className="text-xs text-gray-600">Total Biaya</div>
+                              <div className="font-semibold text-blue-600">
+                                Rp {Number(purchase.totalAmount).toLocaleString('id-ID')}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-600">Items</div>
+                              <div className="font-medium">
+                                {purchase.items.length} item{purchase.items.length > 1 ? 's' : ''}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex gap-2 pt-2 border-t">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="flex-1 text-xs"
+                              onClick={() => openPurchaseDetail(purchase)}
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              Detail
+                            </Button>
+                            {purchase.status === 'PENDING' && (
+                              <Button 
+                                variant="default" 
+                                size="sm"
+                                className="flex-1 text-xs"
+                                onClick={() => completePurchase(purchase.id)}
+                              >
+                                ✅ Complete
+                              </Button>
+                            )}
+                            <Button 
+                              variant="destructive" 
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => openDeletePurchase(purchase)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Desktop Table Layout */}
+                <div className="hidden lg:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>No. Production</TableHead>
+                        <TableHead>Tanggal</TableHead>
+                        <TableHead>Total Biaya</TableHead>
+                        <TableHead>Items</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Aksi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {purchases.map((purchase) => (
+                        <TableRow key={purchase.id}>
+                          <TableCell className="font-medium">
+                            {purchase.invoiceNumber.replace('PO-', 'PROD-')}
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(purchase.transactionDate), 'dd MMM yyyy', { locale: id })}
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-semibold text-blue-600">
+                              Rp {Number(purchase.totalAmount).toLocaleString('id-ID')}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">
+                              {purchase.items.length} item{purchase.items.length > 1 ? 's' : ''}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={purchase.status === 'PENDING' ? 'secondary' : 'default'}>
+                              {purchase.status === 'PENDING' ? 'PRODUKSI' : purchase.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => openPurchaseDetail(purchase)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Detail
+                              </Button>
+                              {purchase.status === 'PENDING' && (
+                                <Button 
+                                  variant="default" 
+                                  size="sm"
+                                  onClick={() => completePurchase(purchase.id)}
+                                >
+                                  ✅ Complete
+                                </Button>
+                              )}
+                              <Button 
+                                variant="destructive" 
+                                size="sm"
+                                onClick={() => openDeletePurchase(purchase)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Hapus
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
@@ -661,22 +804,22 @@ export default function PurchasesPage() {
 
       {/* Purchase Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Detail Production Order</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">Detail Production Order</DialogTitle>
           </DialogHeader>
           
           {selectedPurchase && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Order Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium">Invoice Number</Label>
                   <p className="text-sm">{selectedPurchase.invoiceNumber}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Status</Label>
-                  <div>
+                  <div className="mt-1">
                     <Badge variant={selectedPurchase.status === 'PENDING' ? 'secondary' : 'default'}>
                       {selectedPurchase.status === 'PENDING' ? 'PRODUKSI' : selectedPurchase.status}
                     </Badge>
@@ -695,9 +838,9 @@ export default function PurchasesPage() {
                     {format(new Date(selectedPurchase.transactionDate), 'dd MMMM yyyy', { locale: id })}
                   </p>
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <Label className="text-sm font-medium">Total</Label>
-                  <p className="text-lg font-bold">Rp {selectedPurchase.totalAmount.toLocaleString()}</p>
+                  <p className="text-lg sm:text-xl font-bold text-blue-600">Rp {selectedPurchase.totalAmount.toLocaleString()}</p>
                 </div>
               </div>
 
@@ -706,7 +849,61 @@ export default function PurchasesPage() {
               {/* Items */}
               <div>
                 <Label className="text-sm font-medium mb-3 block">Items</Label>
-                <div className="border rounded-lg">
+                
+                {/* Mobile Card Layout */}
+                <div className="block lg:hidden space-y-3">
+                  {selectedPurchase.items && selectedPurchase.items.length > 0 ? (
+                    selectedPurchase.items.map((item, index) => (
+                      <Card key={index} className="border border-gray-200">
+                        <CardContent className="p-4">
+                          <div className="space-y-2">
+                            <div>
+                              <div className="font-medium text-sm">
+                                {item.variant?.product?.name || item.productName || 'Unknown Product'}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {item.variant?.product?.category?.name || ''}
+                              </div>
+                            </div>
+                            
+                            <div className="text-xs text-gray-600">
+                              Varian: {item.variant ? 
+                                `${item.variant.size?.name || ''} - ${item.variant.color?.name || ''}` : 
+                                item.variantName || '-'
+                              }
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <div className="text-xs text-gray-600">Quantity</div>
+                                <div className="font-medium">{item.quantity || 0}</div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-gray-600">Harga Satuan</div>
+                                <div className="font-medium">Rp {(item.unitPrice || 0).toLocaleString()}</div>
+                              </div>
+                            </div>
+                            
+                            <div className="text-center p-2 bg-gray-50 rounded">
+                              <div className="text-xs text-gray-600">Total</div>
+                              <div className="font-semibold text-blue-600">
+                                Rp {((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <p className="text-muted-foreground">Tidak ada item</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Desktop Table Layout */}
+                <div className="hidden lg:block border rounded-lg">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -769,25 +966,26 @@ export default function PurchasesPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
-            <DialogTitle>Konfirmasi Hapus</DialogTitle>
+            <DialogTitle className="text-lg">Konfirmasi Hapus</DialogTitle>
           </DialogHeader>
           
           {selectedPurchase && (
             <div className="space-y-4">
-              <p>
+              <p className="text-sm">
                 Apakah Anda yakin ingin menghapus production order <strong>{selectedPurchase.invoiceNumber}</strong>?
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Tindakan ini tidak dapat dibatalkan.
               </p>
               
-              <div className="flex gap-2 justify-end">
+              <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
                 <Button 
                   variant="outline" 
                   onClick={() => setIsDeleteOpen(false)}
                   disabled={isDeleting}
+                  className="w-full sm:w-auto"
                 >
                   Batal
                 </Button>
@@ -795,6 +993,7 @@ export default function PurchasesPage() {
                   variant="destructive" 
                   onClick={handleDeletePurchase}
                   disabled={isDeleting}
+                  className="w-full sm:w-auto"
                 >
                   {isDeleting ? 'Menghapus...' : 'Hapus'}
                 </Button>

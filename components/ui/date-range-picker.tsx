@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -47,6 +47,18 @@ export function DateRangePicker({ onDateRangeChange, className }: DateRangePicke
   const [selectedRange, setSelectedRange] = useState<DateRange | undefined>();
   const [selectedPreset, setSelectedPreset] = useState(presets[0]);
   const [open, setOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
   const handlePresetClick = (preset: typeof presets[0]) => {
     const range = preset.range();
@@ -96,17 +108,17 @@ export function DateRangePicker({ onDateRangeChange, className }: DateRangePicke
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <div className="flex">
+      <PopoverContent className="w-auto p-0 max-w-[95vw]" align="start">
+        <div className="flex flex-col sm:flex-row">
           {/* Preset buttons */}
-          <div className="flex flex-col gap-1 p-3 border-r">
+          <div className="flex flex-row sm:flex-col gap-1 p-3 sm:border-r border-b sm:border-b-0 overflow-x-auto sm:overflow-x-visible">
             {presets.map((preset) => (
               <Button
                 key={preset.value}
                 variant={selectedPreset.value === preset.value ? "default" : "ghost"}
                 size="sm"
                 onClick={() => handlePresetClick(preset)}
-                className="justify-start text-left whitespace-nowrap"
+                className="justify-start text-left whitespace-nowrap shrink-0"
               >
                 {preset.label}
               </Button>
@@ -114,12 +126,12 @@ export function DateRangePicker({ onDateRangeChange, className }: DateRangePicke
           </div>
           
           {/* Calendar */}
-          <div className="p-3">
+          <div className="p-3 overflow-auto max-w-full">
             <DayPicker
               mode="range"
               selected={selectedRange}
               onSelect={handleDateSelect}
-              numberOfMonths={2}
+              numberOfMonths={isMobile ? 1 : 2}
               locale={id}
               className="border-0"
               classNames={{
@@ -133,10 +145,10 @@ export function DateRangePicker({ onDateRangeChange, className }: DateRangePicke
                 nav_button_next: "absolute right-1",
                 table: "w-full border-collapse space-y-1",
                 head_row: "flex",
-                head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+                head_cell: "text-muted-foreground rounded-md w-8 sm:w-9 font-normal text-[0.8rem]",
                 row: "flex w-full mt-2",
                 cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
+                day: "h-8 w-8 sm:h-9 sm:w-9 p-0 font-normal aria-selected:opacity-100 text-xs sm:text-sm",
                 day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
                 day_today: "bg-accent text-accent-foreground",
                 day_outside: "text-muted-foreground opacity-50",

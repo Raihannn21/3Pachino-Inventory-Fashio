@@ -227,24 +227,24 @@ export default function CustomersPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 sm:p-6">
         {/* Header Skeleton */}
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
-              <div className="h-8 w-40 bg-gray-200 rounded animate-pulse mb-2"></div>
-              <div className="h-4 w-56 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-6 sm:h-8 w-32 sm:w-40 bg-gray-200 rounded animate-pulse mb-2"></div>
+              <div className="h-3 sm:h-4 w-48 sm:w-56 bg-gray-200 rounded animate-pulse"></div>
             </div>
-            <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-9 sm:h-10 w-full sm:w-36 bg-gray-200 rounded animate-pulse"></div>
           </div>
 
           {/* Loading Animation Center */}
-          <div className="flex items-center justify-center mb-8">
+          <div className="flex items-center justify-center mb-6 sm:mb-8">
             <div className="text-center">
               <div className="relative mb-4">
-                <Building2 className="h-16 w-16 mx-auto text-blue-600 animate-pulse" />
+                <Building2 className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-blue-600 animate-pulse" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Memuat Data Customer</h2>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Memuat Data Customer</h2>
               <p className="text-sm text-gray-600">Mengambil data customer terbaru...</p>
               <div className="flex items-center justify-center mt-4 space-x-1">
                 <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
@@ -254,20 +254,40 @@ export default function CustomersPage() {
             </div>
           </div>
 
-          {/* Search and Stats Skeleton */}
-          <div className="flex items-center justify-between">
-            <div className="h-10 w-64 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+          {/* Summary Cards Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {[1, 2].map((item) => (
+              <Card key={item} className="border-0 shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <div className="h-3 sm:h-4 w-20 sm:w-24 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-3 sm:h-4 w-3 sm:w-4 bg-gray-200 rounded animate-pulse"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-6 sm:h-8 w-12 sm:w-16 bg-gray-200 rounded animate-pulse mb-2"></div>
+                  <div className="h-2 sm:h-3 w-20 sm:w-24 bg-gray-200 rounded animate-pulse"></div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
+
+          {/* Search Section Skeleton */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <div className="h-5 sm:h-6 w-24 sm:w-32 bg-gray-200 rounded animate-pulse"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-9 sm:h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+            </CardContent>
+          </Card>
 
           {/* Table Skeleton */}
           <Card className="border-0 shadow-sm">
             <CardHeader>
-              <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-5 sm:h-6 w-28 sm:w-32 bg-gray-200 rounded animate-pulse"></div>
             </CardHeader>
             <CardContent>
-              <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
-                <Building2 className="h-12 w-12 text-gray-300" />
+              <div className="h-48 sm:h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                <Building2 className="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
               </div>
             </CardContent>
           </Card>
@@ -277,26 +297,26 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="space-y-6">
+    <div className="container mx-auto p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Data Customer</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Data Customer</h1>
+            <p className="text-sm text-muted-foreground">
               Kelola data customer dan pelanggan setia
             </p>
           </div>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button size="lg">
+              <Button size="lg" className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
-                Tambah Customer
+                <span className="sm:inline">Tambah Customer</span>
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="w-[95vw] max-w-md">
               <DialogHeader>
-                <DialogTitle>Tambah Customer Baru</DialogTitle>
+                <DialogTitle className="text-lg sm:text-xl">Tambah Customer Baru</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -333,6 +353,7 @@ export default function CustomersPage() {
                     placeholder="Alamat lengkap customer"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
+                    className="min-h-[80px]"
                   />
                 </div>
                 <Button 
@@ -348,12 +369,12 @@ export default function CustomersPage() {
 
           {/* Edit Customer Dialog */}
           <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-            <DialogContent>
+            <DialogContent className="w-[95vw] max-w-md">
               <DialogHeader>
-                <DialogTitle>Edit Customer</DialogTitle>
+                <DialogTitle className="text-lg sm:text-xl">Edit Customer</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="edit-name">Nama Customer</Label>
                   <Input
                     id="edit-name"
@@ -362,7 +383,7 @@ export default function CustomersPage() {
                     onChange={(e) => setName(e.target.value)}
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="edit-contact">Kontak</Label>
                   <Input
                     id="edit-contact"
@@ -371,7 +392,7 @@ export default function CustomersPage() {
                     onChange={(e) => setContact(e.target.value)}
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="edit-phone">No. Telepon</Label>
                   <Input
                     id="edit-phone"
@@ -380,7 +401,7 @@ export default function CustomersPage() {
                     onChange={(e) => setPhone(e.target.value)}
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="edit-address">Alamat</Label>
                   <Textarea
                     id="edit-address"
@@ -388,10 +409,11 @@ export default function CustomersPage() {
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     rows={3}
+                    className="min-h-[80px]"
                   />
                 </div>
               </div>
-              <div className="flex justify-end space-x-2 mt-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:justify-end mt-4">
                 <Button 
                   variant="outline" 
                   onClick={() => {
@@ -399,12 +421,14 @@ export default function CustomersPage() {
                     resetForm();
                     setEditingCustomer(null);
                   }}
+                  className="w-full sm:w-auto"
                 >
                   Batal
                 </Button>
                 <Button 
                   onClick={updateCustomer}
                   disabled={isEditing}
+                  className="w-full sm:w-auto"
                 >
                   {isEditing ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </Button>
@@ -414,27 +438,27 @@ export default function CustomersPage() {
         </div>
 
         {/* Summary Card */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <Building2 className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{customers.length}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{customers.length}</div>
+              <p className="text-xs text-gray-600">
                 Customer terdaftar
               </p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Hasil Pencarian</CardTitle>
-              <Search className="h-4 w-4 text-muted-foreground" />
+              <Search className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{filteredCustomers.length}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{filteredCustomers.length}</div>
+              <p className="text-xs text-gray-600">
                 Customer ditemukan
               </p>
             </CardContent>
@@ -442,10 +466,10 @@ export default function CustomersPage() {
         </div>
 
         {/* Search Section */}
-        <Card>
+        <Card className="border-0 shadow-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Search className="h-4 w-4 sm:h-5 sm:w-5" />
               Cari Customer
             </CardTitle>
           </CardHeader>
@@ -470,15 +494,15 @@ export default function CustomersPage() {
         </Card>
 
         {/* Customers List */}
-        <Card>
+        <Card className="border-0 shadow-sm">
           <CardHeader>
-            <CardTitle>Daftar Customer</CardTitle>
+            <CardTitle className="text-lg font-semibold">Daftar Customer</CardTitle>
           </CardHeader>
           <CardContent>
             {filteredCustomers.length === 0 ? (
               <div className="text-center py-8">
-                <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <div className="text-sm text-muted-foreground">
+                <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <div className="text-sm text-gray-600 mb-4">
                   {searchTerm 
                     ? `Tidak ada customer yang ditemukan untuk "${searchTerm}"` 
                     : 'Belum ada customer yang terdaftar'
@@ -486,7 +510,7 @@ export default function CustomersPage() {
                 </div>
                 {!searchTerm && (
                   <Button 
-                    className="mt-4" 
+                    className="w-full sm:w-auto" 
                     onClick={() => setIsCreateOpen(true)}
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -496,7 +520,7 @@ export default function CustomersPage() {
                 {searchTerm && (
                   <Button 
                     variant="outline"
-                    className="mt-4" 
+                    className="w-full sm:w-auto" 
                     onClick={() => setSearchTerm('')}
                   >
                     Clear Search
@@ -504,84 +528,158 @@ export default function CustomersPage() {
                 )}
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nama Customer</TableHead>
-                    <TableHead>Kontak</TableHead>
-                    <TableHead>Telepon</TableHead>
-                    <TableHead>Alamat</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <>
+                {/* Mobile Card Layout */}
+                <div className="block lg:hidden space-y-3">
                   {filteredCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {highlightText(customer.name, searchTerm)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            ID: {highlightText(customer.id.slice(0, 8), searchTerm)}...
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {customer.contact ? (
-                          <div className="flex items-center gap-1">
-                            <div>{highlightText(customer.contact, searchTerm)}</div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {customer.phone ? (
-                          <div className="flex items-center gap-1">
-                            <Phone className="h-3 w-3 text-muted-foreground" />
-                            <div>{highlightText(customer.phone, searchTerm)}</div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {customer.address ? (
-                          <div className="flex items-start gap-1">
-                            <MapPin className="h-3 w-3 text-muted-foreground mt-0.5" />
-                            <div className="text-sm max-w-xs truncate">
-                              {highlightText(customer.address, searchTerm)}
+                    <Card key={customer.id} className="border border-gray-200">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          {/* Header */}
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="font-semibold text-gray-900 text-sm">
+                                {highlightText(customer.name, searchTerm)}
+                              </div>
+                              <div className="text-xs text-gray-600 mt-1">
+                                ID: {highlightText(customer.id.slice(0, 8), searchTerm)}...
+                              </div>
                             </div>
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center gap-2 justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEditDialog(customer)}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => window.location.href = `/customers/${customer.id}`}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View History
-                          </Button>
+
+                          {/* Contact Info */}
+                          <div className="space-y-2 text-sm">
+                            {customer.contact && (
+                              <div className="flex items-center gap-2">
+                                <div className="text-xs text-gray-600 w-16">Kontak:</div>
+                                <div className="font-medium">{highlightText(customer.contact, searchTerm)}</div>
+                              </div>
+                            )}
+                            {customer.phone && (
+                              <div className="flex items-center gap-2">
+                                <Phone className="h-3 w-3 text-gray-600" />
+                                <div className="text-xs text-gray-600 w-14">Phone:</div>
+                                <div className="font-medium">{highlightText(customer.phone, searchTerm)}</div>
+                              </div>
+                            )}
+                            {customer.address && (
+                              <div className="flex items-start gap-2">
+                                <MapPin className="h-3 w-3 text-gray-600 mt-0.5" />
+                                <div className="text-xs text-gray-600 w-14">Alamat:</div>
+                                <div className="text-sm flex-1">{highlightText(customer.address, searchTerm)}</div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex gap-2 pt-2 border-t">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 text-xs"
+                              onClick={() => openEditDialog(customer)}
+                            >
+                              <Edit className="h-3 w-3 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 text-xs"
+                              onClick={() => window.location.href = `/customers/${customer.id}`}
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              History
+                            </Button>
+                          </div>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </CardContent>
+                    </Card>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+
+                {/* Desktop Table Layout */}
+                <div className="hidden lg:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nama Customer</TableHead>
+                        <TableHead>Kontak</TableHead>
+                        <TableHead>Telepon</TableHead>
+                        <TableHead>Alamat</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredCustomers.map((customer) => (
+                        <TableRow key={customer.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">
+                                {highlightText(customer.name, searchTerm)}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                ID: {highlightText(customer.id.slice(0, 8), searchTerm)}...
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {customer.contact ? (
+                              <div className="flex items-center gap-1">
+                                <div>{highlightText(customer.contact, searchTerm)}</div>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {customer.phone ? (
+                              <div className="flex items-center gap-1">
+                                <Phone className="h-3 w-3 text-muted-foreground" />
+                                <div>{highlightText(customer.phone, searchTerm)}</div>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {customer.address ? (
+                              <div className="flex items-start gap-1">
+                                <MapPin className="h-3 w-3 text-muted-foreground mt-0.5" />
+                                <div className="text-sm max-w-xs truncate">
+                                  {highlightText(customer.address, searchTerm)}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center gap-2 justify-end">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditDialog(customer)}
+                              >
+                                <Edit className="h-4 w-4 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.location.href = `/customers/${customer.id}`}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                View History
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

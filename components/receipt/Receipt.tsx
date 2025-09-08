@@ -43,9 +43,35 @@ const printStyles = `
       display: none !important;
     }
     
-    /* Ensure content doesn't break across pages inappropriately */
-    .receipt-content {
+    /* Override responsive styles for print */
+    .receipt-print-area .receipt-content {
+      padding: 1.5rem !important;
       page-break-inside: avoid;
+    }
+    
+    .receipt-print-area .store-name {
+      font-size: 1.5rem !important;
+    }
+    
+    .receipt-print-area .store-info {
+      font-size: 0.875rem !important;
+    }
+    
+    .receipt-print-area .invoice-info span,
+    .receipt-print-area .total-row {
+      font-size: 0.875rem !important;
+    }
+    
+    .receipt-print-area .total-final {
+      font-size: 1.125rem !important;
+    }
+    
+    .receipt-print-area .item-name {
+      font-size: 0.875rem !important;
+    }
+    
+    .receipt-print-area .item-variant {
+      font-size: 0.75rem !important;
     }
     
     /* Allow tables to break across pages if needed */
@@ -55,6 +81,14 @@ const printStyles = `
     
     .receipt-item {
       page-break-inside: avoid;
+      flex-direction: row !important;
+      justify-content: space-between !important;
+      align-items: flex-start !important;
+    }
+    
+    .item-qty-price {
+      text-align: right !important;
+      flex-direction: column !important;
     }
   }
 `;
@@ -318,53 +352,54 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
       {/* Inject print styles */}
       <style dangerouslySetInnerHTML={{ __html: printStyles }} />
       
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 mb-4 no-print">
-        <div className="flex gap-2">
-          <Button onClick={handlePrint} variant="outline" size="sm">
-            <Printer className="h-4 w-4 mr-2" />
-            Cetak
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2 mb-3 sm:mb-4 no-print">
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={handlePrint} variant="outline" size="sm" className="flex-1 sm:flex-none">
+            <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">Cetak</span>
           </Button>
-          <Button onClick={handlePrintVersion} variant="outline" size="sm">
-            <Printer className="h-4 w-4 mr-2" />
-            Print Version
+          <Button onClick={handlePrintVersion} variant="outline" size="sm" className="flex-1 sm:flex-none">
+            <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">Print Version</span>
           </Button>
           <Button 
             onClick={handleDownloadPDF} 
             variant="outline" 
             size="sm"
             disabled={isGeneratingPDF}
+            className="flex-1 sm:flex-none"
           >
-            <Download className="h-4 w-4 mr-2" />
-            {isGeneratingPDF ? 'Generating...' : 'Download PDF'}
+            <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">{isGeneratingPDF ? 'Generating...' : 'Download PDF'}</span>
           </Button>
         </div>
         
-        <div className="flex gap-2">
-          <Button onClick={handleShare} variant="outline" size="sm">
-            <Share2 className="h-4 w-4 mr-2" />
-            Bagikan
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={handleShare} variant="outline" size="sm" className="flex-1 sm:flex-none">
+            <Share2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">Bagikan</span>
           </Button>
-          <Button onClick={handleWhatsApp} variant="outline" size="sm" className="text-green-600 hover:text-green-700">
-            <MessageCircle className="h-4 w-4 mr-2" />
-            WhatsApp
+          <Button onClick={handleWhatsApp} variant="outline" size="sm" className="text-green-600 hover:text-green-700 flex-1 sm:flex-none">
+            <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">WhatsApp</span>
           </Button>
         </div>
         
-        <div className="flex gap-2">
-          <Button onClick={handleCopyUrl} variant="outline" size="sm">
-            <Copy className="h-4 w-4 mr-2" />
-            Salin Link
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={handleCopyUrl} variant="outline" size="sm" className="flex-1 sm:flex-none">
+            <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">Salin Link</span>
           </Button>
-          <Button onClick={handleCopyInvoice} variant="outline" size="sm">
-            <Hash className="h-4 w-4 mr-2" />
-            Salin Invoice
+          <Button onClick={handleCopyInvoice} variant="outline" size="sm" className="flex-1 sm:flex-none">
+            <Hash className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">Salin Invoice</span>
           </Button>
         </div>
         {onClose && (
-          <Button onClick={onClose} variant="ghost" size="sm" className="ml-auto">
-            Tutup
+          <Button onClick={onClose} variant="ghost" size="sm" className="w-full sm:w-auto sm:ml-auto">
+            <span className="text-xs sm:text-sm">Tutup</span>
           </Button>
         )}
       </div>
@@ -372,7 +407,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
       {/* Receipt Content */}
       <div ref={receiptRef} className="receipt bg-white receipt-print-area">
         <Card className="shadow-lg">
-          <CardContent className="p-6 relative">
+          <CardContent className="p-3 sm:p-6 relative">
             {/* Watermark Background */}
             <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center pointer-events-none opacity-40 z-0">
               <div className="w-full h-full max-w-lg max-h-lg flex items-center justify-center">
@@ -388,59 +423,59 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
             {/* Content with z-index to appear above watermark */}
             <div className="receipt-content relative z-10 bg-white/80">
               {/* Header */}
-              <div className="header text-center mb-6 bg-white p-4 rounded">
-                <h1 className="store-name text-2xl font-bold">3PACHINO</h1>
-                <div className="store-info text-sm text-gray-600 mt-2">
+              <div className="header text-center mb-4 sm:mb-6 bg-white p-3 sm:p-4 rounded">
+                <h1 className="store-name text-xl sm:text-2xl font-bold">3PACHINO</h1>
+                <div className="store-info text-xs sm:text-sm text-gray-600 mt-2">
                   <p>Premium Fashion Store</p>
                   <p>Telp: 0813-9590-7612</p>
                 </div>
               </div>
 
-              <Separator className="my-4" />
+              <Separator className="my-3 sm:my-4" />
 
             {/* Invoice Info */}
-            <div className="invoice-info space-y-2 mb-4">
+            <div className="invoice-info space-y-2 mb-3 sm:mb-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Hash className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm font-medium">Invoice:</span>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Hash className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+                  <span className="text-xs sm:text-sm font-medium">Invoice:</span>
                 </div>
-                <span className="font-mono font-bold">{transaction.invoiceNumber}</span>
+                <span className="font-mono font-bold text-sm sm:text-base">{transaction.invoiceNumber}</span>
               </div>
               
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm font-medium">Tanggal:</span>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+                  <span className="text-xs sm:text-sm font-medium">Tanggal:</span>
                 </div>
-                <span>{formatDate(transaction.transactionDate)}</span>
+                <span className="text-sm sm:text-base">{formatDate(transaction.transactionDate)}</span>
               </div>
 
               {customerName && customerName.trim() !== '' && (
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm font-medium">Customer:</span>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+                    <span className="text-xs sm:text-sm font-medium">Customer:</span>
                   </div>
-                  <span>{customerName}</span>
+                  <span className="text-sm sm:text-base break-words max-w-[60%] text-right">{customerName}</span>
                 </div>
               )}
             </div>
 
-            <Separator className="my-4" />
+            <Separator className="my-3 sm:my-4" />
 
             {/* Items */}
-            <div className="receipt-items space-y-3 mb-4">
-              <h3 className="font-medium text-sm">ITEM PEMBELIAN:</h3>
+            <div className="receipt-items space-y-2 sm:space-y-3 mb-3 sm:mb-4">
+              <h3 className="font-medium text-xs sm:text-sm">ITEM PEMBELIAN:</h3>
               {transaction.items.map((item, index) => {
                 const product = item.variant?.product || item.product;
                 return (
-                  <div key={index} className="receipt-item item">
+                  <div key={index} className="receipt-item item flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-3 border-b border-gray-100 pb-2">
                     <div className="item-details flex-1">
-                      <div className="item-name font-medium text-sm">
+                      <div className="item-name font-medium text-xs sm:text-sm leading-tight">
                         {product?.name}
                       </div>
-                      <div className="item-variant text-xs text-gray-600">
+                      <div className="item-variant text-xs text-gray-600 mt-0.5">
                         {product?.category?.name && product.category.name}
                         {product?.category?.name && product?.brand?.name && ' • '}
                         {product?.brand?.name && product.brand.name}
@@ -452,11 +487,11 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                         )}
                       </div>
                     </div>
-                    <div className="item-qty-price text-right">
+                    <div className="item-qty-price text-left sm:text-right flex sm:flex-col justify-between sm:justify-start">
                       <div className="text-xs text-gray-600">
                         {item.quantity}x {formatCurrency(item.price)}
                       </div>
-                      <div className="font-medium">
+                      <div className="font-medium text-sm sm:text-base">
                         {formatCurrency(item.subtotal)}
                       </div>
                     </div>
@@ -465,24 +500,24 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
               })}
             </div>
 
-            <Separator className="my-4" />
+            <Separator className="my-3 sm:my-4" />
 
             {/* Total Section */}
-            <div className="total-section space-y-2">
-              <div className="total-row flex justify-between">
+            <div className="total-section space-y-1 sm:space-y-2">
+              <div className="total-row flex justify-between text-sm sm:text-base">
                 <span>Subtotal:</span>
                 <span>{formatCurrency(subtotal)}</span>
               </div>
               
               {discount > 0 && (
-                <div className="total-row flex justify-between text-green-600">
+                <div className="total-row flex justify-between text-green-600 text-sm sm:text-base">
                   <span>Diskon:</span>
                   <span>-{formatCurrency(discount)}</span>
                 </div>
               )}
               
               {tax > 0 && (
-                <div className="total-row flex justify-between">
+                <div className="total-row flex justify-between text-sm sm:text-base">
                   <span>PPN (11%):</span>
                   <span>{formatCurrency(tax)}</span>
                 </div>
@@ -490,7 +525,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
               
               <Separator />
               
-              <div className="total-final flex justify-between text-lg font-bold">
+              <div className="total-final flex justify-between text-base sm:text-lg font-bold">
                 <span>TOTAL:</span>
                 <span>{formatCurrency(transaction.totalAmount)}</span>
               </div>
@@ -498,8 +533,8 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
 
             {transaction.notes && (
               <>
-                <Separator className="my-4" />
-                <div className="text-sm">
+                <Separator className="my-3 sm:my-4" />
+                <div className="text-xs sm:text-sm">
                   <span className="font-medium">Catatan: </span>
                   <span className="text-gray-600">{transaction.notes}</span>
                 </div>
@@ -507,7 +542,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
             )}
 
             {/* Footer */}
-            <div className="footer text-center mt-6 pt-4 border-t">
+            <div className="footer text-center mt-4 sm:mt-6 pt-3 sm:pt-4 border-t">
               <p className="text-xs text-gray-600 mb-2">
                 Terima kasih telah berbelanja di 3PACHINO!
               </p>

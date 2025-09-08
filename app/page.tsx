@@ -224,26 +224,26 @@ export default function Dashboard() {
     trendValue?: string;
   }) => (
     <Card className="border-0 shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-sm font-medium text-gray-600">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-gray-400" />
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3">
+        <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-gray-400 flex-shrink-0" />
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="text-2xl font-bold text-gray-900">{value}</div>
+        <div className="text-lg sm:text-2xl font-bold text-gray-900 break-all">{value}</div>
         <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
           {trend && (
             <>
               {trend === 'up' ? (
-                <TrendingUp className="h-3 w-3 text-green-500" />
+                <TrendingUp className="h-3 w-3 text-green-500 flex-shrink-0" />
               ) : (
-                <TrendingDown className="h-3 w-3 text-red-500" />
+                <TrendingDown className="h-3 w-3 text-red-500 flex-shrink-0" />
               )}
               <span className={trend === 'up' ? 'text-green-500' : 'text-red-500'}>
                 {trendValue}
               </span>
             </>
           )}
-          {description}
+          <span className="break-words">{description}</span>
         </p>
       </CardContent>
     </Card>
@@ -252,26 +252,26 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
           {/* Header Skeleton */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
             <div>
-              <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
-              <div className="h-4 w-80 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-6 sm:h-8 w-32 sm:w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
+              <div className="h-3 sm:h-4 w-48 sm:w-80 bg-gray-200 rounded animate-pulse"></div>
             </div>
-            <div className="flex gap-2">
-              <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="h-10 w-full sm:w-32 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-10 w-full sm:w-24 bg-gray-200 rounded animate-pulse"></div>
             </div>
           </div>
 
           {/* Loading Animation Center */}
-          <div className="flex items-center justify-center mb-8">
+          <div className="flex items-center justify-center mb-6 sm:mb-8">
             <div className="text-center">
               <div className="relative mb-4">
-                <LayoutDashboard className="h-16 w-16 mx-auto text-blue-600 animate-pulse" />
+                <LayoutDashboard className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-blue-600 animate-pulse" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Memuat Dashboard</h2>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Memuat Dashboard</h2>
               <p className="text-sm text-gray-600">Mengumpulkan data analytics terbaru...</p>
               <div className="flex items-center justify-center mt-4 space-x-1">
                 <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
@@ -282,40 +282,40 @@ export default function Dashboard() {
           </div>
 
           {/* Stats Cards Skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
             {[1, 2, 3, 4].map((item) => (
               <Card key={item} className="border-0 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3">
+                  <div className="h-3 sm:h-4 w-20 sm:w-24 bg-gray-200 rounded animate-pulse"></div>
                   <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="h-8 w-20 bg-gray-200 rounded animate-pulse mb-2"></div>
-                  <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-6 sm:h-8 w-16 sm:w-20 bg-gray-200 rounded animate-pulse mb-2"></div>
+                  <div className="h-3 w-24 sm:w-32 bg-gray-200 rounded animate-pulse"></div>
                 </CardContent>
               </Card>
             ))}
           </div>
 
           {/* Charts Skeleton */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <Card className="border-0 shadow-sm">
               <CardHeader>
-                <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-5 sm:h-6 w-24 sm:w-32 bg-gray-200 rounded animate-pulse"></div>
               </CardHeader>
               <CardContent>
-                <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
-                  <LayoutDashboard className="h-12 w-12 text-gray-300" />
+                <div className="h-48 sm:h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                  <LayoutDashboard className="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
                 </div>
               </CardContent>
             </Card>
             <Card className="border-0 shadow-sm">
               <CardHeader>
-                <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-5 sm:h-6 w-24 sm:w-32 bg-gray-200 rounded animate-pulse"></div>
               </CardHeader>
               <CardContent>
-                <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
-                  <LayoutDashboard className="h-12 w-12 text-gray-300" />
+                <div className="h-48 sm:h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                  <LayoutDashboard className="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
                 </div>
               </CardContent>
             </Card>
@@ -363,25 +363,25 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-1">
-                Selamat datang di sistem manajemen inventori 3PACHINO
-              </p>
-            </div>
-          <div className="flex gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">
+              Selamat datang di sistem manajemen inventori 3PACHINO
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
             <DateRangePicker 
               onDateRangeChange={handleDateRangeChange}
-              className="w-64"
+              className="w-full sm:w-64"
             />
             <Button 
               variant="outline" 
               onClick={fetchAnalytics}
               disabled={refreshing}
-              className="shadow-sm"
+              className="shadow-sm w-full sm:w-auto"
             >
               {refreshing ? (
                 <RefreshCw className="h-4 w-4 animate-spin mr-2" />
@@ -405,21 +405,21 @@ export default function Dashboard() {
         ) : (
           <div className="space-y-8">
             <Tabs defaultValue="overview" className="w-full">
-              <div className="bg-white rounded-lg shadow-sm p-1 mb-8">
-                <TabsList className="grid w-full grid-cols-6 bg-transparent">
-                  <TabsTrigger value="overview" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Overview</TabsTrigger>
-                  <TabsTrigger value="sales" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Penjualan</TabsTrigger>
-                  <TabsTrigger value="production" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Produksi</TabsTrigger>
-                  <TabsTrigger value="products" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Produk</TabsTrigger>
-                  <TabsTrigger value="inventory" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Inventory</TabsTrigger>
-                  <TabsTrigger value="transactions" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">Transaksi</TabsTrigger>
+              <div className="bg-white rounded-lg shadow-sm p-1 mb-6 sm:mb-8 overflow-x-auto">
+                <TabsList className="flex w-full min-w-max bg-transparent gap-1 p-1">
+                  <TabsTrigger value="overview" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 text-xs sm:text-sm px-3 py-2 whitespace-nowrap flex-shrink-0">Overview</TabsTrigger>
+                  <TabsTrigger value="sales" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 text-xs sm:text-sm px-3 py-2 whitespace-nowrap flex-shrink-0">Penjualan</TabsTrigger>
+                  <TabsTrigger value="production" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 text-xs sm:text-sm px-3 py-2 whitespace-nowrap flex-shrink-0">Produksi</TabsTrigger>
+                  <TabsTrigger value="products" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 text-xs sm:text-sm px-3 py-2 whitespace-nowrap flex-shrink-0">Produk</TabsTrigger>
+                  <TabsTrigger value="inventory" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 text-xs sm:text-sm px-3 py-2 whitespace-nowrap flex-shrink-0">Inventory</TabsTrigger>
+                  <TabsTrigger value="transactions" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 text-xs sm:text-sm px-3 py-2 whitespace-nowrap flex-shrink-0">Transaksi</TabsTrigger>
                 </TabsList>
               </div>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-8">
+          <TabsContent value="overview" className="space-y-6 sm:space-y-8">
             {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <StatCard
                 title="Total Penjualan"
                 value={formatCurrency(analyticsData.salesOverview.totalSales)}
@@ -449,17 +449,21 @@ export default function Dashboard() {
             {/* Sales Trend Chart */}
             <Card className="bg-white shadow-sm border-0">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-semibold text-gray-900">Tren Penjualan & Profit Harian</CardTitle>
+                <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Tren Penjualan & Profit Harian</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <SimpleComposedChart 
-                  data={analyticsData.dailySales}
-                  xAxisKey="date"
-                  barDataKey="sales"
-                  lineDataKey="profit"
-                  barColor="#2563eb"
-                  lineColor="#059669"
-                />
+                <div className="w-full overflow-x-auto">
+                  <div className="min-w-[300px] h-64 sm:h-80">
+                    <SimpleComposedChart 
+                      data={analyticsData.dailySales}
+                      xAxisKey="date"
+                      barDataKey="sales"
+                      lineDataKey="profit"
+                      barColor="#2563eb"
+                      lineColor="#059669"
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -467,24 +471,24 @@ export default function Dashboard() {
             {analyticsData.lowStockItems.length > 0 && (
               <Card className="bg-white shadow-sm border-0">
                 <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-xl font-semibold text-gray-900">
-                    <AlertTriangle className="h-5 w-5 text-red-500" />
+                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl font-semibold text-gray-900">
+                    <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 flex-shrink-0" />
                     Stok Menipis ({analyticsData.lowStockItems.length} item)
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-3">
                     {analyticsData.lowStockItems.slice(0, 5).map((item) => (
-                      <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div>
-                          <span className="font-medium text-gray-900">{item.product.name}</span>
+                      <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors space-y-2 sm:space-y-0">
+                        <div className="flex-1 min-w-0">
+                          <span className="font-medium text-gray-900 block sm:inline">{item.product.name}</span>
                           {item.size && item.color && (
-                            <span className="text-sm text-gray-500 ml-2">
+                            <span className="text-sm text-gray-500 block sm:inline sm:ml-2">
                               ({item.size.name}, {item.color.name})
                             </span>
                           )}
                         </div>
-                        <Badge variant="destructive" className="font-medium">
+                        <Badge variant="destructive" className="font-medium self-start sm:self-center">
                           {item.stock} / {item.minStock}
                         </Badge>
                       </div>
@@ -496,8 +500,8 @@ export default function Dashboard() {
           </TabsContent>
 
           {/* Sales Tab */}
-          <TabsContent value="sales" className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <TabsContent value="sales" className="space-y-6 sm:space-y-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <StatCard
                 title="Total Penjualan"
                 value={formatCurrency(analyticsData.salesOverview.totalSales)}
@@ -524,42 +528,46 @@ export default function Dashboard() {
               />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
               {/* Sales Chart */}
               <Card className="bg-white shadow-sm border-0">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl font-semibold text-gray-900">Tren Penjualan, Profit & Transaksi</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Tren Penjualan, Profit & Transaksi</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <SimpleComposedChart 
-                    data={analyticsData.dailySales}
-                    xAxisKey="date"
-                    barDataKey="sales"
-                    lineDataKey="profit"
-                    line2DataKey="transactions"
-                    barColor="#2563eb"
-                    lineColor="#059669"
-                    line2Color="#f59e0b"
-                  />
+                  <div className="w-full overflow-x-auto">
+                    <div className="min-w-[300px] h-64 sm:h-80">
+                      <SimpleComposedChart 
+                        data={analyticsData.dailySales}
+                        xAxisKey="date"
+                        barDataKey="sales"
+                        lineDataKey="profit"
+                        line2DataKey="transactions"
+                        barColor="#2563eb"
+                        lineColor="#059669"
+                        line2Color="#f59e0b"
+                      />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
               {/* Top Products */}
               <Card className="bg-white shadow-sm border-0">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl font-semibold text-gray-900">Produk Terlaris</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Produk Terlaris</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-4">
                     {analyticsData.topProducts.slice(0, 5).map((product, index) => (
-                      <div key={product.productId} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div key={product.productId} className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors space-y-2 sm:space-y-0">
                         <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-gray-500 bg-white w-8 h-8 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-gray-500 bg-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
                             #{index + 1}
                           </span>
-                          <span className="font-medium text-gray-900">{product.productName}</span>
+                          <span className="font-medium text-gray-900 break-words">{product.productName}</span>
                         </div>
-                        <div className="text-right">
+                        <div className="text-left sm:text-right">
                           <div className="font-semibold text-gray-900">{formatCurrency(product.revenue)}</div>
                           <div className="text-sm text-gray-500">{product.quantity} unit</div>
                         </div>
@@ -572,8 +580,8 @@ export default function Dashboard() {
           </TabsContent>
 
           {/* Production Tab */}
-          <TabsContent value="production" className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <TabsContent value="production" className="space-y-6 sm:space-y-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <StatCard
                 title="Total Biaya Produksi"
                 value={formatCurrency(analyticsData.productionOverview.totalProductionCost)}
@@ -594,50 +602,58 @@ export default function Dashboard() {
               />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
               {/* Production Cost Trend */}
               <Card className="bg-white shadow-sm border-0">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl font-semibold text-gray-900">Tren Biaya & Volume Produksi</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Tren Biaya & Volume Produksi</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <SimpleComposedChart 
-                    data={analyticsData.dailyProduction}
-                    xAxisKey="date"
-                    barDataKey="cost"
-                    lineDataKey="items"
-                    barColor="#dc2626"
-                    lineColor="#7c3aed"
-                  />
+                  <div className="w-full overflow-x-auto">
+                    <div className="min-w-[300px] h-64 sm:h-80">
+                      <SimpleComposedChart 
+                        data={analyticsData.dailyProduction}
+                        xAxisKey="date"
+                        barDataKey="cost"
+                        lineDataKey="items"
+                        barColor="#dc2626"
+                        lineColor="#7c3aed"
+                      />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
               {/* Production Efficiency */}
               <Card className="bg-white shadow-sm border-0">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl font-semibold text-gray-900">Efisiensi Produksi Harian</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Efisiensi Produksi Harian</CardTitle>
                   <p className="text-sm text-gray-600">Biaya per unit yang diproduksi</p>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <SimpleLineChart 
-                    data={analyticsData.dailyProduction.map(day => ({
-                      ...day,
-                      efficiency: day.items > 0 ? day.cost / day.items : 0
-                    }))}
-                    xAxisKey="date"
-                    dataKey="efficiency"
-                    color="#059669"
-                  />
+                  <div className="w-full overflow-x-auto">
+                    <div className="min-w-[300px] h-64 sm:h-80">
+                      <SimpleLineChart 
+                        data={analyticsData.dailyProduction.map(day => ({
+                          ...day,
+                          efficiency: day.items > 0 ? day.cost / day.items : 0
+                        }))}
+                        xAxisKey="date"
+                        dataKey="efficiency"
+                        color="#059669"
+                      />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
 
           {/* Products Tab */}
-          <TabsContent value="products" className="space-y-8">
+          <TabsContent value="products" className="space-y-6 sm:space-y-8">
             <Card className="bg-white shadow-sm border-0">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-semibold text-gray-900">Performa Produk Terbaik</CardTitle>
+                <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Performa Produk Terbaik</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 <SimpleBarChart 

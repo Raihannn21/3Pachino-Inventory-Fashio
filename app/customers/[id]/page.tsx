@@ -129,14 +129,26 @@ export default function CustomerDetailPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="container mx-auto p-4 sm:p-6">
+        <div className="animate-pulse space-y-4 sm:space-y-6">
+          {/* Header Skeleton */}
+          <div className="flex items-center gap-4">
+            <div className="h-8 w-8 bg-gray-200 rounded"></div>
+            <div>
+              <div className="h-6 sm:h-8 bg-gray-200 rounded w-32 sm:w-48 mb-2"></div>
+              <div className="h-3 sm:h-4 bg-gray-200 rounded w-40 sm:w-56"></div>
+            </div>
+          </div>
+          
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+              <div key={i} className="h-24 sm:h-32 bg-gray-200 rounded"></div>
             ))}
           </div>
+          
+          {/* Content Skeleton */}
+          <div className="h-48 sm:h-64 bg-gray-200 rounded"></div>
         </div>
       </div>
     );
@@ -144,10 +156,10 @@ export default function CustomerDetailPage() {
 
   if (!customer || !stats) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 sm:p-6">
         <div className="text-center py-12">
           <p className="text-gray-500">Customer tidak ditemukan</p>
-          <Button onClick={() => router.back()} className="mt-4">
+          <Button onClick={() => router.back()} className="mt-4 w-full sm:w-auto">
             Kembali
           </Button>
         </div>
@@ -156,27 +168,27 @@ export default function CustomerDetailPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">{customer.name}</h1>
-          <p className="text-gray-600">Riwayat Pembelian & Analitik</p>
+          <h1 className="text-xl sm:text-2xl font-bold">{customer.name}</h1>
+          <p className="text-sm text-gray-600">Riwayat Pembelian & Analitik</p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <Card className="border-0 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Belanja</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-lg sm:text-2xl font-bold text-green-600">
               {formatCurrency(stats.totalSpent)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -185,13 +197,13 @@ export default function CustomerDetailPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Rata-rata Transaksi</CardTitle>
-            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+            <ShoppingBag className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg sm:text-2xl font-bold">
               {formatCurrency(stats.avgTransactionValue)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -200,26 +212,26 @@ export default function CustomerDetailPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Items</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <Package className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Number(stats.totalItems) || 0}</div>
+            <div className="text-lg sm:text-2xl font-bold">{Number(stats.totalItems) || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Produk dibeli
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Terakhir Beli</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg sm:text-2xl font-bold">
               {stats.daysSinceLastPurchase ? `${stats.daysSinceLastPurchase} hari` : 'Hari ini'}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -231,35 +243,35 @@ export default function CustomerDetailPage() {
 
       {/* Tabs Content */}
       <Tabs defaultValue="history" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="history">Riwayat Pembelian</TabsTrigger>
-          <TabsTrigger value="analytics">Analitik</TabsTrigger>
-          <TabsTrigger value="favorites">Produk Favorit</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="history" className="text-xs sm:text-sm">Riwayat</TabsTrigger>
+          <TabsTrigger value="analytics" className="text-xs sm:text-sm">Analitik</TabsTrigger>
+          <TabsTrigger value="favorites" className="text-xs sm:text-sm">Favorit</TabsTrigger>
         </TabsList>
 
         <TabsContent value="history" className="space-y-4">
-          <Card>
+          <Card className="border-0 shadow-sm">
             <CardHeader>
-              <CardTitle>Transaksi Terbaru</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Transaksi Terbaru</CardTitle>
+              <CardDescription className="text-sm">
                 10 transaksi terakhir dari customer ini
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {customer.transactions.map((transaction) => (
-                  <div key={transaction.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-3">
+                  <div key={transaction.id} className="border rounded-lg p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0 mb-3">
                       <div>
-                        <p className="font-medium">
+                        <p className="font-medium text-sm sm:text-base">
                           {formatDate(transaction.transactionDate)}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-xs sm:text-sm text-gray-600">
                           {transaction.items.length} items
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg">
+                      <div className="sm:text-right">
+                        <p className="font-bold text-base sm:text-lg text-green-600">
                           {formatCurrency(transaction.totalAmount)}
                         </p>
                       </div>
@@ -267,33 +279,33 @@ export default function CustomerDetailPage() {
                     
                     <Separator className="my-3" />
                     
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {transaction.items.map((item) => {
                         const product = item.variant?.product || item.product;
                         return (
-                          <div key={item.id} className="flex justify-between items-center">
+                          <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                             <div className="flex-1">
-                              <p className="font-medium">{product?.name}</p>
-                              <div className="flex gap-2 mt-1">
-                                <Badge variant="outline">{product?.category.name}</Badge>
-                                <Badge variant="outline">{product?.brand.name}</Badge>
+                              <p className="font-medium text-sm sm:text-base">{product?.name}</p>
+                              <div className="flex flex-wrap gap-1 sm:gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs">{product?.category.name}</Badge>
+                                <Badge variant="outline" className="text-xs">{product?.brand.name}</Badge>
                                 {item.variant && (
                                   <>
-                                    <Badge variant="secondary">
+                                    <Badge variant="secondary" className="text-xs">
                                       {item.variant.size.name}
                                     </Badge>
-                                    <Badge variant="secondary">
+                                    <Badge variant="secondary" className="text-xs">
                                       {item.variant.color.name}
                                     </Badge>
                                   </>
                                 )}
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="font-medium">
+                            <div className="sm:text-right">
+                              <p className="font-medium text-sm">
                                 {Number(item.quantity) || 0}x {formatCurrency(item.unitPrice)}
                               </p>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-xs text-gray-600">
                                 {formatCurrency(item.totalPrice)}
                               </p>
                             </div>
@@ -309,20 +321,29 @@ export default function CustomerDetailPage() {
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
-          <Card>
+          <Card className="border-0 shadow-sm">
             <CardHeader>
-              <CardTitle>Tren Belanja Bulanan</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Tren Belanja Bulanan</CardTitle>
+              <CardDescription className="text-sm">
                 Pola belanja customer dalam 6 bulan terakhir
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px]">
+              <div className="h-[250px] sm:h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={getMonthlyChartData()}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis tickFormatter={(value) => formatCurrency(value)} />
+                    <XAxis 
+                      dataKey="month" 
+                      tick={{ fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis 
+                      tickFormatter={(value) => formatCurrency(value)} 
+                      tick={{ fontSize: 12 }}
+                    />
                     <Tooltip 
                       formatter={(value: number) => [formatCurrency(value), 'Total Belanja']}
                     />
@@ -341,19 +362,19 @@ export default function CustomerDetailPage() {
         </TabsContent>
 
         <TabsContent value="favorites" className="space-y-4">
-          <Card>
+          <Card className="border-0 shadow-sm">
             <CardHeader>
-              <CardTitle>Produk Favorit</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Produk Favorit</CardTitle>
+              <CardDescription className="text-sm">
                 Produk yang paling sering dibeli customer ini
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {stats.favoriteProducts.map((favorite, index) => (
-                  <div key={favorite.product.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-8 h-8 bg-yellow-100 rounded-full">
+                  <div key={favorite.product.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border rounded-lg gap-3 sm:gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="flex items-center justify-center w-8 h-8 bg-yellow-100 rounded-full flex-shrink-0">
                         {index === 0 ? (
                           <Star className="h-4 w-4 text-yellow-600" fill="currentColor" />
                         ) : (
@@ -362,22 +383,22 @@ export default function CustomerDetailPage() {
                           </span>
                         )}
                       </div>
-                      <div>
-                        <p className="font-medium">{favorite.product.name}</p>
-                        <div className="flex gap-2 mt-1">
-                          <Badge variant="outline">{favorite.product.category.name}</Badge>
-                          <Badge variant="outline">{favorite.product.brand.name}</Badge>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm sm:text-base">{favorite.product.name}</p>
+                        <div className="flex flex-wrap gap-1 sm:gap-2 mt-1">
+                          <Badge variant="outline" className="text-xs">{favorite.product.category.name}</Badge>
+                          <Badge variant="outline" className="text-xs">{favorite.product.brand.name}</Badge>
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">
                           Terakhir beli: {formatDate(favorite.lastPurchase)}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-blue-600">
+                    <div className="text-center sm:text-right flex-shrink-0">
+                      <p className="text-xl sm:text-2xl font-bold text-blue-600">
                         {Number(favorite.count) || 0}
                       </p>
-                      <p className="text-sm text-gray-600">kali dibeli</p>
+                      <p className="text-xs sm:text-sm text-gray-600">kali dibeli</p>
                     </div>
                   </div>
                 ))}

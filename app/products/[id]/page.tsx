@@ -453,12 +453,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   if (!product) {
     return (
-      <div className="max-w-7xl mx-auto p-8">
-        <div className="text-center py-16">
-          <Package className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
-          <h3 className="text-xl font-semibold mb-3">Produk tidak ditemukan</h3>
-          <p className="text-muted-foreground mb-6">Produk yang Anda cari tidak ada atau telah dihapus</p>
-          <Button onClick={() => router.push('/products')}>
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="text-center py-12 sm:py-16">
+          <Package className="h-12 w-12 sm:h-16 sm:w-16 text-muted-foreground mx-auto mb-4 sm:mb-6" />
+          <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">Produk tidak ditemukan</h3>
+          <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">Produk yang Anda cari tidak ada atau telah dihapus</p>
+          <Button onClick={() => router.push('/products')} className="w-full sm:w-auto">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Kembali ke Produk
           </Button>
@@ -468,26 +468,26 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-8">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 sm:mb-8">
         <Button
           variant="ghost"
           onClick={() => router.push('/products')}
-          className="mr-4 hover:bg-blue-50"
+          className="self-start sm:mr-4 hover:bg-blue-50"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Kembali
         </Button>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">{product.name}</h1>
-          <p className="text-muted-foreground mt-2">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900 break-words">{product.name}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2 break-words">
             SKU: {product.sku} • {product.brand.name} • {product.category.name}
           </p>
         </div>
         <Button
           onClick={openEditProduct}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
+          className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
         >
           <Edit className="h-4 w-4 mr-2" />
           Edit Produk
@@ -495,49 +495,49 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* Product Info */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-6 sm:mb-8">
         <Card className="lg:col-span-2 bg-white shadow-sm border-0">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold text-gray-900">Informasi Produk</CardTitle>
+            <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Informasi Produk</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6 pt-0">
-            <div className="grid grid-cols-2 gap-6">
+          <CardContent className="space-y-4 sm:space-y-6 pt-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-600">Nama Produk</label>
-                <p className="text-lg font-semibold text-gray-900">{product.name}</p>
+                <p className="text-base sm:text-lg font-semibold text-gray-900 break-words">{product.name}</p>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-600">SKU</label>
-                <p className="text-lg font-mono text-gray-900">{product.sku}</p>
+                <p className="text-base sm:text-lg font-mono text-gray-900 break-all">{product.sku}</p>
               </div>
             </div>
 
             {product.description && (
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-600">Deskripsi</label>
-                <p className="text-gray-900 leading-relaxed">{product.description}</p>
+                <p className="text-gray-900 leading-relaxed break-words">{product.description}</p>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2 p-4 bg-red-50 rounded-lg border border-red-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="space-y-2 p-3 sm:p-4 bg-red-50 rounded-lg border border-red-200">
                 <label className="text-sm font-medium text-red-700">Harga Modal</label>
-                <p className="text-xl font-bold text-red-600">Rp {product.costPrice.toLocaleString()}</p>
+                <p className="text-lg sm:text-xl font-bold text-red-600">Rp {product.costPrice.toLocaleString()}</p>
               </div>
-              <div className="space-y-2 p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="space-y-2 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
                 <label className="text-sm font-medium text-green-700">Harga Jual</label>
-                <p className="text-xl font-bold text-green-600">Rp {product.sellingPrice.toLocaleString()}</p>
+                <p className="text-lg sm:text-xl font-bold text-green-600">Rp {product.sellingPrice.toLocaleString()}</p>
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {product.season && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-blue-100 text-blue-800">
                   {getSeasonText(product.season)}
                 </span>
               )}
               {product.gender && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-purple-100 text-purple-800">
                   {getGenderText(product.gender)}
                 </span>
               )}
@@ -547,26 +547,26 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
         <Card className="bg-white shadow-sm border-0">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold text-gray-900">Ringkasan Stok</CardTitle>
+            <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Ringkasan Stok</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="space-y-6">
-              <div className="text-center p-6 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-4xl font-bold text-blue-600">{getTotalStock()}</p>
+            <div className="space-y-4 sm:space-y-6">
+              <div className="text-center p-4 sm:p-6 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-3xl sm:text-4xl font-bold text-blue-600">{getTotalStock()}</p>
                 <p className="text-blue-700 font-medium mt-2">Total Stok</p>
               </div>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex justify-between items-center p-2 sm:p-3 bg-gray-50 rounded-lg">
                   <span className="text-sm font-medium text-gray-600">Total Varian:</span>
                   <span className="font-bold text-gray-900">{product.variants.length}</span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                <div className="flex justify-between items-center p-2 sm:p-3 bg-red-50 rounded-lg">
                   <span className="text-sm font-medium text-red-600">Stok Rendah:</span>
                   <span className="font-bold text-red-600">
                     {product.variants.filter(v => v.stock <= v.minStock).length}
                   </span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                <div className="flex justify-between items-center p-2 sm:p-3 bg-green-50 rounded-lg">
                   <span className="text-sm font-medium text-green-600">Profit Margin:</span>
                   <span className="font-bold text-green-600">
                     {product.sellingPrice > 0 ? Math.round(((product.sellingPrice - product.costPrice) / product.sellingPrice) * 100) : 0}%
@@ -580,25 +580,25 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Variants Section */}
       <Card className="shadow-sm border-0">
-        <CardHeader className="flex flex-row items-center justify-between pb-6">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6">
           <div>
-            <CardTitle className="text-xl font-semibold text-slate-800">Varian Produk</CardTitle>
+            <CardTitle className="text-lg sm:text-xl font-semibold text-slate-800">Varian Produk</CardTitle>
             <p className="text-sm text-slate-600 mt-1">Kelola ukuran dan warna untuk produk ini</p>
           </div>
           <Dialog open={addVariantOpen} onOpenChange={setAddVariantOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 Tambah Varian
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto mx-4">
               <DialogHeader>
-                <DialogTitle className="text-xl font-semibold text-slate-800">Tambah Varian Baru</DialogTitle>
+                <DialogTitle className="text-lg sm:text-xl font-semibold text-slate-800">Tambah Varian Baru</DialogTitle>
                 <p className="text-sm text-slate-600">Buat varian baru dengan ukuran dan warna</p>
               </DialogHeader>
-              <form onSubmit={handleAddVariant} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+              <form onSubmit={handleAddVariant} className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">Ukuran</label>
                     <Select value={variantForm.sizeId} onValueChange={(value) => setVariantForm(prev => ({...prev, sizeId: value}))}>
@@ -660,9 +660,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   />
                 </div>
 
-                <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-                  <p className="font-medium text-amber-900 text-sm mb-3">Info Stok</p>
-                  <ul className="space-y-2 text-sm text-amber-700">
+                <div className="bg-amber-50 border border-amber-200 p-3 sm:p-4 rounded-lg">
+                  <p className="font-medium text-amber-900 text-sm mb-2 sm:mb-3">Info Stok</p>
+                  <ul className="space-y-1 sm:space-y-2 text-sm text-amber-700">
                     <li className="flex items-start">
                       <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
                       Stok awal akan dimulai dari <strong>0</strong>
@@ -678,16 +678,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   </ul>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                <div className="bg-blue-50 border border-blue-200 p-3 sm:p-4 rounded-lg">
                   <p className="font-medium text-blue-900 text-sm mb-2">Info Barcode</p>
                   <p className="text-sm text-blue-700">Barcode akan dibuat otomatis setelah varian ditambahkan.</p>
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setAddVariantOpen(false)}>
+                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+                  <Button type="button" variant="outline" onClick={() => setAddVariantOpen(false)} className="w-full sm:w-auto">
                     Batal
                   </Button>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
                     Tambah Varian
                   </Button>
                 </div>
@@ -695,20 +695,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </DialogContent>
           </Dialog>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           {product.variants.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-8 sm:py-12">
               <div className="flex flex-col items-center">
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                  <Package className="h-8 w-8 text-slate-400" />
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                  <Package className="h-6 w-6 sm:h-8 sm:w-8 text-slate-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-700 mb-2">Belum ada varian</h3>
-                <p className="text-slate-500 mb-6 max-w-sm">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-700 mb-2">Belum ada varian</h3>
+                <p className="text-sm sm:text-base text-slate-500 mb-4 sm:mb-6 max-w-sm text-center">
                   Tambahkan varian ukuran dan warna untuk produk ini agar dapat dijual
                 </p>
                 <Button 
                   onClick={() => setAddVariantOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Tambah Varian Pertama
@@ -716,132 +716,249 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-4 px-4 font-semibold text-slate-700">Ukuran</th>
-                    <th className="text-left py-4 px-4 font-semibold text-slate-700">Warna</th>
-                    <th className="text-center py-4 px-4 font-semibold text-slate-700">Harga Jual</th>
-                    <th className="text-center py-4 px-4 font-semibold text-slate-700">Stok</th>
-                    <th className="text-center py-4 px-4 font-semibold text-slate-700">Min. Stok</th>
-                    <th className="text-left py-4 px-4 font-semibold text-slate-700">Barcode</th>
-                    <th className="text-center py-4 px-4 font-semibold text-slate-700">Status</th>
-                    <th className="text-center py-4 px-4 font-semibold text-slate-700">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {product.variants.map((variant) => (
-                    <tr key={variant.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                      <td className="py-4 px-4">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                            <Ruler className="h-4 w-4 text-blue-600" />
-                          </div>
-                          <span className="font-medium text-slate-700">{variant.size.name}</span>
+            <>
+              {/* Mobile Card Layout */}
+              <div className="block lg:hidden space-y-4">
+                {product.variants.map((variant) => (
+                  <div key={variant.id} className="bg-white border border-slate-200 rounded-lg p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <Ruler className="h-4 w-4 text-blue-600" />
                         </div>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center">
-                          {variant.color.hexCode && (
-                            <div 
-                              className="w-5 h-5 rounded-full mr-3 border-2 border-white shadow-sm ring-1 ring-slate-200"
-                              style={{ backgroundColor: variant.color.hexCode }}
-                            />
-                          )}
-                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                            <Palette className="h-4 w-4 text-purple-600" />
-                          </div>
-                          <span className="font-medium text-slate-700">{variant.color.name}</span>
+                        <div>
+                          <p className="font-medium text-slate-700">{variant.size.name}</p>
+                          <p className="text-sm text-slate-500">Ukuran</p>
                         </div>
-                      </td>
-                      <td className="text-center py-4 px-4">
-                        <span className="text-green-600 font-bold">
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditVariant(variant)}
+                          className="hover:bg-slate-100 p-2"
+                          title="Edit Varian"
+                        >
+                          <Edit className="h-4 w-4 text-slate-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteVariant(variant)}
+                          className="hover:bg-red-100 p-2"
+                          title="Hapus Varian"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {variant.color.hexCode && (
+                        <div 
+                          className="w-5 h-5 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-200"
+                          style={{ backgroundColor: variant.color.hexCode }}
+                        />
+                      )}
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Palette className="h-4 w-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-700">{variant.color.name}</p>
+                        <p className="text-sm text-slate-500">Warna</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-slate-500 mb-1">Harga Jual</p>
+                        <p className="text-green-600 font-bold">
                           Rp {(variant.sellingPrice || product.sellingPrice).toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="text-center py-4 px-4">
-                        <span className={`font-bold text-lg ${
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-500 mb-1">Stok</p>
+                        <p className={`font-bold text-lg ${
                           variant.stock <= variant.minStock ? 'text-red-600' : 'text-emerald-600'
                         }`}>
                           {variant.stock}
-                        </span>
-                      </td>
-                      <td className="text-center py-4 px-4">
-                        <span className="text-slate-600 font-medium">{variant.minStock}</span>
-                      </td>
-                      <td className="py-4 px-4 text-sm">
-                        <div className="flex items-center gap-2">
-                          <code className="text-xs bg-slate-100 px-3 py-1.5 rounded-md font-mono text-slate-700">
-                            {variant.barcode || 'Auto-generated'}
-                          </code>
-                          {variant.barcode && (
-                            <BarcodeDisplay 
-                              variant={{
-                                ...variant,
-                                barcode: variant.barcode,
-                                product: {
-                                  name: product.name,
-                                  sku: product.sku,
-                                }
-                              }} 
-                            />
-                          )}
-                        </div>
-                      </td>
-                      <td className="text-center py-4 px-4">
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-slate-500 mb-1">Min. Stok</p>
+                        <p className="text-slate-600 font-medium">{variant.minStock}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-500 mb-1">Status</p>
                         {variant.stock <= variant.minStock ? (
-                          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
                             <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
                             Stok Rendah
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
                             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></div>
                             Normal
                           </span>
                         )}
-                      </td>
-                      <td className="text-center py-4 px-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditVariant(variant)}
-                            className="hover:bg-slate-100"
-                            title="Edit Varian"
-                          >
-                            <Edit className="h-4 w-4 text-slate-600" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteVariant(variant)}
-                            className="hover:bg-red-100"
-                            title="Hapus Varian"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      </td>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-slate-500 mb-2">Barcode</p>
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs bg-slate-100 px-3 py-1.5 rounded-md font-mono text-slate-700 flex-1 break-all">
+                          {variant.barcode || 'Auto-generated'}
+                        </code>
+                        {variant.barcode && (
+                          <BarcodeDisplay 
+                            variant={{
+                              ...variant,
+                              barcode: variant.barcode,
+                              product: {
+                                name: product.name,
+                                sku: product.sku,
+                              }
+                            }} 
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table Layout */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th className="text-left py-4 px-4 font-semibold text-slate-700">Ukuran</th>
+                      <th className="text-left py-4 px-4 font-semibold text-slate-700">Warna</th>
+                      <th className="text-center py-4 px-4 font-semibold text-slate-700">Harga Jual</th>
+                      <th className="text-center py-4 px-4 font-semibold text-slate-700">Stok</th>
+                      <th className="text-center py-4 px-4 font-semibold text-slate-700">Min. Stok</th>
+                      <th className="text-left py-4 px-4 font-semibold text-slate-700">Barcode</th>
+                      <th className="text-center py-4 px-4 font-semibold text-slate-700">Status</th>
+                      <th className="text-center py-4 px-4 font-semibold text-slate-700">Aksi</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {product.variants.map((variant) => (
+                      <tr key={variant.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                        <td className="py-4 px-4">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                              <Ruler className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <span className="font-medium text-slate-700">{variant.size.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center">
+                            {variant.color.hexCode && (
+                              <div 
+                                className="w-5 h-5 rounded-full mr-3 border-2 border-white shadow-sm ring-1 ring-slate-200"
+                                style={{ backgroundColor: variant.color.hexCode }}
+                              />
+                            )}
+                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                              <Palette className="h-4 w-4 text-purple-600" />
+                            </div>
+                            <span className="font-medium text-slate-700">{variant.color.name}</span>
+                          </div>
+                        </td>
+                        <td className="text-center py-4 px-4">
+                          <span className="text-green-600 font-bold">
+                            Rp {(variant.sellingPrice || product.sellingPrice).toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="text-center py-4 px-4">
+                          <span className={`font-bold text-lg ${
+                            variant.stock <= variant.minStock ? 'text-red-600' : 'text-emerald-600'
+                          }`}>
+                            {variant.stock}
+                          </span>
+                        </td>
+                        <td className="text-center py-4 px-4">
+                          <span className="text-slate-600 font-medium">{variant.minStock}</span>
+                        </td>
+                        <td className="py-4 px-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <code className="text-xs bg-slate-100 px-3 py-1.5 rounded-md font-mono text-slate-700">
+                              {variant.barcode || 'Auto-generated'}
+                            </code>
+                            {variant.barcode && (
+                              <BarcodeDisplay 
+                                variant={{
+                                  ...variant,
+                                  barcode: variant.barcode,
+                                  product: {
+                                    name: product.name,
+                                    sku: product.sku,
+                                  }
+                                }} 
+                              />
+                            )}
+                          </div>
+                        </td>
+                        <td className="text-center py-4 px-4">
+                          {variant.stock <= variant.minStock ? (
+                            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+                              <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                              Stok Rendah
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
+                              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></div>
+                              Normal
+                            </span>
+                          )}
+                        </td>
+                        <td className="text-center py-4 px-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditVariant(variant)}
+                              className="hover:bg-slate-100"
+                              title="Edit Varian"
+                            >
+                              <Edit className="h-4 w-4 text-slate-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteVariant(variant)}
+                              className="hover:bg-red-100"
+                              title="Hapus Varian"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
 
       {/* Add Variant Dialog */}
       <Dialog open={addVariantOpen} onOpenChange={setAddVariantOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-slate-800">Tambah Varian Baru</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl font-semibold text-slate-800">Tambah Varian Baru</DialogTitle>
             <p className="text-sm text-slate-600">Buat kombinasi ukuran dan warna baru untuk produk</p>
           </DialogHeader>
-          <form onSubmit={handleAddVariant} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleAddVariant} className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="size">Ukuran</Label>
                 <div className="space-y-3">
@@ -969,7 +1086,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="variantSellingPrice">Harga Jual (Rp)</Label>
                 <Input
@@ -998,14 +1115,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+            <div className="bg-blue-50 border border-blue-200 p-3 sm:p-4 rounded-lg">
               <p className="font-medium text-blue-900 text-sm mb-2">Info Stok Awal</p>
               <p className="text-xs text-blue-600">
                 Stok awal varian akan dimulai dari 0. Gunakan fitur Produksi atau Stock Adjustment untuk menambah stok.
               </p>
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
               <Button 
                 type="button" 
                 variant="outline" 
@@ -1023,10 +1140,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     useNewColor: false
                   });
                 }}
+                className="w-full sm:w-auto"
               >
                 Batal
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 Tambah Varian
               </Button>
@@ -1037,14 +1155,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Edit Variant Dialog */}
       <Dialog open={editVariantOpen} onOpenChange={setEditVariantOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-slate-800">Edit Varian</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl font-semibold text-slate-800">Edit Varian</DialogTitle>
             <p className="text-sm text-slate-600">Ubah pengaturan untuk varian produk</p>
           </DialogHeader>
           {selectedVariant && (
-            <form onSubmit={handleEditVariant} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleEditVariant} className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Ukuran</label>
                   <div className="flex items-center p-3 border border-slate-200 rounded-lg bg-slate-50">
@@ -1097,9 +1215,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <p className="text-xs text-slate-500">Kosongkan untuk menggunakan harga produk</p>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                <p className="font-medium text-blue-900 text-sm mb-3">Info Stok Saat Ini</p>
-                <div className="grid grid-cols-2 gap-4">
+              <div className="bg-blue-50 border border-blue-200 p-3 sm:p-4 rounded-lg">
+                <p className="font-medium text-blue-900 text-sm mb-2 sm:mb-3">Info Stok Saat Ini</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="flex items-center">
                     <span className="text-sm text-blue-700 mr-2">Stok:</span>
                     <span className={`font-bold text-lg ${
@@ -1117,27 +1235,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     </span>
                   </div>
                 </div>
-                <p className="text-xs text-blue-600 mt-3">
+                <p className="text-xs text-blue-600 mt-2 sm:mt-3">
                   <strong>Catatan:</strong> Stok hanya dapat diubah melalui Sistem Produksi atau Stock Adjustments.
                 </p>
               </div>
 
-              <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+              <div className="bg-slate-50 border border-slate-200 p-3 sm:p-4 rounded-lg">
                 <p className="font-medium text-slate-700 text-sm mb-2">Info Barcode</p>
                 <p className="text-xs text-slate-600 mb-2">Barcode tidak dapat diubah setelah varian dibuat.</p>
                 {selectedVariant?.barcode && (
                   <div className="flex items-center">
                     <span className="text-xs text-slate-600 mr-2">Current Barcode:</span>
-                    <code className="text-xs bg-slate-200 px-2 py-1 rounded font-mono">{selectedVariant.barcode}</code>
+                    <code className="text-xs bg-slate-200 px-2 py-1 rounded font-mono break-all">{selectedVariant.barcode}</code>
                   </div>
                 )}
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => setEditVariantOpen(false)}>
+              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+                <Button type="button" variant="outline" onClick={() => setEditVariantOpen(false)} className="w-full sm:w-auto">
                   Batal
                 </Button>
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
                   Update Varian
                 </Button>
               </div>
@@ -1148,17 +1266,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Delete Variant Confirmation Dialog */}
       <Dialog open={deleteVariantOpen} onOpenChange={setDeleteVariantOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md mx-4">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-red-700 flex items-center gap-2">
+            <DialogTitle className="text-lg sm:text-xl font-semibold text-red-700 flex items-center gap-2">
               <Trash2 className="h-5 w-5" />
               Konfirmasi Hapus Varian
             </DialogTitle>
           </DialogHeader>
           {variantToDelete && (
             <div className="space-y-4">
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800 mb-3">
+              <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800 mb-2 sm:mb-3">
                   Anda akan menghapus varian berikut:
                 </p>
                 <div className="space-y-2">
@@ -1177,17 +1295,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
               
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4">
                 <p className="text-sm text-yellow-800">
                   <strong>⚠️ Peringatan:</strong> Aksi ini tidak dapat dibatalkan. Varian akan dihapus permanen dari sistem.
                 </p>
               </div>
 
-              <div className="flex justify-end space-x-3 pt-2">
+              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={closeDeleteDialog}
+                  className="w-full sm:w-auto"
                 >
                   Batal
                 </Button>
@@ -1195,7 +1314,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   type="button" 
                   variant="destructive"
                   onClick={confirmDeleteVariant}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Ya, Hapus Varian
@@ -1208,9 +1327,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Edit Product Dialog */}
       <Dialog open={editProductOpen} onOpenChange={setEditProductOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Produk</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">Edit Produk</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEditProduct} className="space-y-4">
             <div className="space-y-2">
@@ -1224,7 +1343,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="costPrice">Harga Modal (Rp)</Label>
                 <Input
@@ -1254,18 +1373,19 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={closeEditProduct}
                 disabled={isUpdatingProduct}
+                className="w-full sm:w-auto"
               >
                 Batal
               </Button>
               <Button 
                 type="submit" 
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
                 disabled={isUpdatingProduct}
               >
                 {isUpdatingProduct ? (

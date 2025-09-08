@@ -118,11 +118,8 @@ const ADJUSTMENT_CATEGORIES = {
 export default function InventoryPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [summary, setSummary] = useState<InventorySummary | null>(null);
-  const [filters, setFilters] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedBrand, setSelectedBrand] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [showAlertsOnly, setShowAlertsOnly] = useState(false);
   const [adjustmentDialog, setAdjustmentDialog] = useState({ open: false, item: null as InventoryItem | null });
@@ -136,15 +133,13 @@ export default function InventoryPage() {
 
   useEffect(() => {
     fetchInventoryData();
-  }, [showAlertsOnly, selectedCategory, selectedBrand]);
+  }, [showAlertsOnly]);
 
   const fetchInventoryData = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
       if (showAlertsOnly) params.append('alertsOnly', 'true');
-      if (selectedCategory && selectedCategory !== 'all') params.append('category', selectedCategory);
-      if (selectedBrand && selectedBrand !== 'all') params.append('brand', selectedBrand);
 
       const response = await fetch(`/api/inventory?${params.toString()}`);
       if (response.ok) {
@@ -185,11 +180,6 @@ export default function InventoryPage() {
 
         setInventory(transformedInventory);
         setSummary(transformedSummary);
-        setFilters({
-          categories: data.filters.categories.map((c: any) => c.name),
-          brands: data.filters.brands.map((b: any) => b.name),
-          statuses: ['in_stock', 'low_stock', 'out_of_stock', 'over_stock']
-        });
       } else {
         toast.error('Gagal memuat data inventory');
       }
@@ -306,33 +296,31 @@ export default function InventoryPage() {
       item.product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.product.sku.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = selectedCategory === 'all' || item.product.category.name === selectedCategory;
-    const matchesBrand = selectedBrand === 'all' || item.product.brand.name === selectedBrand;
     const matchesStatus = selectedStatus === 'all' || item.status === selectedStatus;
     
-    return matchesSearch && matchesCategory && matchesBrand && matchesStatus;
+    return matchesSearch && matchesStatus;
   });
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto p-8">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         {/* Header Skeleton */}
-        <div className="space-y-8">
-          <div className="flex items-center justify-between">
+        <div className="space-y-6 sm:space-y-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
-              <div className="h-4 w-64 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-6 sm:h-8 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
+              <div className="h-3 sm:h-4 w-64 bg-gray-200 rounded animate-pulse"></div>
             </div>
-            <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-9 sm:h-10 w-20 sm:w-24 bg-gray-200 rounded animate-pulse"></div>
           </div>
 
           {/* Loading Animation Center */}
-          <div className="flex items-center justify-center mb-8">
+          <div className="flex items-center justify-center mb-6 sm:mb-8">
             <div className="text-center">
               <div className="relative mb-4">
-                <Store className="h-16 w-16 mx-auto text-blue-600 animate-pulse" />
+                <Store className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-blue-600 animate-pulse" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Memuat Inventory</h2>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Memuat Inventory</h2>
               <p className="text-sm text-gray-600">Mengambil data stok terbaru...</p>
               <div className="flex items-center justify-center mt-4 space-x-1">
                 <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
@@ -343,16 +331,16 @@ export default function InventoryPage() {
           </div>
 
           {/* Summary Cards Skeleton */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
               <Card key={i} className="border-0 shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-3 sm:h-4 w-20 sm:w-24 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-3 sm:h-4 w-3 sm:w-4 bg-gray-200 rounded animate-pulse"></div>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-8 w-20 bg-gray-200 rounded animate-pulse mb-2"></div>
-                  <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-6 sm:h-8 w-16 sm:w-20 bg-gray-200 rounded animate-pulse mb-2"></div>
+                  <div className="h-2 sm:h-3 w-24 sm:w-32 bg-gray-200 rounded animate-pulse"></div>
                 </CardContent>
               </Card>
             ))}
@@ -361,11 +349,11 @@ export default function InventoryPage() {
           {/* Table Skeleton */}
           <Card className="border-0 shadow-sm">
             <CardHeader>
-              <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-5 sm:h-6 w-28 sm:w-32 bg-gray-200 rounded animate-pulse"></div>
             </CardHeader>
             <CardContent>
-              <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
-                <BarChart3 className="h-12 w-12 text-gray-300" />
+              <div className="h-48 sm:h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                <BarChart3 className="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
               </div>
             </CardContent>
           </Card>
@@ -375,30 +363,30 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-8">
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+      <div className="space-y-6 sm:space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-800">Inventory Management</h1>
-            <p className="text-slate-600 mt-2">Kelola dan pantau stok produk Anda secara real-time</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Inventory Management</h1>
+            <p className="text-slate-600 mt-1 sm:mt-2 text-sm sm:text-base">Kelola dan pantau stok produk Anda secara real-time</p>
           </div>
-          <Button onClick={fetchInventoryData} variant="outline" className="hover:bg-slate-50">
+          <Button onClick={fetchInventoryData} variant="outline" className="hover:bg-slate-50 w-full sm:w-auto">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
           <Card className="shadow-sm border-0 bg-gradient-to-br from-blue-50 to-blue-100">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium text-blue-700">Total Items</CardTitle>
-              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                <Package className="h-5 w-5 text-white" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3">
+              <CardTitle className="text-xs sm:text-sm font-medium text-blue-700">Total Items</CardTitle>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-900">{summary?.totalItems || 0}</div>
+              <div className="text-xl sm:text-2xl font-bold text-blue-900">{summary?.totalItems || 0}</div>
               <p className="text-xs text-blue-600 mt-1">
                 Varian produk
               </p>
@@ -406,14 +394,14 @@ export default function InventoryPage() {
           </Card>
 
           <Card className="shadow-sm border-0 bg-gradient-to-br from-emerald-50 to-emerald-100">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium text-emerald-700">Total Value</CardTitle>
-              <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-white" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3">
+              <CardTitle className="text-xs sm:text-sm font-medium text-emerald-700">Total Value</CardTitle>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-500 rounded-full flex items-center justify-center">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-emerald-900">
+              <div className="text-xl sm:text-2xl font-bold text-emerald-900">
                 Rp {summary?.totalValue?.toLocaleString() || 0}
               </div>
               <p className="text-xs text-emerald-600 mt-1">
@@ -423,14 +411,14 @@ export default function InventoryPage() {
           </Card>
 
           <Card className="shadow-sm border-0 bg-gradient-to-br from-red-50 to-red-100">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium text-red-700">Low Stock</CardTitle>
-              <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
-                <AlertTriangle className="h-5 w-5 text-white" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3">
+              <CardTitle className="text-xs sm:text-sm font-medium text-red-700">Low Stock</CardTitle>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-500 rounded-full flex items-center justify-center">
+                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-900">
+              <div className="text-xl sm:text-2xl font-bold text-red-900">
                 {summary?.lowStock || 0}
               </div>
               <p className="text-xs text-red-600 mt-1">
@@ -440,14 +428,14 @@ export default function InventoryPage() {
           </Card>
 
           <Card className="shadow-sm border-0 bg-gradient-to-br from-amber-50 to-amber-100">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium text-amber-700">Out of Stock</CardTitle>
-              <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center">
-                <Package className="h-5 w-5 text-white" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3">
+              <CardTitle className="text-xs sm:text-sm font-medium text-amber-700">Out of Stock</CardTitle>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-amber-500 rounded-full flex items-center justify-center">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-amber-900">
+              <div className="text-xl sm:text-2xl font-bold text-amber-900">
                 {summary?.outOfStock || 0}
               </div>
               <p className="text-xs text-amber-600 mt-1">
@@ -459,17 +447,17 @@ export default function InventoryPage() {
 
         {/* Filters and Search */}
         <Card className="shadow-sm border-0">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
+          <CardHeader className="pb-3 sm:pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <CardTitle className="text-lg font-semibold text-slate-800">Filter & Pencarian</CardTitle>
+                <CardTitle className="text-base sm:text-lg font-semibold text-slate-800">Filter & Pencarian</CardTitle>
                 <p className="text-sm text-slate-600 mt-1">Cari dan filter produk berdasarkan kriteria</p>
               </div>
-              <Filter className="h-5 w-5 text-slate-400" />
+              <Filter className="h-5 w-5 text-slate-400 self-start sm:self-center" />
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col gap-3 sm:gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 <Input
@@ -480,72 +468,46 @@ export default function InventoryPage() {
                 />
               </div>
               
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-full md:w-48 border-slate-300 focus:border-blue-500 focus:ring-blue-500">
-                  <SelectValue placeholder="Semua Kategori" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Kategori</SelectItem>
-                  {filters.categories?.map((category: string) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedBrand} onValueChange={setSelectedBrand}>
-                <SelectTrigger className="w-full md:w-48 border-slate-300 focus:border-blue-500 focus:ring-blue-500">
-                  <SelectValue placeholder="Semua Brand" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Brand</SelectItem>
-                  {filters.brands?.map((brand: string) => (
-                    <SelectItem key={brand} value={brand}>
-                      {brand}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="w-full md:w-48 border-slate-300 focus:border-blue-500 focus:ring-blue-500">
-                  <SelectValue placeholder="Semua Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Status</SelectItem>
-                  <SelectItem value="in_stock">Stok Normal</SelectItem>
-                  <SelectItem value="low_stock">Stok Rendah</SelectItem>
-                  <SelectItem value="out_of_stock">Habis</SelectItem>
-                  <SelectItem value="over_stock">Over Stock</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-1 sm:grid-cols-1 gap-3">
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Semua Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Status</SelectItem>
+                    <SelectItem value="in_stock">Stok Normal</SelectItem>
+                    <SelectItem value="low_stock">Stok Rendah</SelectItem>
+                    <SelectItem value="out_of_stock">Habis</SelectItem>
+                    <SelectItem value="over_stock">Over Stock</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Inventory Table */}
         <Card className="shadow-sm border-0">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
+          <CardHeader className="pb-3 sm:pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <CardTitle className="text-lg font-semibold text-slate-800">Daftar Inventory</CardTitle>
-                <CardDescription className="text-slate-600">
+                <CardTitle className="text-base sm:text-lg font-semibold text-slate-800">Daftar Inventory</CardTitle>
+                <CardDescription className="text-slate-600 text-sm">
                   {filteredInventory.length} dari {inventory.length} items
                 </CardDescription>
               </div>
-              <BarChart3 className="h-5 w-5 text-slate-400" />
+              <BarChart3 className="h-5 w-5 text-slate-400 self-start sm:self-center" />
             </div>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             {filteredInventory.length === 0 ? (
-              <div className="text-center py-12">
+              <div className="text-center py-8 sm:py-12">
                 <div className="flex flex-col items-center">
-                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                    <Package className="h-8 w-8 text-slate-400" />
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                    <Package className="h-6 w-6 sm:h-8 sm:w-8 text-slate-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-700 mb-2">Tidak ada data inventory</h3>
-                  <p className="text-slate-500 max-w-sm">
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-700 mb-2">Tidak ada data inventory</h3>
+                  <p className="text-sm sm:text-base text-slate-500 max-w-sm text-center">
                     {inventory.length === 0 
                       ? "Belum ada data inventory. Tambahkan produk dan varian terlebih dahulu." 
                       : "Tidak ada data yang sesuai dengan filter yang dipilih."}
@@ -553,47 +515,38 @@ export default function InventoryPage() {
                 </div>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-b border-slate-200">
-                      <TableHead className="font-semibold text-slate-700">Produk</TableHead>
-                      <TableHead className="font-semibold text-slate-700">Varian</TableHead>
-                      <TableHead className="font-semibold text-slate-700">SKU</TableHead>
-                      <TableHead className="font-semibold text-slate-700">Stok</TableHead>
-                      <TableHead className="font-semibold text-slate-700">Min Stock</TableHead>
-                      <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                      <TableHead className="font-semibold text-slate-700">Harga</TableHead>
-                      <TableHead className="font-semibold text-slate-700">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredInventory.map((item) => (
-                      <TableRow key={item.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <TableCell className="font-medium">
-                          <div>
-                            <p className="text-slate-800 font-semibold">{item.product.name}</p>
-                            <p className="text-xs text-slate-500 mt-1">
-                              {item.product.category.name} • {item.product.brand.name}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                              {item.size.name}
-                            </span>
-                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
-                              {item.color.name}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <code className="text-xs bg-slate-100 px-2 py-1 rounded font-mono text-slate-700">
+              <>
+                {/* Mobile Card Layout */}
+                <div className="block lg:hidden space-y-4">
+                  {filteredInventory.map((item) => (
+                    <div key={item.id} className="bg-white border border-slate-200 rounded-lg p-4 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-slate-800 truncate">{item.product.name}</h3>
+                          <p className="text-sm text-slate-500 mt-1">
+                            {item.product.category.name} • {item.product.brand.name}
+                          </p>
+                          <code className="text-xs bg-slate-100 px-2 py-1 rounded font-mono text-slate-700 mt-2 inline-block">
                             {item.product.sku}
                           </code>
-                        </TableCell>
-                        <TableCell>
+                        </div>
+                        <div className="flex flex-col items-end gap-2 ml-3">
+                          {getStatusBadge(item.status)}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                          {item.size.name}
+                        </span>
+                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                          {item.color.name}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-slate-500 mb-1">Stok Saat Ini</p>
                           <div className="flex items-center gap-2">
                             <span className={`font-bold text-lg ${
                               item.stock <= item.minStock ? 'text-red-600' : 
@@ -608,61 +561,164 @@ export default function InventoryPage() {
                               </span>
                             )}
                           </div>
-                        </TableCell>
-                        <TableCell>
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-500 mb-1">Min. Stok</p>
                           <span className="text-slate-600 font-medium">{item.minStock}</span>
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(item.status)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-right">
-                            <div className="font-semibold text-emerald-600">
-                              Rp {item.sellingPrice.toLocaleString()}
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              Cost: Rp {item.costPrice.toLocaleString()}
-                            </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-slate-500 mb-1">Harga Jual</p>
+                          <div className="font-semibold text-emerald-600">
+                            Rp {item.sellingPrice.toLocaleString()}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => openAdjustmentDialog(item)}
-                              className="hover:bg-blue-50 hover:border-blue-300"
-                            >
-                              <ArrowUpDown className="h-4 w-4 mr-1" />
-                              Adjust
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => openHistoryDialog(item)}
-                              className="hover:bg-green-50 hover:border-green-300 ml-2"
-                            >
-                              <History className="h-4 w-4 mr-1" />
-                              History
-                            </Button>
-                      </TableCell>
-                    </TableRow>
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-500 mb-1">Harga Modal</p>
+                          <div className="text-sm text-slate-500">
+                            Rp {item.costPrice.toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 pt-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => openAdjustmentDialog(item)}
+                          className="hover:bg-blue-50 hover:border-blue-300 flex-1"
+                        >
+                          <ArrowUpDown className="h-4 w-4 mr-1" />
+                          Adjust
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => openHistoryDialog(item)}
+                          className="hover:bg-green-50 hover:border-green-300 flex-1"
+                        >
+                          <History className="h-4 w-4 mr-1" />
+                          History
+                        </Button>
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
+                </div>
+
+                {/* Desktop Table Layout */}
+                <div className="hidden lg:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-slate-200">
+                        <TableHead className="font-semibold text-slate-700">Produk</TableHead>
+                        <TableHead className="font-semibold text-slate-700">Varian</TableHead>
+                        <TableHead className="font-semibold text-slate-700">SKU</TableHead>
+                        <TableHead className="font-semibold text-slate-700">Stok</TableHead>
+                        <TableHead className="font-semibold text-slate-700">Min Stock</TableHead>
+                        <TableHead className="font-semibold text-slate-700">Status</TableHead>
+                        <TableHead className="font-semibold text-slate-700">Harga</TableHead>
+                        <TableHead className="font-semibold text-slate-700">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredInventory.map((item) => (
+                        <TableRow key={item.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                          <TableCell className="font-medium">
+                            <div>
+                              <p className="text-slate-800 font-semibold">{item.product.name}</p>
+                              <p className="text-xs text-slate-500 mt-1">
+                                {item.product.category.name} • {item.product.brand.name}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                {item.size.name}
+                              </span>
+                              <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                                {item.color.name}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <code className="text-xs bg-slate-100 px-2 py-1 rounded font-mono text-slate-700">
+                              {item.product.sku}
+                            </code>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className={`font-bold text-lg ${
+                                item.stock <= item.minStock ? 'text-red-600' : 
+                                item.stock > item.maxStock ? 'text-amber-600' : 
+                                'text-emerald-600'
+                              }`}>
+                                {item.stock}
+                              </span>
+                              {item.needReorder && (
+                                <span className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+                                  Reorder: {item.reorderQuantity}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-slate-600 font-medium">{item.minStock}</span>
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(item.status)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-right">
+                              <div className="font-semibold text-emerald-600">
+                                Rp {item.sellingPrice.toLocaleString()}
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                Cost: Rp {item.costPrice.toLocaleString()}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => openAdjustmentDialog(item)}
+                                className="hover:bg-blue-50 hover:border-blue-300"
+                              >
+                                <ArrowUpDown className="h-4 w-4 mr-1" />
+                                Adjust
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => openHistoryDialog(item)}
+                                className="hover:bg-green-50 hover:border-green-300 ml-2"
+                              >
+                                <History className="h-4 w-4 mr-1" />
+                                History
+                              </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
       
       {/* Stock Adjustment Dialog */}
       <Dialog open={adjustmentDialog.open} onOpenChange={closeAdjustmentDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-lg">
               <ArrowUpDown className="h-5 w-5" />
               Stock Adjustment
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               {adjustmentDialog.item && (
                 <>Adjust stock untuk {adjustmentDialog.item.product.name} - {adjustmentDialog.item.size.name} {adjustmentDialog.item.color.name}</>
               )}
@@ -671,7 +727,7 @@ export default function InventoryPage() {
           
           {adjustmentDialog.item && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Stock Sekarang</Label>
                   <Input
@@ -694,7 +750,7 @@ export default function InventoryPage() {
               
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Jumlah Adjustment</Label>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <Select value={adjustmentType || ''} onValueChange={(value: 'INCREASE' | 'DECREASE') => {
                     setAdjustmentType(value);
                     if (adjustmentDialog.item) {
@@ -702,7 +758,7 @@ export default function InventoryPage() {
                     }
                     setAdjustmentReason('');
                   }}>
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-full sm:w-32">
                       <SelectValue placeholder="Tipe" />
                     </SelectTrigger>
                     <SelectContent>
@@ -766,15 +822,15 @@ export default function InventoryPage() {
                 </div>
               )}
 
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={closeAdjustmentDialog} className="flex-1">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button variant="outline" onClick={closeAdjustmentDialog} className="flex-1 w-full sm:w-auto">
                   Batal
                 </Button>
                 <Button 
                   onClick={handleStockAdjustment} 
                   disabled={!adjustmentType || !adjustmentReason || isProcessingAdjustment || 
                            parseInt(adjustmentAmount) === adjustmentDialog.item?.stock}
-                  className="flex-1"
+                  className="flex-1 w-full sm:w-auto"
                 >
                   {isProcessingAdjustment ? 'Processing...' : 'Simpan Adjustment'}
                 </Button>
@@ -786,13 +842,13 @@ export default function InventoryPage() {
 
       {/* Adjustment History Dialog */}
       <Dialog open={historyDialog.open} onOpenChange={closeHistoryDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-lg">
               <History className="h-5 w-5" />
               Riwayat Adjustment
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               {historyDialog.item && (
                 <>Riwayat adjustment untuk {historyDialog.item.product.name} - {historyDialog.item.size.name} {historyDialog.item.color.name}</>
               )}
@@ -801,33 +857,25 @@ export default function InventoryPage() {
           
           <div className="max-h-96 overflow-y-auto">
             {adjustmentHistory.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-6 sm:py-8 text-muted-foreground">
                 Belum ada riwayat adjustment untuk variant ini
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Tipe</TableHead>
-                    <TableHead>Jumlah</TableHead>
-                    <TableHead>Alasan</TableHead>
-                    <TableHead>User</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <>
+                {/* Mobile Card Layout */}
+                <div className="block md:hidden space-y-3">
                   {adjustmentHistory.map((history) => (
-                    <TableRow key={history.id}>
-                      <TableCell className="text-sm">
-                        {new Date(history.createdAt).toLocaleDateString('id-ID', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </TableCell>
-                      <TableCell>
+                    <div key={history.id} className="bg-slate-50 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium">
+                          {new Date(history.createdAt).toLocaleDateString('id-ID', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
                         <Badge variant={history.adjustmentType === 'INCREASE' ? 'default' : 'secondary'}>
                           {history.adjustmentType === 'INCREASE' ? (
                             <><Plus className="h-3 w-3 mr-1" /> Tambah</>
@@ -835,23 +883,83 @@ export default function InventoryPage() {
                             <><Minus className="h-3 w-3 mr-1" /> Kurang</>
                           )}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {history.adjustmentType === 'INCREASE' ? '+' : '-'}{history.quantity}
-                      </TableCell>
-                      <TableCell className="text-sm">
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
-                          {ADJUSTMENT_CATEGORIES[history.adjustmentType].find(cat => cat.value === history.reason)?.label || history.reason}
+                          <p className="text-xs text-slate-500">Jumlah</p>
+                          <p className="font-medium">
+                            {history.adjustmentType === 'INCREASE' ? '+' : '-'}{history.quantity}
+                          </p>
                         </div>
+                        <div>
+                          <p className="text-xs text-slate-500">User</p>
+                          <p className="text-sm">{history.user.name}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500">Alasan</p>
+                        <p className="text-sm">
+                          {ADJUSTMENT_CATEGORIES[history.adjustmentType].find(cat => cat.value === history.reason)?.label || history.reason}
+                        </p>
                         {history.notes && (
-                          <div className="text-xs text-muted-foreground mt-1">{history.notes}</div>
+                          <p className="text-xs text-muted-foreground mt-1">{history.notes}</p>
                         )}
-                      </TableCell>
-                      <TableCell className="text-sm">{history.user.name}</TableCell>
-                    </TableRow>
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+
+                {/* Desktop Table Layout */}
+                <div className="hidden md:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tanggal</TableHead>
+                        <TableHead>Tipe</TableHead>
+                        <TableHead>Jumlah</TableHead>
+                        <TableHead>Alasan</TableHead>
+                        <TableHead>User</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {adjustmentHistory.map((history) => (
+                        <TableRow key={history.id}>
+                          <TableCell className="text-sm">
+                            {new Date(history.createdAt).toLocaleDateString('id-ID', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={history.adjustmentType === 'INCREASE' ? 'default' : 'secondary'}>
+                              {history.adjustmentType === 'INCREASE' ? (
+                                <><Plus className="h-3 w-3 mr-1" /> Tambah</>
+                              ) : (
+                                <><Minus className="h-3 w-3 mr-1" /> Kurang</>
+                              )}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {history.adjustmentType === 'INCREASE' ? '+' : '-'}{history.quantity}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            <div>
+                              {ADJUSTMENT_CATEGORIES[history.adjustmentType].find(cat => cat.value === history.reason)?.label || history.reason}
+                            </div>
+                            {history.notes && (
+                              <div className="text-xs text-muted-foreground mt-1">{history.notes}</div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm">{history.user.name}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </div>
         </DialogContent>

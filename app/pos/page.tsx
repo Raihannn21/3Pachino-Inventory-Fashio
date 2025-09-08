@@ -332,23 +332,23 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
   // Loading full page
   if (isPageLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-3 sm:p-6">
         {/* Header Skeleton */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-2">
           <div>
-            <div className="h-8 w-40 bg-gray-200 rounded animate-pulse mb-2"></div>
-            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-6 sm:h-8 w-32 sm:w-40 bg-gray-200 rounded animate-pulse mb-2"></div>
+            <div className="h-4 w-24 sm:w-32 bg-gray-200 rounded animate-pulse"></div>
           </div>
         </div>
 
         {/* Loading Animation Center */}
-        <div className="flex items-center justify-center mb-8">
+        <div className="flex items-center justify-center mb-6 sm:mb-8">
           <div className="text-center">
             <div className="relative mb-4">
-              <CreditCard className="h-16 w-16 mx-auto text-blue-600 animate-pulse" />
+              <CreditCard className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-blue-600 animate-pulse" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Memuat Point of Sale</h2>
-            <p className="text-sm text-gray-600">Menyiapkan sistem kasir...</p>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Memuat Point of Sale</h2>
+            <p className="text-xs sm:text-sm text-gray-600">Menyiapkan sistem kasir...</p>
             <div className="flex items-center justify-center mt-4 space-x-1">
               <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
               <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
@@ -358,15 +358,15 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
         </div>
 
         {/* Simple Skeleton Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+          <div className="xl:col-span-2">
             <Card className="border-0 shadow-sm">
               <CardHeader>
-                <div className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-5 sm:h-6 w-20 sm:w-24 bg-gray-200 rounded animate-pulse"></div>
               </CardHeader>
               <CardContent>
-                <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
-                  <Search className="h-12 w-12 text-gray-300" />
+                <div className="h-48 sm:h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                  <Search className="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
                 </div>
               </CardContent>
             </Card>
@@ -374,11 +374,11 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
           <div>
             <Card className="border-0 shadow-sm">
               <CardHeader>
-                <div className="h-6 w-20 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-5 sm:h-6 w-16 sm:w-20 bg-gray-200 rounded animate-pulse"></div>
               </CardHeader>
               <CardContent>
-                <div className="h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
-                  <ShoppingCart className="h-12 w-12 text-gray-300" />
+                <div className="h-48 sm:h-64 bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                  <ShoppingCart className="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
                 </div>
               </CardContent>
             </Card>
@@ -389,45 +389,45 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-3 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-2">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Point of Sale</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Point of Sale</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">
             Sistem kasir 3PACHINO
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
         {/* Product Search */}
-        <div className="lg:col-span-2">
+        <div className="xl:col-span-2">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Search className="h-4 w-4 sm:h-5 sm:w-5" />
                 Cari Produk
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent className="pt-0">
+              <div className="space-y-3 sm:space-y-4">
                 <Input
                   placeholder="Cari produk, SKU, atau scan barcode..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="text-lg"
+                  className="text-base sm:text-lg"
                 />
 
                 {isLoadingProducts ? (
-                  <div className="text-center py-12">
+                  <div className="text-center py-8 sm:py-12">
                     <div className="flex items-center justify-center mb-4">
                       <div className="animate-pulse">
-                        <Logo size="lg" showText={true} usePng={true} />
+                        <Logo size="md" showText={true} usePng={true} />
                       </div>
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Memuat Produk</h3>
-                    <p className="text-sm text-gray-600">Sedang mengambil data produk terbaru...</p>
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Memuat Produk</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">Sedang mengambil data produk terbaru...</p>
                     <div className="flex items-center justify-center mt-4 space-x-1">
                       <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
                       <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
@@ -435,11 +435,11 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                     </div>
                   </div>
                 ) : isSearching ? (
-                  <div className="text-center py-8">
+                  <div className="text-center py-6 sm:py-8">
                     <div className="flex items-center justify-center mb-3">
-                      <Search className="h-8 w-8 text-blue-600 animate-pulse" />
+                      <Search className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 animate-pulse" />
                     </div>
-                    <p className="text-sm text-gray-600">Mencari produk...</p>
+                    <p className="text-xs sm:text-sm text-gray-600">Mencari produk...</p>
                     <div className="flex items-center justify-center mt-3 space-x-1">
                       <div className="h-1.5 w-1.5 bg-blue-600 rounded-full animate-bounce"></div>
                       <div className="h-1.5 w-1.5 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
@@ -448,15 +448,15 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                   </div>
                 ) : (
                   <>
-                    <div className="text-sm text-muted-foreground mb-2">
+                    <div className="text-xs sm:text-sm text-muted-foreground mb-2">
                       Menampilkan {searchResults.length} produk {searchTerm && `untuk "${searchTerm}"`}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4 max-h-80 sm:max-h-96 overflow-y-auto">
                       {searchResults.map((variant) => (
                         <Card key={variant.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => addToCart(variant)}>
-                          <CardContent className="p-4">
+                          <CardContent className="p-3 sm:p-4">
                             <div className="space-y-2">
-                              <h3 className="font-medium">{variant.product.name}</h3>
+                              <h3 className="font-medium text-sm sm:text-base leading-tight">{variant.product.name}</h3>
                               <div className="flex flex-wrap gap-1">
                                 <Badge variant="outline" className="text-xs">
                                   {variant.size.name}
@@ -469,15 +469,15 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                                   {variant.color.name}
                                 </Badge>
                               </div>
-                              <div className="flex justify-between items-center">
-                                <span className="font-bold text-primary">
+                              <div className="flex justify-between items-center gap-2">
+                                <span className="font-bold text-primary text-sm sm:text-base">
                                   Rp {variant.product.sellingPrice.toLocaleString('id-ID')}
                                 </span>
-                                <Badge variant={variant.stock > 10 ? 'secondary' : variant.stock > 0 ? 'destructive' : 'outline'}>
+                                <Badge variant={variant.stock > 10 ? 'secondary' : variant.stock > 0 ? 'destructive' : 'outline'} className="text-xs">
                                   Stok: {variant.stock}
                                 </Badge>
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-xs text-muted-foreground truncate">
                                 {variant.product.brand.name} • {variant.product.category.name}
                               </div>
                             </div>
@@ -487,8 +487,8 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                     </div>
 
                     {!isLoadingProducts && searchResults.length === 0 && (
-                      <div className="text-center py-8">
-                        <div className="text-sm text-muted-foreground">
+                      <div className="text-center py-6 sm:py-8">
+                        <div className="text-xs sm:text-sm text-muted-foreground">
                           {searchTerm ? `Tidak ada produk yang ditemukan untuk "${searchTerm}"` : 'Belum ada produk tersedia'}
                         </div>
                       </div>
@@ -503,32 +503,32 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
         {/* Shopping Cart */}
         <div>
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="flex items-center justify-between text-lg sm:text-xl">
                 <span className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
+                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
                   Keranjang ({cart.length})
                 </span>
                 {cart.length > 0 && (
                   <Button variant="outline" size="sm" onClick={clearCart}>
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                 )}
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent className="pt-0">
+              <div className="space-y-3 sm:space-y-4">
                 {cart.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+                  <div className="text-center py-6 sm:py-8 text-muted-foreground text-sm sm:text-base">
                     Keranjang masih kosong
                   </div>
                 ) : (
                   <>
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                    <div className="space-y-2 sm:space-y-3 max-h-60 sm:max-h-64 overflow-y-auto">
                       {cart.map((item) => (
-                        <div key={item.variant.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div key={item.variant.id} className="flex items-start gap-3 p-2 sm:p-3 border rounded-lg">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm truncate">
+                            <h4 className="font-medium text-xs sm:text-sm leading-tight">
                               {item.variant.product.name}
                             </h4>
                             <div className="flex gap-1 mt-1">
@@ -543,18 +543,20 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                               Rp {item.variant.product.sellingPrice.toLocaleString('id-ID')}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 sm:gap-2">
                             <Button
                               variant="outline"
                               size="sm"
+                              className="h-7 w-7 p-0"
                               onClick={() => updateQuantity(item.variant.id, item.quantity - 1)}
                             >
                               <Minus className="h-3 w-3" />
                             </Button>
-                            <span className="w-8 text-center text-sm">{item.quantity}</span>
+                            <span className="w-6 sm:w-8 text-center text-xs sm:text-sm font-medium">{item.quantity}</span>
                             <Button
                               variant="outline"
                               size="sm"
+                              className="h-7 w-7 p-0"
                               onClick={() => updateQuantity(item.variant.id, item.quantity + 1)}
                             >
                               <Plus className="h-3 w-3" />
@@ -566,19 +568,19 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
 
                     <Separator />
 
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
+                    <div className="space-y-1 sm:space-y-2">
+                      <div className="flex justify-between text-xs sm:text-sm">
                         <span>Subtotal:</span>
                         <span>Rp {subtotal.toLocaleString('id-ID')}</span>
                       </div>
                       {discount > 0 && (
-                        <div className="flex justify-between text-sm text-red-600">
+                        <div className="flex justify-between text-xs sm:text-sm text-red-600">
                           <span>Diskon ({discount}%):</span>
                           <span>-Rp {discountAmount.toLocaleString('id-ID')}</span>
                         </div>
                       )}
                       <Separator />
-                      <div className="flex justify-between font-bold">
+                      <div className="flex justify-between font-bold text-sm sm:text-base">
                         <span>Total:</span>
                         <span>Rp {total.toLocaleString('id-ID')}</span>
                       </div>
@@ -591,15 +593,15 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                           Checkout
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                      <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
-                          <DialogTitle>Checkout</DialogTitle>
+                          <DialogTitle className="text-lg sm:text-xl">Checkout</DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-4">
+                        <div className="space-y-3 sm:space-y-4">
                           <div className="space-y-2">
-                            <Label htmlFor="customer">Pilih Customer</Label>
+                            <Label htmlFor="customer" className="text-sm">Pilih Customer</Label>
                             <Select value={selectedCustomer} onValueChange={handleCustomerSelect}>
-                              <SelectTrigger>
+                              <SelectTrigger className="text-sm">
                                 <SelectValue placeholder="Pilih customer atau isi manual" />
                               </SelectTrigger>
                               <SelectContent>
@@ -613,33 +615,36 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                             </Select>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="customerName">Nama Pelanggan</Label>
+                            <Label htmlFor="customerName" className="text-sm">Nama Pelanggan</Label>
                             <Input
                               id="customerName"
                               placeholder="Masukkan nama pelanggan"
                               value={customerName}
                               onChange={(e) => setCustomerName(e.target.value)}
                               disabled={selectedCustomer !== '' && selectedCustomer !== 'manual'}
+                              className="text-sm"
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="customerPhone">No. Telepon</Label>
+                            <Label htmlFor="customerPhone" className="text-sm">No. Telepon</Label>
                             <Input
                               id="customerPhone"
                               placeholder="Masukkan no. telepon"
                               value={customerPhone}
                               onChange={(e) => setCustomerPhone(e.target.value)}
                               disabled={selectedCustomer !== '' && selectedCustomer !== 'manual'}
+                              className="text-sm"
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="customerAddress">Alamat</Label>
+                            <Label htmlFor="customerAddress" className="text-sm">Alamat</Label>
                             <Input
                               id="customerAddress"
                               placeholder="Masukkan alamat pelanggan"
                               value={customerAddress}
                               onChange={(e) => setCustomerAddress(e.target.value)}
                               disabled={selectedCustomer !== '' && selectedCustomer !== 'manual'}
+                              className="text-sm"
                             />
                           </div>
                           <div className="space-y-2">
@@ -650,7 +655,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                                 onCheckedChange={(checked) => setSendWhatsApp(checked as boolean)}
                                 disabled={!customerPhone.trim()}
                               />
-                              <Label htmlFor="sendWhatsApp" className="text-sm font-medium">
+                              <Label htmlFor="sendWhatsApp" className="text-xs sm:text-sm font-medium">
                                 📱 Kirim struk ke WhatsApp customer
                               </Label>
                             </div>
@@ -666,7 +671,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                             )}
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="discount">Diskon (%)</Label>
+                            <Label htmlFor="discount" className="text-sm">Diskon (%)</Label>
                             <Input
                               id="discount"
                               type="number"
@@ -675,32 +680,34 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                               placeholder="0"
                               value={discount || ''}
                               onChange={(e) => setDiscount(Number(e.target.value) || 0)}
+                              className="text-sm"
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="notes">Catatan</Label>
+                            <Label htmlFor="notes" className="text-sm">Catatan</Label>
                             <Textarea
                               id="notes"
                               placeholder="Catatan tambahan..."
                               value={notes}
                               onChange={(e) => setNotes(e.target.value)}
+                              className="text-sm min-h-[60px] sm:min-h-[80px]"
                             />
                           </div>
 
                           <Separator />
 
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
+                          <div className="space-y-1 sm:space-y-2">
+                            <div className="flex justify-between text-xs sm:text-sm">
                               <span>Subtotal:</span>
                               <span>Rp {subtotal.toLocaleString('id-ID')}</span>
                             </div>
                             {discount > 0 && (
-                              <div className="flex justify-between text-sm text-red-600">
+                              <div className="flex justify-between text-xs sm:text-sm text-red-600">
                                 <span>Diskon ({discount}%):</span>
                                 <span>-Rp {discountAmount.toLocaleString('id-ID')}</span>
                               </div>
                             )}
-                            <div className="flex justify-between font-bold text-lg">
+                            <div className="flex justify-between font-bold text-sm sm:text-lg">
                               <span>Total:</span>
                               <span>Rp {total.toLocaleString('id-ID')}</span>
                             </div>
