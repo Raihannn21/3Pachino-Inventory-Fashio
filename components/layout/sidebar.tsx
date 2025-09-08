@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'POS', href: '/pos', icon: CreditCard },
   { name: 'Penjualan', href: '/sales', icon: ShoppingCart },
   { name: 'Produk', href: '/products', icon: Package },
