@@ -711,17 +711,17 @@ export default function Dashboard() {
           </TabsContent>
 
           {/* Transactions Tab */}
-          <TabsContent value="transactions" className="space-y-8">
+          <TabsContent value="transactions" className="space-y-6 sm:space-y-8">
             {transactionData ? (
               <Card className="bg-white shadow-sm border-0">
                 <CardHeader className="pb-4">
-                  <div className="flex justify-between items-center flex-wrap gap-4">
-                    <div className="flex items-center gap-4">
-                      <CardTitle className="text-xl font-semibold text-gray-900">
+                  <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                      <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">
                         Laporan Transaksi ({transactionData.totalCount} transaksi)
                       </CardTitle>
                       <Select value={transactionFilter} onValueChange={setTransactionFilter}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-full sm:w-40">
                           <SelectValue placeholder="Filter transaksi" />
                         </SelectTrigger>
                         <SelectContent>
@@ -731,14 +731,16 @@ export default function Dashboard() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="flex items-center gap-2">
+                    
+                    {/* Export Buttons - Mobile Responsive */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       {transactionFilter === 'ALL' && (
                         <>
                           <Button 
                             onClick={handleExportSalesExcel}
                             variant="outline" 
                             size="sm"
-                            className="flex items-center gap-2 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
+                            className="flex items-center justify-center gap-2 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-xs sm:text-sm"
                           >
                             <Download className="h-4 w-4" />
                             Export Penjualan
@@ -747,7 +749,7 @@ export default function Dashboard() {
                             onClick={handleExportPurchasesExcel}
                             variant="outline" 
                             size="sm"
-                            className="flex items-center gap-2 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300"
+                            className="flex items-center justify-center gap-2 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300 text-xs sm:text-sm"
                           >
                             <Download className="h-4 w-4" />
                             Export Pembelian
@@ -758,7 +760,7 @@ export default function Dashboard() {
                         onClick={handleExportExcel}
                         variant="outline" 
                         size="sm"
-                        className="flex items-center gap-2 hover:bg-green-50 hover:text-green-700 hover:border-green-300"
+                        className="flex items-center justify-center gap-2 hover:bg-green-50 hover:text-green-700 hover:border-green-300 text-xs sm:text-sm"
                       >
                         <Download className="h-4 w-4" />
                         Export Excel
@@ -767,7 +769,8 @@ export default function Dashboard() {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="overflow-x-auto">
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-200 bg-gray-50">
@@ -861,45 +864,124 @@ export default function Dashboard() {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Mobile Card View */}
+                  <div className="lg:hidden space-y-4">
+                    {transactionData.transactions.map((transaction) => (
+                      <Card key={transaction.id} className="border border-gray-200 shadow-sm">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge 
+                                  variant={
+                                    transaction.type === 'SALE' ? 'default' :
+                                    transaction.type === 'PURCHASE' ? 'secondary' :
+                                    transaction.type === 'RETURN_SALE' ? 'destructive' :
+                                    transaction.type === 'RETURN_PURCHASE' ? 'outline' :
+                                    'secondary'
+                                  }
+                                  className="text-xs"
+                                >
+                                  {transaction.type === 'SALE' ? 'Penjualan' :
+                                   transaction.type === 'PURCHASE' ? 'Pembelian' :
+                                   transaction.type === 'RETURN_SALE' ? 'Retur Jual' :
+                                   transaction.type === 'RETURN_PURCHASE' ? 'Retur Beli' :
+                                   'Penyesuaian'}
+                                </Badge>
+                                <Badge 
+                                  variant={
+                                    transaction.status === 'COMPLETED' ? 'default' :
+                                    transaction.status === 'PENDING' ? 'secondary' :
+                                    'destructive'
+                                  }
+                                  className="text-xs"
+                                >
+                                  {transaction.status === 'COMPLETED' ? 'Selesai' :
+                                   transaction.status === 'PENDING' ? 'Pending' :
+                                   'Batal'}
+                                </Badge>
+                              </div>
+                              <p className="font-mono text-sm text-blue-600 mb-1">
+                                {transaction.invoiceNumber}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {new Date(transaction.date).toLocaleDateString('id-ID', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className={`text-lg font-bold ${
+                                transaction.type === 'SALE' ? 'text-green-600' :
+                                transaction.type === 'PURCHASE' ? 'text-blue-600' :
+                                transaction.type === 'RETURN_SALE' ? 'text-red-600' :
+                                transaction.type === 'RETURN_PURCHASE' ? 'text-orange-600' :
+                                'text-gray-600'
+                              }`}>
+                                {formatCurrency(transaction.totalAmount)}
+                              </p>
+                              {transaction.type === 'SALE' && transaction.profit > 0 && (
+                                <p className="text-sm text-green-600 font-medium">
+                                  Profit: {formatCurrency(transaction.profit)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-between items-center text-sm text-gray-600 pt-2 border-t border-gray-100">
+                            <span>
+                              {transaction.type === 'PURCHASE' || transaction.type === 'RETURN_PURCHASE' 
+                                ? transaction.supplier 
+                                : transaction.user}
+                            </span>
+                            <span>{transaction.itemCount} items</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                   
                   {/* Summary Statistics */}
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">
+                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
+                    <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg">
+                      <div className="text-xl sm:text-2xl font-bold text-green-600 break-all">
                         {formatCurrency(
                           transactionData.transactions
                             .filter(t => t.type === 'SALE')
                             .reduce((sum, t) => sum + t.totalAmount, 0)
                         )}
                       </div>
-                      <div className="text-sm text-green-700 font-medium">Total Penjualan</div>
+                      <div className="text-xs sm:text-sm text-green-700 font-medium">Total Penjualan</div>
                     </div>
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">
+                    <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg">
+                      <div className="text-xl sm:text-2xl font-bold text-blue-600 break-all">
                         {formatCurrency(
                           transactionData.transactions
                             .filter(t => t.type === 'PURCHASE')
                             .reduce((sum, t) => sum + t.totalAmount, 0)
                         )}
                       </div>
-                      <div className="text-sm text-blue-700 font-medium">Total Pembelian</div>
+                      <div className="text-xs sm:text-sm text-blue-700 font-medium">Total Pembelian</div>
                     </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">
+                    <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg">
+                      <div className="text-xl sm:text-2xl font-bold text-green-600 break-all">
                         {formatCurrency(
                           transactionData.transactions
                             .filter(t => t.type === 'SALE')
                             .reduce((sum, t) => sum + t.profit, 0)
                         )}
                       </div>
-                      <div className="text-sm text-green-700 font-medium">Total Profit</div>
+                      <div className="text-xs sm:text-sm text-green-700 font-medium">Total Profit</div>
                     </div>
-                    <div className="text-center p-4 bg-gray-50 rounded-lg">
-                      <div className="text-2xl font-bold text-gray-600">
+                    <div className="text-center p-3 sm:p-4 bg-gray-50 rounded-lg">
+                      <div className="text-xl sm:text-2xl font-bold text-gray-600">
                         {transactionData.transactions
                           .reduce((sum, t) => sum + t.itemCount, 0)}
                       </div>
-                      <div className="text-sm text-gray-700 font-medium">Total Item</div>
+                      <div className="text-xs sm:text-sm text-gray-700 font-medium">Total Item</div>
                     </div>
                   </div>
                 </CardContent>
