@@ -591,7 +591,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                           Checkout
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-md">
+                      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle>Checkout</DialogTitle>
                         </DialogHeader>

@@ -17,6 +17,8 @@ interface ProductVariant {
   id: string;
   stock: number;
   minStock: number;
+  costPrice?: number;
+  sellingPrice?: number;
   barcode?: string;
   size: {
     id: string;
@@ -58,8 +60,9 @@ interface Color {
   hexCode?: string;
 }
 
-export default function ProductDetailPage({ params }: { params: { id: string } }) {
+export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const [productId, setProductId] = useState<string>('');
   const [product, setProduct] = useState<Product | null>(null);
   const [sizes, setSizes] = useState<Size[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
@@ -74,28 +77,43 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const [variantForm, setVariantForm] = useState({
     sizeId: '',
     colorId: '',
-    minStock: '5'
+    minStock: '5',
+    sellingPrice: '',
+    // For new size/color
+    newSizeName: '',
+    newColorName: '',
+    newColorHex: '',
+    useNewSize: false,
+    useNewColor: false
   });
   const [productForm, setProductForm] = useState({
     name: '',
-    description: '',
-    season: '',
-    gender: '',
     costPrice: '',
     sellingPrice: ''
   });
   const [stockAdjustmentReason, setStockAdjustmentReason] = useState('');
   const [originalStock, setOriginalStock] = useState(0);
+  const [isUpdatingProduct, setIsUpdatingProduct] = useState(false);
 
   useEffect(() => {
-    fetchProduct();
-    fetchSizes();
-    fetchColors();
-  }, [params.id]);
+    const initParams = async () => {
+      const { id } = await params;
+      setProductId(id);
+    };
+    initParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (productId) {
+      fetchProduct();
+      fetchSizes();
+      fetchColors();
+    }
+  }, [productId]);
 
   const fetchProduct = async () => {
     try {
-      const response = await fetch(`/api/products/${params.id}`);
+      const response = await fetch(`/api/products/${productId}`);
       if (response.ok) {
         const data = await response.json();
         setProduct(data);
@@ -135,34 +153,120 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     e.preventDefault();
     
     try {
-      const response = await fetch(`/api/products/${params.id}/variants`, {
+      let sizeId = variantForm.sizeId;
+      let colorId = variantForm.colorId;
+
+      // Create new size if needed
+      if (variantForm.useNewSize && variantForm.newSizeName.trim()) {
+        const sizeResponse = await fetch('/api/sizes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: variantForm.newSizeName.trim() }),
+        });
+        
+        if (sizeResponse.ok) {
+          const newSize = await sizeResponse.json();
+          sizeId = newSize.id;
+          // Refresh sizes list
+          fetchSizes();
+        } else {
+          let errorMessage = 'Gagal membuat ukuran baru';
+          try {
+            const errorData = await sizeResponse.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            console.error('Error parsing size response:', e);
+          }
+          toast.error(errorMessage);
+          return;
+        }
+      }
+
+      // Create new color if needed
+      if (variantForm.useNewColor && variantForm.newColorName.trim()) {
+        const colorData: any = { name: variantForm.newColorName.trim() };
+        if (variantForm.newColorHex) {
+          colorData.hexCode = variantForm.newColorHex;
+        }
+
+        const colorResponse = await fetch('/api/colors', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(colorData),
+        });
+        
+        if (colorResponse.ok) {
+          const newColor = await colorResponse.json();
+          colorId = newColor.id;
+          // Refresh colors list
+          fetchColors();
+        } else {
+          let errorMessage = 'Gagal membuat warna baru';
+          try {
+            const errorData = await colorResponse.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            console.error('Error parsing color response:', e);
+          }
+          toast.error(errorMessage);
+          return;
+        }
+      }
+
+      // Validate that we have both size and color
+      if (!sizeId || !colorId) {
+        toast.error('Ukuran dan warna harus dipilih atau dibuat');
+        return;
+      }
+
+      const requestBody: any = {
+        sizeId,
+        colorId,
+        stock: 0, // Selalu mulai dari 0
+        minStock: parseInt(variantForm.minStock),
+      };
+
+      // Only include selling price if provided (cost price always same as product)
+      if (variantForm.sellingPrice && variantForm.sellingPrice.trim() !== '') {
+        requestBody.sellingPrice = parseFloat(variantForm.sellingPrice);
+      }
+
+      const response = await fetch(`/api/products/${productId}/variants`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          sizeId: variantForm.sizeId,
-          colorId: variantForm.colorId,
-          stock: 0, // Selalu mulai dari 0
-          minStock: parseInt(variantForm.minStock),
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
         setVariantForm({
           sizeId: '',
           colorId: '',
-          minStock: '5'
+          minStock: '5',
+          sellingPrice: '',
+          newSizeName: '',
+          newColorName: '',
+          newColorHex: '',
+          useNewSize: false,
+          useNewColor: false
         });
         setAddVariantOpen(false);
         fetchProduct();
+        toast.success('Varian berhasil ditambahkan');
       } else {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.error}`);
+        let errorMessage = 'Gagal menambahkan varian';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          console.error('Error parsing variant response:', e);
+        }
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error('Error adding variant:', error);
-      alert('Gagal menambahkan varian');
+      toast.error('Gagal menambahkan varian');
     }
   };
 
@@ -171,28 +275,37 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     if (!selectedVariant) return;
 
     try {
-      const response = await fetch(`/api/products/${params.id}/variants/${selectedVariant.id}`, {
+      const requestBody: any = {
+        minStock: parseInt(variantForm.minStock),
+      };
+
+      // Only include selling price if provided (cost price always same as product)
+      if (variantForm.sellingPrice && variantForm.sellingPrice.trim() !== '') {
+        requestBody.sellingPrice = parseFloat(variantForm.sellingPrice);
+      } else {
+        requestBody.sellingPrice = null; // Reset to use product price
+      }
+
+      const response = await fetch(`/api/products/${productId}/variants/${selectedVariant.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          minStock: parseInt(variantForm.minStock),
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
         setEditVariantOpen(false);
         setSelectedVariant(null);
         fetchProduct();
-        alert('Minimum stok berhasil diupdate');
+        toast.success('Varian berhasil diperbarui');
       } else {
         const errorData = await response.json();
-        alert(`Error: ${errorData.error}`);
+        toast.error(errorData.error || 'Gagal memperbarui varian');
       }
     } catch (error) {
       console.error('Error updating variant:', error);
-      alert('Gagal mengupdate varian');
+      toast.error('Gagal memperbarui varian');
     }
   };
 
@@ -205,7 +318,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     if (!variantToDelete) return;
 
     try {
-      const response = await fetch(`/api/products/${params.id}/variants/${variantToDelete.id}`, {
+      const response = await fetch(`/api/products/${productId}/variants/${variantToDelete.id}`, {
         method: 'DELETE',
       });
 
@@ -234,9 +347,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     if (product) {
       setProductForm({
         name: product.name,
-        description: product.description || '',
-        season: product.season || '',
-        gender: product.gender || '',
         costPrice: product.costPrice.toString(),
         sellingPrice: product.sellingPrice.toString()
       });
@@ -246,18 +356,16 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
   const handleEditProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsUpdatingProduct(true);
     
     try {
-      const response = await fetch(`/api/products/${params.id}`, {
+      const response = await fetch(`/api/products/${productId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           name: productForm.name,
-          description: productForm.description,
-          season: productForm.season,
-          gender: productForm.gender,
           costPrice: parseFloat(productForm.costPrice),
           sellingPrice: parseFloat(productForm.sellingPrice)
         }),
@@ -274,6 +382,8 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     } catch (error) {
       console.error('Error updating product:', error);
       toast.error('Gagal memperbarui produk');
+    } finally {
+      setIsUpdatingProduct(false);
     }
   };
 
@@ -281,9 +391,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     setEditProductOpen(false);
     setProductForm({
       name: '',
-      description: '',
-      season: '',
-      gender: '',
       costPrice: '',
       sellingPrice: ''
     });
@@ -295,7 +402,13 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     setVariantForm({
       sizeId: variant.size.id,
       colorId: variant.color.id,
-      minStock: variant.minStock.toString()
+      minStock: variant.minStock.toString(),
+      sellingPrice: variant.sellingPrice?.toString() || '',
+      newSizeName: '',
+      newColorName: '',
+      newColorHex: '',
+      useNewSize: false,
+      useNewColor: false
     });
     setStockAdjustmentReason(''); // Reset reason
     setEditVariantOpen(true);
@@ -609,6 +722,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                   <tr className="border-b border-slate-200">
                     <th className="text-left py-4 px-4 font-semibold text-slate-700">Ukuran</th>
                     <th className="text-left py-4 px-4 font-semibold text-slate-700">Warna</th>
+                    <th className="text-center py-4 px-4 font-semibold text-slate-700">Harga Jual</th>
                     <th className="text-center py-4 px-4 font-semibold text-slate-700">Stok</th>
                     <th className="text-center py-4 px-4 font-semibold text-slate-700">Min. Stok</th>
                     <th className="text-left py-4 px-4 font-semibold text-slate-700">Barcode</th>
@@ -640,6 +754,11 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                           </div>
                           <span className="font-medium text-slate-700">{variant.color.name}</span>
                         </div>
+                      </td>
+                      <td className="text-center py-4 px-4">
+                        <span className="text-green-600 font-bold">
+                          Rp {(variant.sellingPrice || product.sellingPrice).toLocaleString()}
+                        </span>
                       </td>
                       <td className="text-center py-4 px-4">
                         <span className={`font-bold text-lg ${
@@ -714,9 +833,211 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         </CardContent>
       </Card>
 
+      {/* Add Variant Dialog */}
+      <Dialog open={addVariantOpen} onOpenChange={setAddVariantOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-slate-800">Tambah Varian Baru</DialogTitle>
+            <p className="text-sm text-slate-600">Buat kombinasi ukuran dan warna baru untuk produk</p>
+          </DialogHeader>
+          <form onSubmit={handleAddVariant} className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="size">Ukuran</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="existing-size"
+                      name="size-option"
+                      checked={!variantForm.useNewSize}
+                      onChange={() => setVariantForm(prev => ({...prev, useNewSize: false, newSizeName: ''}))}
+                      className="text-blue-600"
+                    />
+                    <label htmlFor="existing-size" className="text-sm font-medium">Pilih dari yang ada</label>
+                  </div>
+                  {!variantForm.useNewSize && (
+                    <Select value={variantForm.sizeId} onValueChange={(value) => setVariantForm(prev => ({...prev, sizeId: value}))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih ukuran" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sizes.map((size) => (
+                          <SelectItem key={size.id} value={size.id}>
+                            {size.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="new-size"
+                      name="size-option"
+                      checked={variantForm.useNewSize}
+                      onChange={() => setVariantForm(prev => ({...prev, useNewSize: true, sizeId: ''}))}
+                      className="text-blue-600"
+                    />
+                    <label htmlFor="new-size" className="text-sm font-medium">Tambah ukuran baru</label>
+                  </div>
+                  {variantForm.useNewSize && (
+                    <Input
+                      placeholder="Contoh: XL, 42, 32"
+                      value={variantForm.newSizeName}
+                      onChange={(e) => setVariantForm(prev => ({...prev, newSizeName: e.target.value}))}
+                      required={variantForm.useNewSize}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="color">Warna</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="existing-color"
+                      name="color-option"
+                      checked={!variantForm.useNewColor}
+                      onChange={() => setVariantForm(prev => ({...prev, useNewColor: false, newColorName: '', newColorHex: ''}))}
+                      className="text-blue-600"
+                    />
+                    <label htmlFor="existing-color" className="text-sm font-medium">Pilih dari yang ada</label>
+                  </div>
+                  {!variantForm.useNewColor && (
+                    <Select value={variantForm.colorId} onValueChange={(value) => setVariantForm(prev => ({...prev, colorId: value}))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih warna" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {colors.map((color) => (
+                          <SelectItem key={color.id} value={color.id}>
+                            <div className="flex items-center gap-2">
+                              {color.hexCode && (
+                                <div 
+                                  className="w-4 h-4 rounded-full border border-gray-300"
+                                  style={{ backgroundColor: color.hexCode }}
+                                />
+                              )}
+                              {color.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="new-color"
+                      name="color-option"
+                      checked={variantForm.useNewColor}
+                      onChange={() => setVariantForm(prev => ({...prev, useNewColor: true, colorId: ''}))}
+                      className="text-blue-600"
+                    />
+                    <label htmlFor="new-color" className="text-sm font-medium">Tambah warna baru</label>
+                  </div>
+                  {variantForm.useNewColor && (
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Nama warna (contoh: Merah Marun)"
+                        value={variantForm.newColorName}
+                        onChange={(e) => setVariantForm(prev => ({...prev, newColorName: e.target.value}))}
+                        required={variantForm.useNewColor}
+                      />
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="color"
+                          value={variantForm.newColorHex}
+                          onChange={(e) => setVariantForm(prev => ({...prev, newColorHex: e.target.value}))}
+                          className="w-16 h-10 border rounded cursor-pointer"
+                        />
+                        <Input
+                          placeholder="Kode hex (opsional)"
+                          value={variantForm.newColorHex}
+                          onChange={(e) => setVariantForm(prev => ({...prev, newColorHex: e.target.value}))}
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="variantSellingPrice">Harga Jual (Rp)</Label>
+                <Input
+                  id="variantSellingPrice"
+                  type="number"
+                  value={variantForm.sellingPrice}
+                  onChange={(e) => setVariantForm(prev => ({...prev, sellingPrice: e.target.value}))}
+                  placeholder={`Default: ${product?.sellingPrice.toLocaleString()}`}
+                  min="0"
+                  step="1000"
+                />
+                <p className="text-xs text-slate-500">Kosongkan untuk menggunakan harga produk</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="minStock">Stok Minimum</Label>
+                <Input
+                  id="minStock"
+                  type="number"
+                  value={variantForm.minStock}
+                  onChange={(e) => setVariantForm(prev => ({...prev, minStock: e.target.value}))}
+                  placeholder="5"
+                  min="0"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+              <p className="font-medium text-blue-900 text-sm mb-2">Info Stok Awal</p>
+              <p className="text-xs text-blue-600">
+                Stok awal varian akan dimulai dari 0. Gunakan fitur Produksi atau Stock Adjustment untuk menambah stok.
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setAddVariantOpen(false);
+                  setVariantForm({
+                    sizeId: '',
+                    colorId: '',
+                    minStock: '5',
+                    sellingPrice: '',
+                    newSizeName: '',
+                    newColorName: '',
+                    newColorHex: '',
+                    useNewSize: false,
+                    useNewColor: false
+                  });
+                }}
+              >
+                Batal
+              </Button>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Tambah Varian
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit Variant Dialog */}
       <Dialog open={editVariantOpen} onOpenChange={setEditVariantOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-slate-800">Edit Varian</DialogTitle>
             <p className="text-sm text-slate-600">Ubah pengaturan untuk varian produk</p>
@@ -760,6 +1081,20 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Harga Jual (Rp)</label>
+                <Input
+                  type="number"
+                  value={variantForm.sellingPrice}
+                  onChange={(e) => setVariantForm(prev => ({...prev, sellingPrice: e.target.value}))}
+                  placeholder={`Default: ${product?.sellingPrice.toLocaleString()}`}
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  min="0"
+                  step="1000"
+                />
+                <p className="text-xs text-slate-500">Kosongkan untuk menggunakan harga produk</p>
               </div>
 
               <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
@@ -889,50 +1224,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="productDescription">Deskripsi</Label>
-              <Textarea
-                id="productDescription"
-                value={productForm.description}
-                onChange={(e) => setProductForm({...productForm, description: e.target.value})}
-                placeholder="Masukkan deskripsi produk"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="season">Season</Label>
-                <Select value={productForm.season} onValueChange={(value) => setProductForm({...productForm, season: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih season" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Tidak ada</SelectItem>
-                    <SelectItem value="SPRING">Spring</SelectItem>
-                    <SelectItem value="SUMMER">Summer</SelectItem>
-                    <SelectItem value="FALL">Fall</SelectItem>
-                    <SelectItem value="WINTER">Winter</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="gender">Gender</Label>
-                <Select value={productForm.gender} onValueChange={(value) => setProductForm({...productForm, gender: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Tidak ada</SelectItem>
-                    <SelectItem value="MALE">Male</SelectItem>
-                    <SelectItem value="FEMALE">Female</SelectItem>
-                    <SelectItem value="UNISEX">Unisex</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="costPrice">Harga Modal (Rp)</Label>
@@ -968,12 +1259,26 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                 type="button" 
                 variant="outline" 
                 onClick={closeEditProduct}
+                disabled={isUpdatingProduct}
               >
                 Batal
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                <Edit className="h-4 w-4 mr-2" />
-                Simpan Perubahan
+              <Button 
+                type="submit" 
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={isUpdatingProduct}
+              >
+                {isUpdatingProduct ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Menyimpan...
+                  </>
+                ) : (
+                  <>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Simpan Perubahan
+                  </>
+                )}
               </Button>
             </div>
           </form>

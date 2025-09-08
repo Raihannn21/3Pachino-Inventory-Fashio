@@ -30,8 +30,8 @@ interface Transaction {
 interface TransactionItem {
   id: string;
   quantity: number;
-  price: number;
-  subtotal: number;
+  unitPrice: number;
+  totalPrice: number;
   variant?: {
     id: string;
     size: { name: string };
@@ -89,20 +89,30 @@ export default function CustomerDetailPage() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | null | undefined) => {
+    const validAmount = Number(amount) || 0;
+    if (isNaN(validAmount)) return 'Rp 0';
+    
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
-    }).format(amount);
+    }).format(validAmount);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+  const formatDate = (dateString: string | Date) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Tanggal tidak valid';
+      
+      return date.toLocaleDateString('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } catch (error) {
+      return 'Tanggal tidak valid';
+    }
   };
 
   const getMonthlyChartData = () => {
@@ -111,8 +121,9 @@ export default function CustomerDetailPage() {
     return Object.entries(stats.monthlySpending)
       .map(([month, amount]) => ({
         month: new Date(month + '-01').toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }),
-        amount,
+        amount: Number(amount) || 0,
       }))
+      .filter(item => !isNaN(item.amount))
       .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
   };
 
@@ -153,7 +164,7 @@ export default function CustomerDetailPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold">{customer.name}</h1>
-          <p className="text-gray-600">Purchase History & Analytics</p>
+          <p className="text-gray-600">Riwayat Pembelian & Analitik</p>
         </div>
       </div>
 
@@ -161,7 +172,7 @@ export default function CustomerDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Belanja</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -195,7 +206,7 @@ export default function CustomerDetailPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalItems}</div>
+            <div className="text-2xl font-bold">{Number(stats.totalItems) || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Produk dibeli
             </p>
@@ -221,15 +232,15 @@ export default function CustomerDetailPage() {
       {/* Tabs Content */}
       <Tabs defaultValue="history" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="history">Purchase History</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="favorites">Favorite Products</TabsTrigger>
+          <TabsTrigger value="history">Riwayat Pembelian</TabsTrigger>
+          <TabsTrigger value="analytics">Analitik</TabsTrigger>
+          <TabsTrigger value="favorites">Produk Favorit</TabsTrigger>
         </TabsList>
 
         <TabsContent value="history" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Recent Transactions</CardTitle>
+              <CardTitle>Transaksi Terbaru</CardTitle>
               <CardDescription>
                 10 transaksi terakhir dari customer ini
               </CardDescription>
@@ -280,10 +291,10 @@ export default function CustomerDetailPage() {
                             </div>
                             <div className="text-right">
                               <p className="font-medium">
-                                {item.quantity}x {formatCurrency(item.price)}
+                                {Number(item.quantity) || 0}x {formatCurrency(item.unitPrice)}
                               </p>
                               <p className="text-sm text-gray-600">
-                                {formatCurrency(item.subtotal)}
+                                {formatCurrency(item.totalPrice)}
                               </p>
                             </div>
                           </div>
@@ -300,7 +311,7 @@ export default function CustomerDetailPage() {
         <TabsContent value="analytics" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Monthly Spending Trend</CardTitle>
+              <CardTitle>Tren Belanja Bulanan</CardTitle>
               <CardDescription>
                 Pola belanja customer dalam 6 bulan terakhir
               </CardDescription>
@@ -332,7 +343,7 @@ export default function CustomerDetailPage() {
         <TabsContent value="favorites" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Favorite Products</CardTitle>
+              <CardTitle>Produk Favorit</CardTitle>
               <CardDescription>
                 Produk yang paling sering dibeli customer ini
               </CardDescription>
@@ -364,7 +375,7 @@ export default function CustomerDetailPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-blue-600">
-                        {favorite.count}
+                        {Number(favorite.count) || 0}
                       </p>
                       <p className="text-sm text-gray-600">kali dibeli</p>
                     </div>

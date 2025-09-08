@@ -61,34 +61,50 @@ export async function PUT(
       sellingPrice,
     } = body;
 
-    // Check if SKU already exists (exclude current product)
-    const existingProduct = await prisma.product.findFirst({
-      where: { 
-        sku,
-        NOT: { id }
-      },
+    // Get current product data
+    const currentProduct = await prisma.product.findUnique({
+      where: { id },
     });
 
-    if (existingProduct) {
+    if (!currentProduct) {
       return NextResponse.json(
-        { error: 'SKU already exists' },
-        { status: 400 }
+        { error: 'Product not found' },
+        { status: 404 }
       );
     }
 
+    // Check if SKU already exists (exclude current product) - only if SKU is being updated
+    if (sku && sku !== currentProduct.sku) {
+      const existingProduct = await prisma.product.findFirst({
+        where: { 
+          sku,
+          NOT: { id }
+        },
+      });
+
+      if (existingProduct) {
+        return NextResponse.json(
+          { error: 'SKU already exists' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Build update data object with only provided fields
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (sku !== undefined) updateData.sku = sku;
+    if (description !== undefined) updateData.description = description;
+    if (season !== undefined && season !== null && season !== '') updateData.season = season;
+    if (gender !== undefined && gender !== null && gender !== '') updateData.gender = gender;
+    if (categoryId !== undefined) updateData.categoryId = categoryId;
+    if (brandId !== undefined) updateData.brandId = brandId;
+    if (costPrice !== undefined) updateData.costPrice = parseFloat(costPrice);
+    if (sellingPrice !== undefined) updateData.sellingPrice = parseFloat(sellingPrice);
+
     const product = await prisma.product.update({
       where: { id },
-      data: {
-        name,
-        sku,
-        description,
-        season,
-        gender,
-        categoryId,
-        brandId,
-        costPrice: parseFloat(costPrice),
-        sellingPrice: parseFloat(sellingPrice),
-      },
+      data: updateData,
       include: {
         category: true,
         brand: true,

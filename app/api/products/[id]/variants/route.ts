@@ -9,7 +9,7 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { sizeId, colorId, stock, minStock } = body;
+    const { sizeId, colorId, stock, minStock, sellingPrice } = body;
 
     // Check if variant already exists
     const existingVariant = await prisma.productVariant.findFirst({
@@ -69,15 +69,23 @@ export async function POST(
       );
     }
 
+    // Prepare variant data
+    const variantData: any = {
+      productId: id,
+      sizeId,
+      colorId,
+      stock: parseInt(stock),
+      minStock: parseInt(minStock),
+      barcode: barcode,
+    };
+
+    // TODO: Add selling price when Prisma client is regenerated
+    // if (sellingPrice !== undefined && sellingPrice !== null) {
+    //   variantData.sellingPrice = parseFloat(sellingPrice);
+    // }
+
     const variant = await prisma.productVariant.create({
-      data: {
-        productId: id,
-        sizeId,
-        colorId,
-        stock: parseInt(stock),
-        minStock: parseInt(minStock),
-        barcode: barcode,
-      },
+      data: variantData,
       include: {
         size: true,
         color: true,

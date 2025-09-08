@@ -58,13 +58,19 @@ export async function GET(
 
     // Hitung statistik customer
     const transactions = customer.transactions;
-    const totalSpent = transactions.reduce((sum: number, t: any) => sum + Number(t.totalAmount), 0);
+    const totalSpent = transactions.reduce((sum: number, t: any) => {
+      const amount = Number(t.totalAmount) || 0;
+      return sum + amount;
+    }, 0);
     const totalTransactions = transactions.length;
     const avgTransactionValue = totalTransactions > 0 ? totalSpent / totalTransactions : 0;
     
     // Hitung total items yang pernah dibeli
     const totalItems = transactions.reduce((sum: number, t: any) => 
-      sum + t.items.reduce((itemSum: number, item: any) => itemSum + item.quantity, 0), 0
+      sum + t.items.reduce((itemSum: number, item: any) => {
+        const quantity = Number(item.quantity) || 0;
+        return itemSum + quantity;
+      }, 0), 0
     );
 
     // Cari produk favorit (yang paling sering dibeli)
@@ -83,7 +89,7 @@ export async function GET(
           };
         }
         
-        productFrequency[productKey].count += item.quantity;
+        productFrequency[productKey].count += Number(item.quantity) || 0;
         const transactionDate = new Date(transaction.transactionDate);
         if (transactionDate > productFrequency[productKey].lastPurchase) {
           productFrequency[productKey].lastPurchase = transactionDate;
@@ -114,7 +120,7 @@ export async function GET(
         if (!monthlySpending[monthKey]) {
           monthlySpending[monthKey] = 0;
         }
-        monthlySpending[monthKey] += Number(transaction.totalAmount);
+        monthlySpending[monthKey] += Number(transaction.totalAmount) || 0;
       }
     });
 

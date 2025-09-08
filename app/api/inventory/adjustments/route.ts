@@ -18,7 +18,13 @@ export async function POST(request: NextRequest) {
     const variant = await prisma.productVariant.findUnique({
       where: { id: variantId },
       include: {
-        product: { select: { name: true } },
+        product: { 
+          select: { 
+            name: true, 
+            costPrice: true,
+            sellingPrice: true 
+          } 
+        },
         size: { select: { name: true } },
         color: { select: { name: true } }
       }
@@ -63,30 +69,80 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create stock adjustment record
-    const adjustment = await prisma.stockAdjustment.create({
-      data: {
-        variantId,
-        adjustmentType,
-        quantity,
-        stockBefore: currentStock,
-        stockAfter: newStock,
-        reason,
-        notes,
-        createdBy: firstUser.id, // Use actual user ID
-      }
-    });
+    // Use Prisma transaction for atomic operations
+    const result = await prisma.$transaction(async (tx) => {
+      // Create stock adjustment record
+      const adjustment = await tx.stockAdjustment.create({
+        data: {
+          variantId,
+          adjustmentType,
+          quantity,
+          stockBefore: currentStock,
+          stockAfter: newStock,
+          reason,
+          notes,
+          createdBy: firstUser.id,
+        }
+      });
 
-    // Update variant stock
-    await prisma.productVariant.update({
-      where: { id: variantId },
-      data: { stock: newStock }
+      // Update variant stock
+      await tx.productVariant.update({
+        where: { id: variantId },
+        data: { stock: newStock }
+      });
+
+      // If this is a production adjustment, create a production order record
+      if (reason === 'PRODUCTION' && adjustmentType === 'INCREASE') {
+        const invoiceNumber = `PROD-ADJ-${Date.now()}`;
+        
+        // Calculate unit price (use variant's cost price or product's cost price)
+        const unitPrice = variant.costPrice || Number(variant.product.costPrice) || 0;
+        const totalAmount = unitPrice * quantity;
+
+        // Create production order transaction
+        const productionOrder = await tx.transaction.create({
+          data: {
+            type: 'PURCHASE', // Use PURCHASE type for production orders
+            invoiceNumber,
+            totalAmount,
+            notes: `Auto-generated from stock adjustment: ${notes || 'Produksi barang jadi'}`,
+            status: 'COMPLETED', // Mark as completed since stock already adjusted
+            userId: firstUser.id,
+            items: {
+              create: {
+                productId: variant.productId,
+                variantId: variant.id,
+                quantity,
+                unitPrice,
+                totalPrice: totalAmount
+              }
+            }
+          }
+        });
+
+        // Create stock movement record
+        await tx.stockMovement.create({
+          data: {
+            variantId,
+            type: 'IN',
+            quantity,
+            reason: 'PRODUCTION',
+            reference: invoiceNumber,
+            createdBy: firstUser.id
+          }
+        });
+
+        return { adjustment, productionOrder };
+      }
+
+      return { adjustment };
     });
 
     return NextResponse.json({
       success: true,
-      adjustment,
-      message: `Stock ${adjustmentType === 'INCREASE' ? 'bertambah' : 'berkurang'} ${quantity} unit`
+      adjustment: result.adjustment,
+      productionOrder: result.productionOrder,
+      message: `Stock ${adjustmentType === 'INCREASE' ? 'bertambah' : 'berkurang'} ${quantity} unit${reason === 'PRODUCTION' && adjustmentType === 'INCREASE' ? '. Production order telah dibuat otomatis.' : ''}`
     });
 
   } catch (error) {

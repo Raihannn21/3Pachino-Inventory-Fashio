@@ -12,8 +12,7 @@ import {
   Store,
   CreditCard,
   Truck,
-  Building2,
-  ArrowUpDown
+  Building2
 } from 'lucide-react';
 
 const navigation = [
@@ -22,7 +21,6 @@ const navigation = [
   { name: 'Penjualan', href: '/sales', icon: ShoppingCart },
   { name: 'Produk', href: '/products', icon: Package },
   { name: 'Inventory', href: '/inventory', icon: Store },
-  { name: 'Stock Adjustments', href: '/inventory/adjustments', icon: ArrowUpDown },
   { name: 'Produksi', href: '/purchases', icon: Truck },
   { name: 'Customers', href: '/suppliers', icon: Building2 },
   { name: 'Pengaturan', href: '/settings', icon: Settings },

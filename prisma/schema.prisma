@@ -129,16 +129,18 @@ enum Gender {
 }
 
 model ProductVariant {
-  id        String   @id @default(cuid())
-  productId String
-  sizeId    String
-  colorId   String
-  barcode   String?  @unique
-  stock     Int      @default(0)
-  minStock  Int      @default(5)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  productId   String
+  sizeId      String
+  colorId     String
+  barcode     String?  @unique
+  stock       Int      @default(0)
+  minStock    Int      @default(5)
+  costPrice   Float?   // Harga modal per variant, jika null maka gunakan harga produk
+  sellingPrice Float?  // Harga jual per variant, jika null maka gunakan harga produk
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)

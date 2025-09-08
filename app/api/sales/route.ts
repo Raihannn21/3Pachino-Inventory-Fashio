@@ -195,18 +195,24 @@ export async function POST(request: NextRequest) {
       }
 
       // 1. Buat transaksi
+      const transactionData: any = {
+        type: 'SALE',
+        invoiceNumber,
+        totalAmount: total,
+        notes: notes || undefined,
+        userId: defaultUser.id,
+        items: {
+          create: transactionItems
+        }
+      };
+
+      // Hanya set supplierId jika ada customer
+      if (finalCustomerId) {
+        transactionData.supplierId = finalCustomerId;
+      }
+
       const transaction = await tx.transaction.create({
-        data: {
-          type: 'SALE',
-          invoiceNumber,
-          supplierId: finalCustomerId, // Set customer ID
-          totalAmount: total,
-          notes: notes || undefined,
-          userId: defaultUser.id,
-          items: {
-            create: transactionItems
-          }
-        },
+        data: transactionData,
         include: {
           supplier: true, // Include customer info
           items: {

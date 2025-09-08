@@ -8,7 +8,7 @@ export async function PUT(
   try {
     const { id, variantId } = await params;
     const body = await request.json();
-    const { minStock } = body;
+    const { minStock, sellingPrice } = body;
 
     // Get current variant
     const currentVariant = await prisma.productVariant.findUnique({
@@ -22,12 +22,20 @@ export async function PUT(
       );
     }
 
-    // Update only minStock (stock managed by production/adjustment systems)
+    // Build update data
+    const updateData: any = {
+      minStock: parseInt(minStock),
+    };
+
+    // Update selling price if provided (cost price always uses product price)
+    if (sellingPrice !== undefined) {
+      updateData.sellingPrice = sellingPrice === null ? null : parseFloat(sellingPrice);
+    }
+
+    // Update variant
     const variant = await prisma.productVariant.update({
       where: { id: variantId },
-      data: {
-        minStock: parseInt(minStock),
-      },
+      data: updateData,
       include: {
         size: true,
         color: true,
