@@ -104,10 +104,51 @@ interface TransactionData {
   period: number;
 }
 
+// Move StatCard outside of Dashboard component to prevent recreation on every render
+const StatCard = ({ 
+  title, 
+  value, 
+  description, 
+  icon: Icon, 
+  trend, 
+  trendValue 
+}: {
+  title: string;
+  value: string | number;
+  description: string;
+  icon: any;
+  trend?: 'up' | 'down';
+  trendValue?: string;
+}) => (
+  <Card className="border-0 shadow-sm">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3">
+      <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">{title}</CardTitle>
+      <Icon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+    </CardHeader>
+    <CardContent className="pt-0">
+      <div className="text-lg sm:text-2xl font-bold text-gray-900 break-all">{value}</div>
+      <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+        {trend && (
+          <>
+            {trend === 'up' ? (
+              <TrendingUp className="h-3 w-3 text-green-500 flex-shrink-0" />
+            ) : (
+              <TrendingDown className="h-3 w-3 text-red-500 flex-shrink-0" />
+            )}
+            <span className={trend === 'up' ? 'text-green-500' : 'text-red-500'}>
+              {trendValue}
+            </span>
+          </>
+        )}
+        <span className="break-words">{description}</span>
+      </p>
+    </CardContent>
+  </Card>
+);
+
 export default function Dashboard() {
-  // Permission check
+  // All hooks must be declared first, before any conditional logic
   const { hasPermission, isLoading: permissionLoading } = usePermission('dashboard.view');
-  
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [transactionData, setTransactionData] = useState<TransactionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,23 +157,7 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [transactionFilter, setTransactionFilter] = useState<string>('ALL'); // ALL, SALE, PURCHASE
 
-  // Show loading while checking permissions
-  if (permissionLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Shield className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Memverifikasi akses...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If no permission, component will redirect automatically via usePermission hook
-  if (hasPermission === false) {
-    return null;
-  }
-
+  // Define functions that will be used in useEffect
   const fetchAnalytics = async () => {
     try {
       setRefreshing(true);
@@ -184,10 +209,30 @@ export default function Dashboard() {
     }
   };
 
+  // useEffect must be called before any conditional returns
   useEffect(() => {
-    fetchAnalytics();
-    fetchTransactions();
-  }, [period, dateRange, transactionFilter]);
+    if (hasPermission) {
+      fetchAnalytics();
+      fetchTransactions();
+    }
+  }, [period, dateRange, transactionFilter, hasPermission]);
+
+  // Show loading while checking permissions
+  if (permissionLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Shield className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Memverifikasi akses...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no permission, component will redirect automatically via usePermission hook
+  if (hasPermission === false) {
+    return null;
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -229,47 +274,6 @@ export default function Dashboard() {
       setPeriod('');
     }
   };
-
-  const StatCard = ({ 
-    title, 
-    value, 
-    description, 
-    icon: Icon, 
-    trend, 
-    trendValue 
-  }: {
-    title: string;
-    value: string | number;
-    description: string;
-    icon: any;
-    trend?: 'up' | 'down';
-    trendValue?: string;
-  }) => (
-    <Card className="border-0 shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3">
-        <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-gray-400 flex-shrink-0" />
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="text-lg sm:text-2xl font-bold text-gray-900 break-all">{value}</div>
-        <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-          {trend && (
-            <>
-              {trend === 'up' ? (
-                <TrendingUp className="h-3 w-3 text-green-500 flex-shrink-0" />
-              ) : (
-                <TrendingDown className="h-3 w-3 text-red-500 flex-shrink-0" />
-              )}
-              <span className={trend === 'up' ? 'text-green-500' : 'text-red-500'}>
-                {trendValue}
-              </span>
-            </>
-          )}
-          <span className="break-words">{description}</span>
-        </p>
-      </CardContent>
-    </Card>
-  );
 
   if (loading) {
     return (
