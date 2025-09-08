@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SimpleLineChart, SimpleBarChart, SimplePieChart, SimpleComposedChart } from '@/components/charts/ChartComponents';
 import { exportTransactionsToExcel } from '@/lib/excel-export';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { usePermission } from '@/hooks/usePermission';
 import { 
   Package, 
   ShoppingCart, 
@@ -20,7 +21,8 @@ import {
   RefreshCw,
   Calendar,
   Download,
-  LayoutDashboard
+  LayoutDashboard,
+  Shield
 } from 'lucide-react';
 
 interface AnalyticsData {
@@ -103,6 +105,9 @@ interface TransactionData {
 }
 
 export default function Dashboard() {
+  // Permission check
+  const { hasPermission, isLoading: permissionLoading } = usePermission('dashboard.view');
+  
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [transactionData, setTransactionData] = useState<TransactionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -110,6 +115,23 @@ export default function Dashboard() {
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [transactionFilter, setTransactionFilter] = useState<string>('ALL'); // ALL, SALE, PURCHASE
+
+  // Show loading while checking permissions
+  if (permissionLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Shield className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Memverifikasi akses...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no permission, component will redirect automatically via usePermission hook
+  if (hasPermission === false) {
+    return null;
+  }
 
   const fetchAnalytics = async () => {
     try {

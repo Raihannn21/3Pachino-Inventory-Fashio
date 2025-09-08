@@ -122,26 +122,33 @@ export default function PermissionsPage() {
             setSaving(true);
             setSavingRole(role);
 
-            const rolePermissionsToSave = permissions.map(permission => ({
-                role,
+            // Prepare permissions data for this role only
+            const permissionsData = permissions.map(permission => ({
                 permissionId: permission.id,
                 granted: rolePermissions[role].has(permission.id)
             }));
 
-            const response = await fetch('/api/role-permissions', {
-                method: 'POST',
+            console.log(`Saving ${permissionsData.length} permissions for role: ${role}`);
+            console.log(`Granted permissions: ${permissionsData.filter(p => p.granted).length}`);
+
+            const response = await fetch(`/api/role-permissions/${role}`, {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    rolePermissions: rolePermissionsToSave
+                    permissions: permissionsData
                 }),
             });
 
+            const result = await response.json();
+
             if (response.ok) {
+                console.log(`Success:`, result);
                 toast.success(`✅ Permissions untuk ${ROLES.find(r => r.value === role)?.label} berhasil disimpan`);
             } else {
-                throw new Error('Failed to save permissions');
+                console.error('API Error:', result);
+                throw new Error(result.error || 'Failed to save permissions');
             }
         } catch (error) {
             console.error('Error saving permissions:', error);
