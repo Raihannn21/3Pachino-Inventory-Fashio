@@ -11,25 +11,14 @@ export default withAuth(
         if (req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/') {
           return true;
         }
-        
-        // Admin routes require SUPER_ADMIN role
-        if (req.nextUrl.pathname.startsWith('/admin')) {
-          return token?.role === 'SUPER_ADMIN';
+
+        // Require authentication for all protected routes
+        if (!token) {
+          return false;
         }
-        
-        // Dashboard and other protected routes require authentication
-        if (req.nextUrl.pathname.startsWith('/dashboard') || 
-            req.nextUrl.pathname.startsWith('/pos') ||
-            req.nextUrl.pathname.startsWith('/sales') ||
-            req.nextUrl.pathname.startsWith('/products') ||
-            req.nextUrl.pathname.startsWith('/inventory') ||
-            req.nextUrl.pathname.startsWith('/purchases') ||
-            req.nextUrl.pathname.startsWith('/suppliers') ||
-            req.nextUrl.pathname.startsWith('/customers') ||
-            req.nextUrl.pathname.startsWith('/reports')) {
-          return !!token;
-        }
-        
+
+        // For now, just check if user is authenticated
+        // Permission checking will be done at component level
         return true;
       },
     },

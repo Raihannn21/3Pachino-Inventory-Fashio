@@ -66,10 +66,13 @@ export default function AdminPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/admin/users');
+      const response = await fetch('/api/users');
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
+      } else {
+        console.error('Failed to fetch users:', response.status);
+        toast.error('Gagal memuat data user');
       }
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -83,7 +86,7 @@ export default function AdminPage() {
     e.preventDefault();
     
     try {
-      const response = await fetch('/api/admin/users', {
+      const response = await fetch('/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -92,13 +95,14 @@ export default function AdminPage() {
       });
 
       if (response.ok) {
+        const data = await response.json();
         toast.success('User berhasil ditambahkan');
         setIsAddDialogOpen(false);
         setFormData({ name: '', email: '', password: '', role: 'STAFF' });
         fetchUsers();
       } else {
         const error = await response.json();
-        toast.error(error.message || 'Gagal menambahkan user');
+        toast.error(error.error || 'Gagal menambahkan user');
       }
     } catch (error) {
       console.error('Error adding user:', error);

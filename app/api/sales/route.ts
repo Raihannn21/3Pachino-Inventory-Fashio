@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
 
 // GET - Ambil semua transaksi penjualan
@@ -79,6 +81,15 @@ export async function GET(request: NextRequest) {
 // POST - Buat transaksi penjualan baru
 export async function POST(request: NextRequest) {
   try {
+    // Get current session
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Silakan login terlebih dahulu' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { 
       customerId, // Add customer ID
@@ -90,6 +101,26 @@ export async function POST(request: NextRequest) {
       discount = 0,
       tax = 0
     } = body;
+
+    // Validasi input
+    if (!items || items.length === 0) {
+      return NextResponse.json(
+        { error: 'Items tidak boleh kosong' },
+        { status: 400 }
+      );
+    }
+
+    // Get current user from database
+    const currentUser = await prisma.user.findUnique({
+      where: { email: session.user.email! }
+    });
+
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'User tidak ditemukan' },
+        { status: 404 }
+      );
+    }
 
     // Validasi input
     if (!items || items.length === 0) {
@@ -149,22 +180,6 @@ export async function POST(request: NextRequest) {
     // Generate invoice number
     const invoiceNumber = `INV-${Date.now()}`;
 
-    // Pastikan ada user default untuk transaksi
-    let defaultUser = await prisma.user.findFirst({
-      where: { email: 'admin@kelola-inventory.com' }
-    });
-
-    if (!defaultUser) {
-      defaultUser = await prisma.user.create({
-        data: {
-          email: 'admin@kelola-inventory.com',
-          name: 'Administrator',
-          password: 'hashed_password', // TODO: Hash proper password
-          role: 'OWNER'
-        }
-      });
-    }
-
     // Buat transaksi dengan Prisma transaction
     const result = await prisma.$transaction(async (tx) => {
       // Handle customer - buat customer baru jika diperlukan
@@ -200,7 +215,7 @@ export async function POST(request: NextRequest) {
         invoiceNumber,
         totalAmount: total,
         notes: notes || undefined,
-        userId: defaultUser.id,
+        userId: currentUser.id,
         items: {
           create: transactionItems
         }

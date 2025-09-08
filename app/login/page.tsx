@@ -49,12 +49,8 @@ export default function LoginPage() {
           description: `Selamat datang, ${session?.user?.name || 'User'}!`
         });
 
-        // Redirect based on role
-        if (session?.user?.role === 'SUPER_ADMIN') {
-          router.push('/admin');
-        } else {
-          router.push('/dashboard');
-        }
+        // Redirect to dashboard for all users
+        router.push('/dashboard');
       }
     } catch (error) {
       console.error('Login error:', error);
