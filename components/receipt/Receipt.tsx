@@ -417,6 +417,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                   alt="3PACHINO Watermark" 
                   width={500}
                   height={500}
+                  unoptimized
                   className="w-full h-full object-contain transform scale-200"
                   style={{ minWidth: '500px', minHeight: '500px' }}
                 />

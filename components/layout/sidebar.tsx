@@ -48,7 +48,7 @@ export default function Sidebar() {
     if (isMobileMenuOpen) {
       handleCloseMobileMenu();
     }
-  }, [pathname, isMobileMenuOpen]);
+  }, [pathname]);
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -185,7 +185,15 @@ export default function Sidebar() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={isMobileMenuOpen ? handleCloseMobileMenu : handleOpenMobileMenu}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (isMobileMenuOpen) {
+              handleCloseMobileMenu();
+            } else {
+              handleOpenMobileMenu();
+            }
+          }}
           className="p-2"
         >
           <Menu className="h-6 w-6" />

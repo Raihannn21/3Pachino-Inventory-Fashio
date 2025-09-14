@@ -2,18 +2,11 @@
 const nextConfig = {
   serverExternalPackages: ['@prisma/client', 'bcryptjs'],
   images: {
+    // Allow optimization of local images
+    formats: ['image/webp', 'image/avif'],
+    // Optional: Add remote patterns if needed for external images
     remotePatterns: [
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '3000',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'localhost',
-        pathname: '/**',
-      },
+      // Add external image domains here if needed
     ],
   },
 }

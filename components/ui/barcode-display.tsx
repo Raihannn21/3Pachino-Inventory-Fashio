@@ -126,6 +126,7 @@ export default function BarcodeDisplay({ variant }: BarcodeDisplayProps) {
                   alt="QR Code" 
                   width={192}
                   height={192}
+                  unoptimized
                   className="w-48 h-48 border rounded"
                 />
               ) : (
