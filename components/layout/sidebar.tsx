@@ -12,7 +12,6 @@ import {
   LayoutDashboard, 
   Package, 
   ShoppingCart, 
-  Settings,
   Store,
   CreditCard,
   Truck,
@@ -32,7 +31,6 @@ const navigation = [
   { name: 'Inventory', href: '/inventory', icon: Store, permission: 'inventory.view' },
   { name: 'Produksi', href: '/purchases', icon: Truck, permission: 'purchases.view' },
   { name: 'Customers', href: '/suppliers', icon: Building2, permission: 'suppliers.view' },
-  { name: 'Pengaturan', href: '/settings', icon: Settings, permission: null }, // No specific permission
   { name: 'Manajemen User', href: '/users', icon: Users, permission: 'users.view' },
   { name: 'Hak Akses', href: '/permissions', icon: Shield, permission: 'admin.permissions' },
 ];
