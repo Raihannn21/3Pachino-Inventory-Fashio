@@ -8,6 +8,12 @@ const DEFAULT_PERMISSIONS = [
   // Dashboard permissions
   { name: 'dashboard.view', category: 'Dashboard', description: 'View dashboard' },
   
+  // POS permissions
+  { name: 'pos.view', category: 'POS', description: 'Access POS system' },
+  { name: 'pos.create', category: 'POS', description: 'Create POS transactions' },
+  { name: 'pos.edit', category: 'POS', description: 'Edit POS transactions' },
+  { name: 'pos.delete', category: 'POS', description: 'Delete POS transactions' },
+  
   // Product permissions
   { name: 'products.view', category: 'Products', description: 'View products' },
   { name: 'products.create', category: 'Products', description: 'Create products' },
@@ -46,6 +52,12 @@ const DEFAULT_PERMISSIONS = [
   { name: 'reports.view', category: 'Reports', description: 'View reports' },
   { name: 'reports.export', category: 'Reports', description: 'Export reports' },
   
+  // Users permissions  
+  { name: 'users.view', category: 'Users', description: 'View users' },
+  { name: 'users.create', category: 'Users', description: 'Create users' },
+  { name: 'users.edit', category: 'Users', description: 'Edit users' },
+  { name: 'users.delete', category: 'Users', description: 'Delete users' },
+  
   // Admin permissions
   { name: 'admin.permissions', category: 'Admin System', description: 'Manage permissions' },
   { name: 'admin.system', category: 'Admin System', description: 'System settings' },
@@ -55,23 +67,27 @@ const DEFAULT_PERMISSIONS = [
 // Default role permissions
 const DEFAULT_ROLE_PERMISSIONS = {
   OWNER: [
-    'dashboard.view', 'products.view', 'products.create', 'products.edit', 'products.delete',
+    'dashboard.view', 'pos.view', 'pos.create', 'pos.edit', 'pos.delete',
+    'products.view', 'products.create', 'products.edit', 'products.delete',
     'inventory.view', 'inventory.adjust', 'sales.view', 'sales.create', 'sales.edit', 'sales.delete',
     'purchases.view', 'purchases.create', 'purchases.edit', 'purchases.delete',
     'customers.view', 'customers.create', 'customers.edit', 'customers.delete',
     'suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.delete',
-    'reports.view', 'reports.export', 'admin.permissions', 'admin.system', 'admin.users'
+    'reports.view', 'reports.export', 'users.view', 'users.create', 'users.edit', 'users.delete',
+    'admin.permissions', 'admin.system', 'admin.users'
   ],
   MANAGER: [
-    'dashboard.view', 'products.view', 'products.create', 'products.edit',
+    'dashboard.view', 'pos.view', 'pos.create', 'pos.edit',
+    'products.view', 'products.create', 'products.edit',
     'inventory.view', 'inventory.adjust', 'sales.view', 'sales.create', 'sales.edit',
     'purchases.view', 'purchases.create', 'purchases.edit',
     'customers.view', 'customers.create', 'customers.edit',
     'suppliers.view', 'suppliers.create', 'suppliers.edit',
-    'reports.view'
+    'reports.view', 'users.view'
   ],
   STAFF: [
-    'dashboard.view', 'products.view', 'inventory.view',
+    'dashboard.view', 'pos.view', 'pos.create',
+    'products.view', 'inventory.view',
     'sales.view', 'sales.create', 'purchases.view',
     'customers.view', 'customers.create', 'suppliers.view'
   ]
