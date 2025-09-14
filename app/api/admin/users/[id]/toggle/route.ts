@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 // PATCH /api/admin/users/[id]/toggle - Toggle user active status
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -16,7 +16,7 @@ export async function PATCH(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const { isActive } = await request.json();
 
     // Check if user exists

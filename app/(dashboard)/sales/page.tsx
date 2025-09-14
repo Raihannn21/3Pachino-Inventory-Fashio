@@ -122,7 +122,7 @@ export default function SalesPage() {
 
   useEffect(() => {
     fetchSales(currentPage, searchTerm);
-  }, [currentPage]);
+  }, [currentPage, searchTerm]);
 
   // Handle search
   const handleSearch = () => {

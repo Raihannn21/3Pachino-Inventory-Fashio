@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -77,7 +77,7 @@ export default function ReportsAnalytics() {
   const [endDate, setEndDate] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setRefreshing(true);
       const params = new URLSearchParams();
@@ -100,11 +100,11 @@ export default function ReportsAnalytics() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [period, startDate, endDate]);
 
   useEffect(() => {
     fetchAnalytics();
-  }, [period]);
+  }, [period, fetchAnalytics]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {

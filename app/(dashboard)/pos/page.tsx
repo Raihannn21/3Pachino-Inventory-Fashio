@@ -152,7 +152,7 @@ export default function POSPage() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, allProducts]);
+  }, [searchTerm, allProducts, searchProducts]);
 
   // Add to cart
   const addToCart = (variant: ProductVariant) => {

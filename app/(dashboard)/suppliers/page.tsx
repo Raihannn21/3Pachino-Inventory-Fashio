@@ -111,7 +111,7 @@ export default function CustomersPage() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, customers]);
+  }, [searchTerm, customers, searchCustomers]);
 
   // Keyboard shortcut for search (Ctrl+K or Cmd+K)
   useEffect(() => {

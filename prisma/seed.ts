@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Season, Gender } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -134,8 +134,8 @@ async function main() {
       name: "Basic Cotton T-Shirt",
       sku: "TSH001",
       description: "Comfortable cotton t-shirt for everyday wear",
-      season: "ALL_SEASON",
-      gender: "UNISEX",
+      season: Season.ALL_SEASON,
+      gender: Gender.UNISEX,
       categoryId: categories[0].id, // Tops
       brandId: brands[0].id, // Local Brand
       costPrice: 50000,
@@ -145,8 +145,8 @@ async function main() {
       name: "Slim Fit Jeans",
       sku: "JNS001",
       description: "Classic blue denim jeans with slim fit",
-      season: "ALL_SEASON",
-      gender: "UNISEX",
+      season: Season.ALL_SEASON,
+      gender: Gender.UNISEX,
       categoryId: categories[1].id, // Bottoms
       brandId: brands[1].id, // Zara
       costPrice: 120000,
@@ -156,8 +156,8 @@ async function main() {
       name: "Summer Floral Dress",
       sku: "DRS001",
       description: "Light and breezy floral dress perfect for summer",
-      season: "SPRING_SUMMER",
-      gender: "FEMALE",
+      season: Season.SPRING_SUMMER,
+      gender: Gender.FEMALE,
       categoryId: categories[2].id, // Dresses
       brandId: brands[2].id, // H&M
       costPrice: 80000,

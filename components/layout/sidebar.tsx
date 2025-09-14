@@ -48,7 +48,7 @@ export default function Sidebar() {
     if (isMobileMenuOpen) {
       handleCloseMobileMenu();
     }
-  }, [pathname]);
+  }, [pathname, isMobileMenuOpen]);
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {

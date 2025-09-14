@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { generateQRCode, generateVariantQRData } from '@/lib/barcode';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -120,9 +121,11 @@ export default function BarcodeDisplay({ variant }: BarcodeDisplayProps) {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
               ) : qrCodeUrl ? (
-                <img 
+                <Image 
                   src={qrCodeUrl} 
                   alt="QR Code" 
+                  width={192}
+                  height={192}
                   className="w-48 h-48 border rounded"
                 />
               ) : (

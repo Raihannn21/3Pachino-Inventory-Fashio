@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -411,9 +412,11 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
             {/* Watermark Background */}
             <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center pointer-events-none opacity-40 z-0">
               <div className="w-full h-full max-w-lg max-h-lg flex items-center justify-center">
-                <img 
+                <Image 
                   src="/3pachino.png" 
                   alt="3PACHINO Watermark" 
+                  width={500}
+                  height={500}
                   className="w-full h-full object-contain transform scale-200"
                   style={{ minWidth: '500px', minHeight: '500px' }}
                 />

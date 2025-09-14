@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -158,7 +158,7 @@ export default function Dashboard() {
   const [transactionFilter, setTransactionFilter] = useState<string>('ALL'); // ALL, SALE, PURCHASE
 
   // Define functions that will be used in useEffect
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setRefreshing(true);
       const params = new URLSearchParams();
@@ -181,9 +181,9 @@ export default function Dashboard() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [dateRange, period]);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       
@@ -207,7 +207,7 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error fetching transactions:', error);
     }
-  };
+  }, [dateRange, period, transactionFilter]);
 
   // useEffect must be called before any conditional returns
   useEffect(() => {
@@ -215,7 +215,7 @@ export default function Dashboard() {
       fetchAnalytics();
       fetchTransactions();
     }
-  }, [period, dateRange, transactionFilter, hasPermission]);
+  }, [period, dateRange, transactionFilter, hasPermission, fetchAnalytics, fetchTransactions]);
 
   // Show loading while checking permissions
   if (permissionLoading) {

@@ -4,9 +4,9 @@ import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
 
 interface Params {
-  params: {
+  params: Promise<{
     role: string;
-  };
+  }>;
 }
 
 // PUT - Update permissions for a specific role
@@ -22,7 +22,7 @@ export async function PUT(request: Request, { params }: Params) {
     }
 
     const { permissions } = await request.json();
-    const { role } = params;
+    const { role } = await params;
 
     // Validate role
     const validRoles = ['OWNER', 'MANAGER', 'STAFF'];
@@ -74,7 +74,7 @@ export async function PUT(request: Request, { params }: Params) {
     });
 
   } catch (error) {
-    console.error(`Error updating permissions for role ${params.role}:`, error);
+    console.error(`Error updating permissions for role:`, error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

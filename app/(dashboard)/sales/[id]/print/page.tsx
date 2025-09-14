@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import Receipt from '@/components/receipt/Receipt';
 
 interface Transaction {
@@ -89,9 +90,9 @@ export default function PrintReceiptPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">Struk tidak ditemukan</p>
-          <a href="/sales" className="text-blue-600 hover:underline">
+          <Link href="/sales" className="text-blue-600 hover:underline">
             Kembali ke daftar penjualan
-          </a>
+          </Link>
         </div>
       </div>
     );

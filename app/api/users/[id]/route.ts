@@ -5,9 +5,9 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
 interface Params {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // GET single user
@@ -30,8 +30,9 @@ export async function GET(request: Request, { params }: Params) {
       );
     }
 
+    const { id } = await params;
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         email: true,
@@ -81,10 +82,11 @@ export async function PUT(request: Request, { params }: Params) {
     }
 
     const { name, email, role, password, isActive } = await request.json();
+    const { id } = await params;
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!existingUser) {
@@ -143,7 +145,7 @@ export async function PUT(request: Request, { params }: Params) {
 
     // Update user
     const updatedUser = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       select: {
         id: true,
@@ -190,9 +192,11 @@ export async function DELETE(request: Request, { params }: Params) {
       );
     }
 
+    const { id } = await params;
+    
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!existingUser) {
@@ -220,7 +224,7 @@ export async function DELETE(request: Request, { params }: Params) {
 
     // Soft delete by setting isActive to false
     const deletedUser = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: { 
         isActive: false,
         updatedAt: new Date()
