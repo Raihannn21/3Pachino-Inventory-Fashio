@@ -308,25 +308,50 @@ export default function PermissionsPage() {
 
     if (loading) {
         return (
-            <div className="space-y-6">
-                <div className="flex items-center justify-between">
+            <div className="max-w-7xl mx-auto p-3 sm:p-6 lg:p-8">
+                {/* Header Skeleton */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Hak Akses</h1>
-                        <p className="text-gray-600">Kelola permissions untuk setiap role</p>
+                        <div className="h-6 sm:h-8 w-24 sm:w-32 bg-gray-200 rounded animate-pulse mb-2"></div>
+                        <div className="h-4 w-40 sm:w-56 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                    <div className="h-8 sm:h-10 w-36 sm:w-40 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+
+                {/* Loading Animation Center */}
+                <div className="flex items-center justify-center mb-6 sm:mb-8">
+                    <div className="text-center">
+                        <div className="relative mb-4">
+                            <Shield className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-blue-600 animate-pulse" />
+                        </div>
+                        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Memuat Hak Akses</h2>
+                        <p className="text-sm text-gray-600">Mengambil data permissions dan roles...</p>
+                        <div className="flex items-center justify-center mt-4 space-x-1">
+                            <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
+                            <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                            <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                        </div>
                     </div>
                 </div>
 
-                <div className="grid gap-6">
-                    {[...Array(3)].map((_, i) => (
-                        <Card key={i} className="animate-pulse">
-                            <CardHeader>
-                                <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-                                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                {/* Permission Cards Skeleton */}
+                <div className="grid gap-4 sm:gap-6">
+                    {[1, 2, 3].map((item) => (
+                        <Card key={item} className="border-0 shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3">
+                                <div className="flex items-center space-x-3">
+                                    <div className="h-8 w-8 sm:h-10 sm:w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                                    <div>
+                                        <div className="h-4 w-20 sm:w-24 bg-gray-200 rounded animate-pulse mb-1"></div>
+                                        <div className="h-3 w-32 sm:w-40 bg-gray-200 rounded animate-pulse"></div>
+                                    </div>
+                                </div>
+                                <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="pt-0">
                                 <div className="space-y-3">
-                                    {[...Array(6)].map((_, j) => (
-                                        <div key={j} className="h-10 bg-gray-200 rounded"></div>
+                                    {[1, 2, 3, 4, 5, 6].map((j) => (
+                                        <div key={j} className="h-10 bg-gray-100 rounded animate-pulse"></div>
                                     ))}
                                 </div>
                             </CardContent>

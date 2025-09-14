@@ -22,7 +22,7 @@ interface User {
 
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([])
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(true)
     const [showAddForm, setShowAddForm] = useState(false)
     const [showEditDialog, setShowEditDialog] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
@@ -46,6 +46,7 @@ export default function UsersPage() {
 
     const loadUsers = async () => {
         try {
+            setLoading(true)
             const response = await fetch('/api/users')
             if (response.ok) {
                 const data = await response.json()
@@ -57,6 +58,8 @@ export default function UsersPage() {
         } catch (error) {
             console.error('Error loading users:', error)
             toast.error('Terjadi kesalahan saat memuat user')
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -195,6 +198,62 @@ export default function UsersPage() {
             default:
                 return role
         }
+    }
+
+    // Loading state
+    if (loading) {
+        return (
+            <div className="max-w-7xl mx-auto p-3 sm:p-6 lg:p-8">
+                {/* Header Skeleton */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
+                    <div>
+                        <div className="h-6 sm:h-8 w-32 sm:w-40 bg-gray-200 rounded animate-pulse mb-2"></div>
+                        <div className="h-4 w-40 sm:w-56 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                    <div className="h-8 sm:h-10 w-28 sm:w-32 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+
+                {/* Loading Animation Center */}
+                <div className="flex items-center justify-center mb-6 sm:mb-8">
+                    <div className="text-center">
+                        <div className="relative mb-4">
+                            <Users className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-blue-600 animate-pulse" />
+                        </div>
+                        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Memuat Data User</h2>
+                        <p className="text-sm text-gray-600">Mengambil daftar pengguna terbaru...</p>
+                        <div className="flex items-center justify-center mt-4 space-x-1">
+                            <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
+                            <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                            <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Users Cards Skeleton */}
+                <div className="grid gap-4 sm:gap-6">
+                    {[1, 2, 3].map((item) => (
+                        <Card key={item} className="border-0 shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3">
+                                <div className="flex items-center space-x-3">
+                                    <div className="h-8 w-8 sm:h-10 sm:w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                                    <div>
+                                        <div className="h-4 w-24 sm:w-32 bg-gray-200 rounded animate-pulse mb-1"></div>
+                                        <div className="h-3 w-32 sm:w-40 bg-gray-200 rounded animate-pulse"></div>
+                                    </div>
+                                </div>
+                                <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                                <div className="flex justify-between items-center">
+                                    <div className="h-3 w-20 bg-gray-200 rounded animate-pulse"></div>
+                                    <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            </div>
+        );
     }
 
     return (

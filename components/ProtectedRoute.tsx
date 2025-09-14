@@ -70,18 +70,8 @@ export default function ProtectedRoute({ children, requiredPermission }: Protect
             }
           }
 
-          // Debug logging
-          console.log('Debug Permission Check:', {
-            userRole: session.user.role,
-            pathname,
-            permissionToCheck,
-            permissions,
-            isSuperAdmin: session.user.role === 'SUPER_ADMIN'
-          });
-
           // Super Admin has access to everything
           if (session.user.role === 'SUPER_ADMIN') {
-            console.log('SUPER_ADMIN detected, granting access');
             setHasAccess(true);
           } else if (permissionToCheck) {
             // Check if user has required permission
@@ -91,11 +81,9 @@ export default function ProtectedRoute({ children, requiredPermission }: Protect
             setHasAccess(true);
           }
         } else {
-          console.error('Failed to fetch permissions:', data);
           setHasAccess(false);
         }
       } catch (error) {
-        console.error('Error checking permissions:', error);
         setHasAccess(false);
       } finally {
         setLoading(false);
@@ -108,10 +96,23 @@ export default function ProtectedRoute({ children, requiredPermission }: Protect
   // Loading state
   if (loading || status === 'loading') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Memeriksa akses...</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md text-center">
+          {/* Loading Animation Center */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="text-center">
+              <div className="relative mb-4">
+                <Shield className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-blue-600 animate-pulse" />
+              </div>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Memeriksa Akses</h2>
+              <p className="text-sm text-gray-600">Memverifikasi hak akses pengguna...</p>
+              <div className="flex items-center justify-center mt-4 space-x-1">
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
