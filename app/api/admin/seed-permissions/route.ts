@@ -120,7 +120,6 @@ export async function POST(request: NextRequest) {
     if (force && existingPermissions > 0) {
       await prisma.rolePermission.deleteMany({});
       await prisma.permission.deleteMany({});
-      console.log('🗑️ Deleted existing permissions for regeneration');
     }
 
     // Create permissions

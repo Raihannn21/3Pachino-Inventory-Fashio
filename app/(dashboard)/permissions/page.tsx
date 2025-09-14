@@ -71,7 +71,6 @@ export default function PermissionsPage() {
             // Fetch permissions
             const permissionsRes = await fetch('/api/permissions');
             const permissionsData = await permissionsRes.json();
-            console.log('📋 Fetched permissions:', permissionsData);
 
             // If no permissions exist, auto-generate them
             if (permissionsRes.ok && permissionsData.length === 0) {
@@ -93,10 +92,6 @@ export default function PermissionsPage() {
                     toast.error('Gagal generate permissions');
                 }
             } else if (permissionsRes.ok) {
-                console.log('✅ Setting permissions:', permissionsData);
-                console.log('🔍 Checking for POS permissions:', permissionsData.filter((p: any) => p.category === 'pos' || p.name.includes('pos')));
-                console.log('🔍 Checking for Users permissions:', permissionsData.filter((p: any) => p.category === 'users' || p.name.includes('users')));
-                console.log('📊 All permission names:', permissionsData.map((p: any) => p.name));
                 setPermissions(permissionsData);
             }
 
@@ -152,9 +147,6 @@ export default function PermissionsPage() {
                 granted: rolePermissions[role].has(permission.id)
             }));
 
-            console.log(`Saving ${permissionsData.length} permissions for role: ${role}`);
-            console.log(`Granted permissions: ${permissionsData.filter(p => p.granted).length}`);
-
             const response = await fetch(`/api/role-permissions/${role}`, {
                 method: 'PUT',
                 headers: {
@@ -168,10 +160,8 @@ export default function PermissionsPage() {
             const result = await response.json();
 
             if (response.ok) {
-                console.log(`Success:`, result);
                 toast.success(`✅ Permissions untuk ${ROLES.find(r => r.value === role)?.label} berhasil disimpan`);
             } else {
-                console.error('API Error:', result);
                 throw new Error(result.error || 'Failed to save permissions');
             }
         } catch (error) {
@@ -221,7 +211,6 @@ export default function PermissionsPage() {
             
             if (response.ok) {
                 const result = await response.json();
-                console.log('✅ Permissions generated:', result);
                 toast.success('Permissions berhasil di-generate!');
                 
                 // Wait a bit then reload data
@@ -230,11 +219,9 @@ export default function PermissionsPage() {
                 }, 1000);
             } else {
                 const error = await response.json();
-                console.error('❌ Generation failed:', error);
                 toast.error(error.message || 'Gagal generate permissions');
             }
         } catch (error) {
-            console.error('❌ Error generating permissions:', error);
             toast.error('Gagal generate permissions');
         } finally {
             setLoading(false);
@@ -277,9 +264,6 @@ export default function PermissionsPage() {
             }
             categorized[permission.category].push(permission);
         });
-        
-        console.log('🗂️ Categorized permissions:', categorized);
-        console.log('🎯 Available categories:', Object.keys(categorized));
         
         return categorized;
     };
