@@ -6,62 +6,62 @@ import { prisma } from '@/lib/prisma';
 // Default permissions structure
 const DEFAULT_PERMISSIONS = [
   // Dashboard permissions
-  { name: 'dashboard.view', category: 'Dashboard', description: 'View dashboard' },
+  { name: 'dashboard.view', category: 'dashboard', description: 'View dashboard' },
   
   // POS permissions
-  { name: 'pos.view', category: 'POS', description: 'Access POS system' },
-  { name: 'pos.create', category: 'POS', description: 'Create POS transactions' },
-  { name: 'pos.edit', category: 'POS', description: 'Edit POS transactions' },
-  { name: 'pos.delete', category: 'POS', description: 'Delete POS transactions' },
+  { name: 'pos.view', category: 'pos', description: 'Access POS system' },
+  { name: 'pos.create', category: 'pos', description: 'Create POS transactions' },
+  { name: 'pos.edit', category: 'pos', description: 'Edit POS transactions' },
+  { name: 'pos.delete', category: 'pos', description: 'Delete POS transactions' },
   
   // Product permissions
-  { name: 'products.view', category: 'Products', description: 'View products' },
-  { name: 'products.create', category: 'Products', description: 'Create products' },
-  { name: 'products.edit', category: 'Products', description: 'Edit products' },
-  { name: 'products.delete', category: 'Products', description: 'Delete products' },
+  { name: 'products.view', category: 'products', description: 'View products' },
+  { name: 'products.create', category: 'products', description: 'Create products' },
+  { name: 'products.edit', category: 'products', description: 'Edit products' },
+  { name: 'products.delete', category: 'products', description: 'Delete products' },
   
   // Inventory permissions
-  { name: 'inventory.view', category: 'Inventory', description: 'View inventory' },
-  { name: 'inventory.adjust', category: 'Inventory', description: 'Adjust inventory' },
+  { name: 'inventory.view', category: 'inventory', description: 'View inventory' },
+  { name: 'inventory.adjust', category: 'inventory', description: 'Adjust inventory' },
   
   // Sales permissions
-  { name: 'sales.view', category: 'Sales', description: 'View sales' },
-  { name: 'sales.create', category: 'Sales', description: 'Create sales' },
-  { name: 'sales.edit', category: 'Sales', description: 'Edit sales' },
-  { name: 'sales.delete', category: 'Sales', description: 'Delete sales' },
+  { name: 'sales.view', category: 'sales', description: 'View sales' },
+  { name: 'sales.create', category: 'sales', description: 'Create sales' },
+  { name: 'sales.edit', category: 'sales', description: 'Edit sales' },
+  { name: 'sales.delete', category: 'sales', description: 'Delete sales' },
   
   // Purchase permissions
-  { name: 'purchases.view', category: 'Purchases', description: 'View purchases' },
-  { name: 'purchases.create', category: 'Purchases', description: 'Create purchases' },
-  { name: 'purchases.edit', category: 'Purchases', description: 'Edit purchases' },
-  { name: 'purchases.delete', category: 'Purchases', description: 'Delete purchases' },
+  { name: 'purchases.view', category: 'purchases', description: 'View purchases' },
+  { name: 'purchases.create', category: 'purchases', description: 'Create purchases' },
+  { name: 'purchases.edit', category: 'purchases', description: 'Edit purchases' },
+  { name: 'purchases.delete', category: 'purchases', description: 'Delete purchases' },
   
   // Customer permissions
-  { name: 'customers.view', category: 'Customers', description: 'View customers' },
-  { name: 'customers.create', category: 'Customers', description: 'Create customers' },
-  { name: 'customers.edit', category: 'Customers', description: 'Edit customers' },
-  { name: 'customers.delete', category: 'Customers', description: 'Delete customers' },
+  { name: 'customers.view', category: 'customers', description: 'View customers' },
+  { name: 'customers.create', category: 'customers', description: 'Create customers' },
+  { name: 'customers.edit', category: 'customers', description: 'Edit customers' },
+  { name: 'customers.delete', category: 'customers', description: 'Delete customers' },
   
   // Supplier permissions
-  { name: 'suppliers.view', category: 'Suppliers', description: 'View suppliers' },
-  { name: 'suppliers.create', category: 'Suppliers', description: 'Create suppliers' },
-  { name: 'suppliers.edit', category: 'Suppliers', description: 'Edit suppliers' },
-  { name: 'suppliers.delete', category: 'Suppliers', description: 'Delete suppliers' },
+  { name: 'suppliers.view', category: 'suppliers', description: 'View suppliers' },
+  { name: 'suppliers.create', category: 'suppliers', description: 'Create suppliers' },
+  { name: 'suppliers.edit', category: 'suppliers', description: 'Edit suppliers' },
+  { name: 'suppliers.delete', category: 'suppliers', description: 'Delete suppliers' },
   
   // Reports permissions
-  { name: 'reports.view', category: 'Reports', description: 'View reports' },
-  { name: 'reports.export', category: 'Reports', description: 'Export reports' },
+  { name: 'reports.view', category: 'reports', description: 'View reports' },
+  { name: 'reports.export', category: 'reports', description: 'Export reports' },
   
   // Users permissions  
-  { name: 'users.view', category: 'Users', description: 'View users' },
-  { name: 'users.create', category: 'Users', description: 'Create users' },
-  { name: 'users.edit', category: 'Users', description: 'Edit users' },
-  { name: 'users.delete', category: 'Users', description: 'Delete users' },
+  { name: 'users.view', category: 'users', description: 'View users' },
+  { name: 'users.create', category: 'users', description: 'Create users' },
+  { name: 'users.edit', category: 'users', description: 'Edit users' },
+  { name: 'users.delete', category: 'users', description: 'Delete users' },
   
   // Admin permissions
-  { name: 'admin.permissions', category: 'Admin System', description: 'Manage permissions' },
-  { name: 'admin.system', category: 'Admin System', description: 'System settings' },
-  { name: 'admin.users', category: 'Admin System', description: 'Manage users' },
+  { name: 'admin.permissions', category: 'admin', description: 'Manage permissions' },
+  { name: 'admin.system', category: 'admin', description: 'System settings' },
+  { name: 'admin.users', category: 'admin', description: 'Manage users' },
 ];
 
 // Default role permissions
