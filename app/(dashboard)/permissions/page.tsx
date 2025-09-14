@@ -71,6 +71,7 @@ export default function PermissionsPage() {
             // Fetch permissions
             const permissionsRes = await fetch('/api/permissions');
             const permissionsData = await permissionsRes.json();
+            console.log('📋 Fetched permissions:', permissionsData);
 
             // If no permissions exist, auto-generate them
             if (permissionsRes.ok && permissionsData.length === 0) {
@@ -92,6 +93,7 @@ export default function PermissionsPage() {
                     toast.error('Gagal generate permissions');
                 }
             } else if (permissionsRes.ok) {
+                console.log('✅ Setting permissions:', permissionsData);
                 setPermissions(permissionsData);
             }
 
@@ -211,14 +213,21 @@ export default function PermissionsPage() {
             });
             
             if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Permissions generated:', result);
                 toast.success('Permissions berhasil di-generate!');
-                await fetchData(); // Reload data
+                
+                // Wait a bit then reload data
+                setTimeout(async () => {
+                    await fetchData();
+                }, 1000);
             } else {
                 const error = await response.json();
+                console.error('❌ Generation failed:', error);
                 toast.error(error.message || 'Gagal generate permissions');
             }
         } catch (error) {
-            console.error('Error generating permissions:', error);
+            console.error('❌ Error generating permissions:', error);
             toast.error('Gagal generate permissions');
         } finally {
             setLoading(false);
@@ -261,6 +270,10 @@ export default function PermissionsPage() {
             }
             categorized[permission.category].push(permission);
         });
+        
+        console.log('🗂️ Categorized permissions:', categorized);
+        console.log('🎯 Available categories:', Object.keys(categorized));
+        
         return categorized;
     };
 
