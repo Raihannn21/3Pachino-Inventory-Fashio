@@ -70,8 +70,18 @@ export default function ProtectedRoute({ children, requiredPermission }: Protect
             }
           }
 
+          // Debug logging
+          console.log('Debug Permission Check:', {
+            userRole: session.user.role,
+            pathname,
+            permissionToCheck,
+            permissions,
+            isSuperAdmin: session.user.role === 'SUPER_ADMIN'
+          });
+
           // Super Admin has access to everything
           if (session.user.role === 'SUPER_ADMIN') {
+            console.log('SUPER_ADMIN detected, granting access');
             setHasAccess(true);
           } else if (permissionToCheck) {
             // Check if user has required permission

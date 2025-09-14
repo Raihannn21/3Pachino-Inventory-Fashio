@@ -72,13 +72,32 @@ export default function PermissionsPage() {
             const permissionsRes = await fetch('/api/permissions');
             const permissionsData = await permissionsRes.json();
 
+            // If no permissions exist, auto-generate them
+            if (permissionsRes.ok && permissionsData.length === 0) {
+                toast.info('Permissions tidak ditemukan, sedang generate data...');
+                
+                const seedRes = await fetch('/api/admin/seed-permissions', {
+                    method: 'POST'
+                });
+                
+                if (seedRes.ok) {
+                    toast.success('Permissions berhasil di-generate!');
+                    // Re-fetch permissions after seeding
+                    const newPermissionsRes = await fetch('/api/permissions');
+                    const newPermissionsData = await newPermissionsRes.json();
+                    if (newPermissionsRes.ok) {
+                        setPermissions(newPermissionsData);
+                    }
+                } else {
+                    toast.error('Gagal generate permissions');
+                }
+            } else if (permissionsRes.ok) {
+                setPermissions(permissionsData);
+            }
+
             // Fetch role permissions
             const rolePermissionsRes = await fetch('/api/role-permissions');
             const rolePermissionsData = await rolePermissionsRes.json();
-
-            if (permissionsRes.ok) {
-                setPermissions(permissionsData);
-            }
 
             if (rolePermissionsRes.ok) {
                 const rolePermissionMap: Record<Role, Set<string>> = {
@@ -179,6 +198,30 @@ export default function PermissionsPage() {
         } finally {
             setSaving(false);
             setSavingRole(null);
+        }
+    };
+
+    const generatePermissions = async () => {
+        try {
+            setLoading(true);
+            toast.info('Sedang generate permissions...');
+            
+            const response = await fetch('/api/admin/seed-permissions', {
+                method: 'POST'
+            });
+            
+            if (response.ok) {
+                toast.success('Permissions berhasil di-generate!');
+                await fetchData(); // Reload data
+            } else {
+                const error = await response.json();
+                toast.error(error.message || 'Gagal generate permissions');
+            }
+        } catch (error) {
+            console.error('Error generating permissions:', error);
+            toast.error('Gagal generate permissions');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -299,9 +342,24 @@ export default function PermissionsPage() {
                     <p className="text-gray-600">Kelola permissions untuk setiap role pengguna</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    {permissions.length === 0 && (
+                        <Button
+                            onClick={generatePermissions}
+                            disabled={loading}
+                            size="sm"
+                            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                            {loading ? (
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                                <Settings className="h-4 w-4 mr-2" />
+                            )}
+                            Generate Permissions
+                        </Button>
+                    )}
                     <Button
                         onClick={saveAllRoles}
-                        disabled={saving}
+                        disabled={saving || permissions.length === 0}
                         size="sm"
                         className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
                     >
@@ -343,8 +401,37 @@ export default function PermissionsPage() {
                 </AlertDescription>
             </Alert>
 
+            {/* No Permissions Message */}
+            {permissions.length === 0 && (
+                <Card>
+                    <CardContent className="py-12">
+                        <div className="text-center">
+                            <Shield className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">Permissions Belum Tersedia</h3>
+                            <p className="text-gray-600 mb-6">
+                                Database permissions kosong. Silakan generate permissions default untuk memulai.
+                            </p>
+                            <Button
+                                onClick={generatePermissions}
+                                disabled={loading}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                                {loading ? (
+                                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Settings className="h-4 w-4 mr-2" />
+                                )}
+                                Generate Permissions Default
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Mobile/Desktop Toggle Views */}
-            <div className="block lg:hidden">
+            {permissions.length > 0 && (
+                <>
+                <div className="block lg:hidden">
                 {/* Mobile View - Tabs */}
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Role)}>
                     <TabsList className="grid w-full grid-cols-3 gap-1 p-1 h-auto">
@@ -565,6 +652,8 @@ export default function PermissionsPage() {
                     </div>
                 </CardContent>
             </Card>
+                </>
+            )}
         </div>
     );
 }

@@ -190,12 +190,142 @@ async function main() {
     }
   }
 
+  // Seed Permissions
+  console.log("🔐 Seeding permissions...");
+  const defaultPermissions = [
+    // Dashboard
+    { name: 'dashboard.view', description: 'Lihat Dashboard', category: 'dashboard' },
+    { name: 'dashboard.analytics', description: 'Lihat Analytics', category: 'dashboard' },
+    
+    // POS
+    { name: 'pos.view', description: 'Akses POS', category: 'pos' },
+    { name: 'pos.create', description: 'Buat Transaksi', category: 'pos' },
+    
+    // Sales
+    { name: 'sales.view', description: 'Lihat Penjualan', category: 'sales' },
+    { name: 'sales.create', description: 'Buat Penjualan', category: 'sales' },
+    { name: 'sales.edit', description: 'Edit Penjualan', category: 'sales' },
+    { name: 'sales.delete', description: 'Hapus Penjualan', category: 'sales' },
+    
+    // Products
+    { name: 'products.view', description: 'Lihat Produk', category: 'products' },
+    { name: 'products.create', description: 'Tambah Produk', category: 'products' },
+    { name: 'products.edit', description: 'Edit Produk', category: 'products' },
+    { name: 'products.delete', description: 'Hapus Produk', category: 'products' },
+    
+    // Inventory
+    { name: 'inventory.view', description: 'Lihat Inventory', category: 'inventory' },
+    { name: 'inventory.adjust', description: 'Adjust Stok', category: 'inventory' },
+    { name: 'inventory.approve', description: 'Approve Adjustment', category: 'inventory' },
+    
+    // Purchases
+    { name: 'purchases.view', description: 'Lihat Pembelian', category: 'purchases' },
+    { name: 'purchases.create', description: 'Buat Pembelian', category: 'purchases' },
+    { name: 'purchases.edit', description: 'Edit Pembelian', category: 'purchases' },
+    { name: 'purchases.delete', description: 'Hapus Pembelian', category: 'purchases' },
+    
+    // Suppliers
+    { name: 'suppliers.view', description: 'Lihat Supplier', category: 'suppliers' },
+    { name: 'suppliers.create', description: 'Tambah Supplier', category: 'suppliers' },
+    { name: 'suppliers.edit', description: 'Edit Supplier', category: 'suppliers' },
+    { name: 'suppliers.delete', description: 'Hapus Supplier', category: 'suppliers' },
+    
+    // Customers
+    { name: 'customers.view', description: 'Lihat Pelanggan', category: 'customers' },
+    { name: 'customers.create', description: 'Tambah Pelanggan', category: 'customers' },
+    { name: 'customers.edit', description: 'Edit Pelanggan', category: 'customers' },
+    { name: 'customers.delete', description: 'Hapus Pelanggan', category: 'customers' },
+    
+    // Reports
+    { name: 'reports.view', description: 'Lihat Laporan', category: 'reports' },
+    { name: 'reports.export', description: 'Export Laporan', category: 'reports' },
+    
+    // Users
+    { name: 'users.view', description: 'Lihat User', category: 'users' },
+    { name: 'users.create', description: 'Tambah User', category: 'users' },
+    { name: 'users.edit', description: 'Edit User', category: 'users' },
+    { name: 'users.delete', description: 'Hapus User', category: 'users' },
+    
+    // Admin
+    { name: 'admin.permissions', description: 'Kelola Hak Akses', category: 'admin' },
+    { name: 'admin.system', description: 'Pengaturan System', category: 'admin' },
+  ];
+
+  const permissions = await Promise.all(
+    defaultPermissions.map((permission) =>
+      prisma.permission.upsert({
+        where: { name: permission.name },
+        update: permission,
+        create: permission,
+      })
+    )
+  );
+
+  // Seed Default Role Permissions
+  console.log("🎭 Seeding role permissions...");
+
+  // Owner permissions (almost all)
+  const ownerPermissions = permissions.filter(p => 
+    !p.name.includes('admin.') // Owner tidak termasuk admin permissions
+  );
+
+  // Manager permissions (operational)
+  const managerPermissions = permissions.filter(p => 
+    p.name.includes('dashboard.') ||
+    p.name.includes('pos.') ||
+    p.name.includes('sales.') ||
+    p.name.includes('products.view') ||
+    p.name.includes('products.edit') ||
+    p.name.includes('inventory.view') ||
+    p.name.includes('inventory.adjust') ||
+    p.name.includes('purchases.') ||
+    p.name.includes('suppliers.') ||
+    p.name.includes('customers.') ||
+    p.name.includes('reports.view')
+  );
+
+  // Staff permissions (limited)
+  const staffPermissions = permissions.filter(p => 
+    p.name.includes('dashboard.view') ||
+    p.name.includes('pos.') ||
+    p.name.includes('sales.view') ||
+    p.name.includes('sales.create') ||
+    p.name.includes('products.view') ||
+    p.name.includes('inventory.view') ||
+    p.name.includes('customers.view') ||
+    p.name.includes('customers.create')
+  );
+
+  // Create role permissions
+  const rolePermissionData = [
+    ...ownerPermissions.map(p => ({ role: 'OWNER', permissionId: p.id, granted: true })),
+    ...managerPermissions.map(p => ({ role: 'MANAGER', permissionId: p.id, granted: true })),
+    ...staffPermissions.map(p => ({ role: 'STAFF', permissionId: p.id, granted: true })),
+  ];
+
+  await Promise.all(
+    rolePermissionData.map(rp =>
+      prisma.rolePermission.upsert({
+        where: {
+          role_permissionId: {
+            role: rp.role as any,
+            permissionId: rp.permissionId
+          }
+        },
+        update: { granted: rp.granted },
+        create: rp as any,
+      })
+    )
+  );
+
   console.log("✅ Seed completed successfully!");
   console.log(`📦 Created ${categories.length} categories`);
   console.log(`🏷️ Created ${brands.length} brands`);
   console.log(`📏 Created ${sizes.length} sizes`);
   console.log(`🎨 Created ${colors.length} colors`);
   console.log(`👕 Created ${products.length} products`);
+  console.log(`🔐 Created ${permissions.length} permissions`);
+  console.log(`🎭 Created role permissions for 3 roles`);
 }
 
 main()
