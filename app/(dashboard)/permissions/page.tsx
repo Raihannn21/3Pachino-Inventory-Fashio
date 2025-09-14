@@ -357,6 +357,22 @@ export default function PermissionsPage() {
                             Generate Permissions
                         </Button>
                     )}
+                    {permissions.length > 0 && (
+                        <Button
+                            onClick={generatePermissions}
+                            disabled={loading}
+                            size="sm"
+                            variant="outline"
+                            className="w-full sm:w-auto border-blue-600 text-blue-600 hover:bg-blue-50"
+                        >
+                            {loading ? (
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                            )}
+                            Regenerate All Permissions
+                        </Button>
+                    )}
                     <Button
                         onClick={saveAllRoles}
                         disabled={saving || permissions.length === 0}
