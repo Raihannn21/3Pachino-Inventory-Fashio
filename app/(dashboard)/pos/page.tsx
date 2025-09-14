@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,7 +112,7 @@ export default function POSPage() {
   };
 
   // Search products
-  const searchProducts = async (term: string) => {
+  const searchProducts = useCallback(async (term: string) => {
     setIsSearching(true);
     try {
       if (!term.trim()) {
@@ -135,7 +135,7 @@ export default function POSPage() {
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [allProducts]);
 
   // Load products on mount
   useEffect(() => {
