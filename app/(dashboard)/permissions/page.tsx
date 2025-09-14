@@ -94,6 +94,9 @@ export default function PermissionsPage() {
                 }
             } else if (permissionsRes.ok) {
                 console.log('✅ Setting permissions:', permissionsData);
+                console.log('🔍 Checking for POS permissions:', permissionsData.filter((p: any) => p.category === 'pos' || p.name.includes('pos')));
+                console.log('🔍 Checking for Users permissions:', permissionsData.filter((p: any) => p.category === 'users' || p.name.includes('users')));
+                console.log('📊 All permission names:', permissionsData.map((p: any) => p.name));
                 setPermissions(permissionsData);
             }
 
@@ -203,13 +206,17 @@ export default function PermissionsPage() {
         }
     };
 
-    const generatePermissions = async () => {
+    const generatePermissions = async (force: boolean = false) => {
         try {
             setLoading(true);
-            toast.info('Sedang generate permissions...');
+            toast.info(force ? 'Sedang regenerate semua permissions...' : 'Sedang generate permissions...');
             
             const response = await fetch('/api/admin/seed-permissions', {
-                method: 'POST'
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ force })
             });
             
             if (response.ok) {
@@ -357,7 +364,7 @@ export default function PermissionsPage() {
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     {permissions.length === 0 && (
                         <Button
-                            onClick={generatePermissions}
+                            onClick={() => generatePermissions(false)}
                             disabled={loading}
                             size="sm"
                             className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
@@ -372,7 +379,7 @@ export default function PermissionsPage() {
                     )}
                     {permissions.length > 0 && (
                         <Button
-                            onClick={generatePermissions}
+                            onClick={() => generatePermissions(true)}
                             disabled={loading}
                             size="sm"
                             variant="outline"
@@ -441,7 +448,7 @@ export default function PermissionsPage() {
                                 Database permissions kosong. Silakan generate permissions default untuk memulai.
                             </p>
                             <Button
-                                onClick={generatePermissions}
+                                onClick={() => generatePermissions(false)}
                                 disabled={loading}
                                 className="bg-blue-600 hover:bg-blue-700 text-white"
                             >

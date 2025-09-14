@@ -102,14 +102,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get force parameter from request body
+    const body = await request.json().catch(() => ({}));
+    const force = body.force || false;
+
     // Check if permissions already exist
     const existingPermissions = await prisma.permission.count();
     
-    if (existingPermissions > 0) {
+    if (existingPermissions > 0 && !force) {
       return NextResponse.json({ 
         message: 'Permissions already exist',
         count: existingPermissions 
       });
+    }
+
+    // If force is true, delete existing permissions first
+    if (force && existingPermissions > 0) {
+      await prisma.rolePermission.deleteMany({});
+      await prisma.permission.deleteMany({});
+      console.log('🗑️ Deleted existing permissions for regeneration');
     }
 
     // Create permissions
