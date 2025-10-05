@@ -68,6 +68,36 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
 
+  // Format number input dengan titik pemisah (real-time)
+  const formatNumberInput = (value: string) => {
+    // Hapus semua karakter selain angka
+    const numbers = value.replace(/[^\d]/g, '');
+    // Tambahkan titik pemisah setiap 3 digit dari kanan
+    return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // Parse formatted number kembali ke string angka
+  const parseFormattedNumber = (value: string) => {
+    return value.replace(/\./g, '');
+  };
+
+  // Handler untuk input harga dengan format real-time
+  const handlePriceInput = (field: 'sellingPrice' | 'costPrice', value: string, formType: 'variant' | 'product') => {
+    const formattedValue = formatNumberInput(value);
+    
+    if (formType === 'variant') {
+      setVariantForm(prev => ({
+        ...prev,
+        [field]: formattedValue
+      }));
+    } else {
+      setProductForm(prev => ({
+        ...prev,
+        [field]: formattedValue
+      }));
+    }
+  };
+
   const [productId, setProductId] = useState<string>('');
   const [product, setProduct] = useState<Product | null>(null);
   const [sizes, setSizes] = useState<Size[]>([]);
@@ -235,7 +265,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
       // Only include selling price if provided (cost price always same as product)
       if (variantForm.sellingPrice && variantForm.sellingPrice.trim() !== '') {
-        requestBody.sellingPrice = parseFloat(variantForm.sellingPrice);
+        requestBody.sellingPrice = parseFloat(parseFormattedNumber(variantForm.sellingPrice));
       }
 
       const response = await fetch(`/api/products/${productId}/variants`, {
@@ -288,7 +318,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
       // Only include selling price if provided (cost price always same as product)
       if (variantForm.sellingPrice && variantForm.sellingPrice.trim() !== '') {
-        requestBody.sellingPrice = parseFloat(variantForm.sellingPrice);
+        requestBody.sellingPrice = parseFloat(parseFormattedNumber(variantForm.sellingPrice));
       } else {
         requestBody.sellingPrice = null; // Reset to use product price
       }
@@ -354,8 +384,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     if (product) {
       setProductForm({
         name: product.name,
-        costPrice: product.costPrice.toString(),
-        sellingPrice: product.sellingPrice.toString()
+        costPrice: formatNumberInput(product.costPrice.toString()),
+        sellingPrice: formatNumberInput(product.sellingPrice.toString())
       });
       setEditProductOpen(true);
     }
@@ -373,8 +403,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         },
         body: JSON.stringify({
           name: productForm.name,
-          costPrice: parseFloat(productForm.costPrice),
-          sellingPrice: parseFloat(productForm.sellingPrice)
+          costPrice: parseFloat(parseFormattedNumber(productForm.costPrice)),
+          sellingPrice: parseFloat(parseFormattedNumber(productForm.sellingPrice))
         }),
       });
 
@@ -440,7 +470,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       sizeId: variant.size.id,
       colorId: variant.color.id,
       minStock: variant.minStock.toString(),
-      sellingPrice: variant.sellingPrice?.toString() || '',
+      sellingPrice: variant.sellingPrice ? formatNumberInput(variant.sellingPrice.toString()) : '',
       newSizeName: '',
       newColorName: '',
       newColorHex: '',
@@ -1036,12 +1066,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <Label htmlFor="variantSellingPrice">Harga Jual (Rp)</Label>
                 <Input
                   id="variantSellingPrice"
-                  type="number"
+                  type="text"
                   value={variantForm.sellingPrice}
-                  onChange={(e) => setVariantForm(prev => ({...prev, sellingPrice: e.target.value}))}
-                  placeholder={`Default: ${product?.sellingPrice.toLocaleString('id-ID')}`}
-                  min="0"
-                  step="1000"
+                  onChange={(e) => handlePriceInput('sellingPrice', e.target.value, 'variant')}
+                  placeholder={`Default: ${formatNumber(product?.sellingPrice || 0)}`}
                 />
                 <p className="text-xs text-slate-500">Kosongkan untuk menggunakan harga produk</p>
               </div>
@@ -1149,13 +1177,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Harga Jual (Rp)</label>
                 <Input
-                  type="number"
+                  type="text"
                   value={variantForm.sellingPrice}
-                  onChange={(e) => setVariantForm(prev => ({...prev, sellingPrice: e.target.value}))}
-                  placeholder={`Default: ${product?.sellingPrice.toLocaleString('id-ID')}`}
+                  onChange={(e) => handlePriceInput('sellingPrice', e.target.value, 'variant')}
+                  placeholder={`Default: ${formatNumber(product?.sellingPrice || 0)}`}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
-                  min="0"
-                  step="1000"
                 />
                 <p className="text-xs text-slate-500">Kosongkan untuk menggunakan harga produk</p>
               </div>
@@ -1293,12 +1319,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <Label htmlFor="costPrice">Harga Modal (Rp)</Label>
                 <Input
                   id="costPrice"
-                  type="number"
+                  type="text"
                   value={productForm.costPrice}
-                  onChange={(e) => setProductForm({...productForm, costPrice: e.target.value})}
-                  placeholder="0"
-                  min="0"
-                  step="1000"
+                  onChange={(e) => handlePriceInput('costPrice', e.target.value, 'product')}
+                  placeholder={formatNumber(0)}
                   required
                 />
               </div>
@@ -1307,12 +1331,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <Label htmlFor="sellingPrice">Harga Jual (Rp)</Label>
                 <Input
                   id="sellingPrice"
-                  type="number"
+                  type="text"
                   value={productForm.sellingPrice}
-                  onChange={(e) => setProductForm({...productForm, sellingPrice: e.target.value})}
-                  placeholder="0"
-                  min="0"
-                  step="1000"
+                  onChange={(e) => handlePriceInput('sellingPrice', e.target.value, 'product')}
+                  placeholder={formatNumber(0)}
                   required
                 />
               </div>

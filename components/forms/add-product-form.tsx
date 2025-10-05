@@ -57,6 +57,19 @@ export default function AddProductForm({ onProductAdded }: AddProductFormProps) 
     return `${prefix}${nameCode}${timestamp}`;
   };
 
+  // Format number input dengan titik pemisah
+  const formatNumberInput = (value: string) => {
+    // Hapus semua karakter selain angka
+    const numbers = value.replace(/[^\d]/g, '');
+    // Tambahkan titik pemisah setiap 3 digit dari kanan
+    return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // Parse formatted number kembali ke number
+  const parseFormattedNumber = (value: string) => {
+    return value.replace(/\./g, '');
+  };
+
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
 
@@ -96,8 +109,8 @@ export default function AddProductForm({ onProductAdded }: AddProductFormProps) 
         name: formData.name,
         sku: sku,
         categoryId: formData.categoryId,
-        costPrice: parseFloat(formData.costPrice),
-        sellingPrice: parseFloat(formData.sellingPrice),
+        costPrice: parseFloat(parseFormattedNumber(formData.costPrice)),
+        sellingPrice: parseFloat(parseFormattedNumber(formData.sellingPrice)),
       };
 
       const response = await fetch('/api/products', {
@@ -131,10 +144,19 @@ export default function AddProductForm({ onProductAdded }: AddProductFormProps) 
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    // Format input untuk field harga
+    if (field === 'costPrice' || field === 'sellingPrice') {
+      const formattedValue = formatNumberInput(value);
+      setFormData(prev => ({
+        ...prev,
+        [field]: formattedValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
   };
 
   return (
@@ -233,10 +255,10 @@ export default function AddProductForm({ onProductAdded }: AddProductFormProps) 
             <div className="space-y-2">
               <label className="text-sm font-medium">Harga Modal (Rp)</label>
               <Input
-                type="number"
+                type="text"
                 value={formData.costPrice}
                 onChange={(e) => handleInputChange('costPrice', e.target.value)}
-                placeholder="50000"
+                placeholder="50.000"
                 required
               />
             </div>
@@ -244,10 +266,10 @@ export default function AddProductForm({ onProductAdded }: AddProductFormProps) 
             <div className="space-y-2">
               <label className="text-sm font-medium">Harga Jual (Rp)</label>
               <Input
-                type="number"
+                type="text"
                 value={formData.sellingPrice}
                 onChange={(e) => handleInputChange('sellingPrice', e.target.value)}
-                placeholder="85000"
+                placeholder="85.000"
                 required
               />
             </div>
