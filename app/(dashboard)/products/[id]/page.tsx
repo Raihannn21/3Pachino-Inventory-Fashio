@@ -960,6 +960,38 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <DialogTitle className="text-lg sm:text-xl font-semibold text-slate-800">Tambah Varian Baru</DialogTitle>
             <p className="text-sm text-slate-600">Buat kombinasi ukuran dan warna baru untuk produk</p>
           </DialogHeader>
+          
+          {/* Manajemen Warna */}
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <h4 className="font-medium text-sm text-gray-700 mb-3">Kelola Warna</h4>
+            {colors.length > 0 ? (
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                {colors.map((color) => (
+                  <div key={color.id} className="flex items-center justify-between bg-white p-2 rounded border">
+                    <div className="flex items-center gap-2">
+                      {color.hexCode && (
+                        <div 
+                          className="w-4 h-4 rounded-full border border-gray-300"
+                          style={{ backgroundColor: color.hexCode }}
+                        />
+                      )}
+                      <span className="text-sm">{color.name}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteColor(color.id, color.name)}
+                      className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
+                      title="Hapus warna"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">Belum ada warna tersedia</p>
+            )}
+          </div>
           <form onSubmit={handleAddVariant} className="space-y-4 sm:space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -1036,28 +1068,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         <SelectContent>
                           {colors.map((color) => (
                             <SelectItem key={color.id} value={color.id}>
-                              <div className="flex items-center justify-between w-full gap-2">
-                                <div className="flex items-center gap-2">
-                                  {color.hexCode && (
-                                    <div 
-                                      className="w-4 h-4 rounded-full border border-gray-300"
-                                      style={{ backgroundColor: color.hexCode }}
-                                    />
-                                  )}
-                                  {color.name}
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleDeleteColor(color.id, color.name);
-                                  }}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
+                              <div className="flex items-center gap-2">
+                                {color.hexCode && (
+                                  <div 
+                                    className="w-4 h-4 rounded-full border border-gray-300"
+                                    style={{ backgroundColor: color.hexCode }}
+                                  />
+                                )}
+                                {color.name}
                               </div>
                             </SelectItem>
                           ))}
