@@ -532,6 +532,34 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const handleDeleteSize = async (sizeId: string, sizeName: string) => {
+    // Confirm deletion
+    const confirmed = window.confirm(`Apakah Anda yakin ingin menghapus ukuran "${sizeName}"? Tindakan ini tidak dapat dibatalkan.`);
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`/api/sizes/${sizeId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success(`Ukuran "${sizeName}" berhasil dihapus`);
+        // Refresh sizes list
+        fetchSizes();
+        // Reset size selection if the deleted size was selected
+        if (variantForm.sizeId === sizeId) {
+          setVariantForm(prev => ({...prev, sizeId: ''}));
+        }
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Gagal menghapus ukuran');
+      }
+    } catch (error) {
+      console.error('Error deleting size:', error);
+      toast.error('Gagal menghapus ukuran');
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto p-8">
@@ -961,6 +989,32 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <p className="text-sm text-slate-600">Buat kombinasi ukuran dan warna baru untuk produk</p>
           </DialogHeader>
           
+          {/* Manajemen Ukuran */}
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <h4 className="font-medium text-sm text-gray-700 mb-3">Kelola Ukuran</h4>
+            {sizes.length > 0 ? (
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                {sizes.map((size) => (
+                  <div key={size.id} className="flex items-center justify-between bg-white p-2 rounded border">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{size.name}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSize(size.id, size.name)}
+                      className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
+                      title="Hapus ukuran"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">Belum ada ukuran tersedia</p>
+            )}
+          </div>
+
           {/* Manajemen Warna */}
           <div className="border rounded-lg p-4 bg-gray-50">
             <h4 className="font-medium text-sm text-gray-700 mb-3">Kelola Warna</h4>
@@ -1009,18 +1063,32 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     <label htmlFor="existing-size" className="text-sm font-medium">Pilih dari yang ada</label>
                   </div>
                   {!variantForm.useNewSize && (
-                    <Select value={variantForm.sizeId} onValueChange={(value) => setVariantForm(prev => ({...prev, sizeId: value}))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih ukuran" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sizes.map((size) => (
-                          <SelectItem key={size.id} value={size.id}>
-                            {size.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      <Select value={variantForm.sizeId} onValueChange={(value) => setVariantForm(prev => ({...prev, sizeId: value}))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih ukuran" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sizes.map((size) => (
+                            <SelectItem key={size.id} value={size.id}>
+                              {size.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {variantForm.sizeId && (
+                        <button
+                          type="button"
+                          onClick={() => setVariantForm(prev => ({...prev, sizeId: ''}))}
+                          className="text-sm text-red-600 hover:text-red-800 flex items-center gap-1"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Hapus pilihan ukuran
+                        </button>
+                      )}
+                    </div>
                   )}
                   
                   <div className="flex items-center space-x-2">
