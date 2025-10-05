@@ -133,15 +133,105 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+
+    console.log('Attempting to delete product:', id);
+
+    // Check if product exists
+    const product = await prisma.product.findUnique({
+      where: { id },
+      include: {
+        variants: true
+      }
+    });
+
+    if (!product) {
+      console.log('Product not found:', id);
+      return NextResponse.json(
+        { error: 'Produk tidak ditemukan' },
+        { status: 404 }
+      );
+    }
+
+    console.log('Product found:', { id: product.id, name: product.name, variantCount: product.variants.length });
+
+    // Check if any variant has transactions
+    const transactionCount = await prisma.transactionItem.count({
+      where: { 
+        variant: {
+          productId: id
+        }
+      }
+    });
+
+    console.log('Transaction count:', transactionCount);
+
+    if (transactionCount > 0) {
+      return NextResponse.json(
+        { error: 'Tidak dapat menghapus produk yang sudah memiliki riwayat transaksi' },
+        { status: 400 }
+      );
+    }
+
+    // Check if any variant has stock adjustments
+    const adjustmentCount = await prisma.stockAdjustment.count({
+      where: { 
+        variant: {
+          productId: id
+        }
+      }
+    });
+
+    console.log('Stock adjustment count:', adjustmentCount);
+
+    if (adjustmentCount > 0) {
+      return NextResponse.json(
+        { error: 'Tidak dapat menghapus produk yang sudah memiliki riwayat adjustment stok' },
+        { status: 400 }
+      );
+    }
+
+    // Clean up stock movements for all variants
+    const stockMovementCount = await prisma.stockMovement.count({
+      where: { 
+        variant: {
+          productId: id
+        }
+      }
+    });
+
+    console.log('Stock movement count:', stockMovementCount);
+
+    if (stockMovementCount > 0) {
+      console.log('Cleaning up stock movements before deletion...');
+      await prisma.stockMovement.deleteMany({
+        where: { 
+          variant: {
+            productId: id
+          }
+        }
+      });
+      console.log(`Deleted ${stockMovementCount} stock movements`);
+    }
+
+    console.log('All checks passed, deleting product and its variants...');
+
+    // Delete all variants first (cascade should handle this, but being explicit)
+    await prisma.productVariant.deleteMany({
+      where: { productId: id }
+    });
+
+    // Delete the product
     await prisma.product.delete({
       where: { id },
     });
 
-    return NextResponse.json({ message: 'Product deleted successfully' });
+    console.log('Product deleted successfully');
+
+    return NextResponse.json({ message: 'Produk berhasil dihapus' });
   } catch (error) {
     console.error('Error deleting product:', error);
     return NextResponse.json(
-      { error: 'Failed to delete product' },
+      { error: 'Gagal menghapus produk', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

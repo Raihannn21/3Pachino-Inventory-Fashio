@@ -71,6 +71,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [editVariantOpen, setEditVariantOpen] = useState(false);
   const [deleteVariantOpen, setDeleteVariantOpen] = useState(false);
   const [editProductOpen, setEditProductOpen] = useState(false);
+  const [deleteProductOpen, setDeleteProductOpen] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [variantToDelete, setVariantToDelete] = useState<ProductVariant | null>(null);
 
@@ -396,6 +397,36 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     });
   };
 
+  const handleDeleteProduct = () => {
+    setDeleteProductOpen(true);
+  };
+
+  const confirmDeleteProduct = async () => {
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Produk berhasil dihapus');
+        router.push('/products'); // Redirect to products list
+      } else {
+        toast.error(data.error || 'Gagal menghapus produk');
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast.error('Gagal menghapus produk');
+    } finally {
+      setDeleteProductOpen(false);
+    }
+  };
+
+  const closeDeleteProductDialog = () => {
+    setDeleteProductOpen(false);
+  };
+
   const openEditVariant = (variant: ProductVariant) => {
     setSelectedVariant(variant);
     setOriginalStock(variant.stock); // Save original stock for comparison
@@ -485,13 +516,23 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             SKU: {product.sku} • {product.brand.name} • {product.category.name}
           </p>
         </div>
-        <Button
-          onClick={openEditProduct}
-          className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
-        >
-          <Edit className="h-4 w-4 mr-2" />
-          Edit Produk
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <Button
+            onClick={openEditProduct}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Produk
+          </Button>
+          <Button
+            onClick={handleDeleteProduct}
+            variant="destructive"
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Hapus Produk
+          </Button>
+        </div>
       </div>
 
       {/* Product Info */}
@@ -1402,6 +1443,59 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Product Confirmation Dialog */}
+      <Dialog open={deleteProductOpen} onOpenChange={setDeleteProductOpen}>
+        <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl font-semibold text-red-700">Hapus Produk</DialogTitle>
+            <p className="text-sm text-slate-600">Konfirmasi penghapusan produk ini</p>
+          </DialogHeader>
+          {product && (
+            <div className="space-y-4 sm:space-y-6">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Package className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-red-900 text-sm sm:text-base break-words">{product.name}</h3>
+                    <p className="text-xs sm:text-sm text-red-700 mt-1">
+                      SKU: {product.sku} • {product.variants.length} varian
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4">
+                <p className="text-sm text-yellow-800 text-center sm:text-left">
+                  <strong>⚠️ Peringatan:</strong> Semua varian produk ini juga akan dihapus permanen. Aksi ini tidak dapat dibatalkan.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-center sm:justify-end gap-3 pt-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={closeDeleteProductDialog}
+                  className="w-full sm:w-auto"
+                >
+                  Batal
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="destructive"
+                  onClick={confirmDeleteProduct}
+                  className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Ya, Hapus Produk
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
