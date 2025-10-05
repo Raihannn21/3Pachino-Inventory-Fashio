@@ -46,13 +46,14 @@ export async function GET(request: NextRequest) {
             { isActive: true },
             { product: { isActive: true } }
           ]),
-          {
+          // Only add search conditions if search term is provided
+          ...(search ? [{
             OR: [
               {
                 product: {
                   name: {
                     contains: search,
-                    mode: 'insensitive'
+                    mode: 'insensitive' as const
                   }
                 }
               },
@@ -60,18 +61,18 @@ export async function GET(request: NextRequest) {
                 product: {
                   sku: {
                     contains: search,
-                    mode: 'insensitive'
+                    mode: 'insensitive' as const
                   }
                 }
               },
               {
                 barcode: {
                   contains: search,
-                  mode: 'insensitive'
+                  mode: 'insensitive' as const
                 }
               }
             ]
-          }
+          }] : [])
         ]
       },
       include: {
@@ -91,6 +92,8 @@ export async function GET(request: NextRequest) {
       ],
       take: search ? 100 : 500 // Show many more products when not searching, reasonable limit when searching
     });
+
+    console.log(`API /pos/search - Found ${variants.length} variants. Search: "${search}", includeInactive: ${includeInactive}`);
 
     return NextResponse.json({
       variants

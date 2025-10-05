@@ -143,6 +143,9 @@ export default function PurchasesPage() {
       if (response.ok) {
         setProducts(data.variants);
         console.log(`Loaded ${data.variants.length} product variants for production orders`);
+        console.log('Sample products:', data.variants.slice(0, 3));
+      } else {
+        console.error('Error response from API:', data);
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -323,6 +326,11 @@ export default function PurchasesPage() {
         variant.product.category.name.toLowerCase().includes(productSearch.toLowerCase())
       )
     : [];
+
+  // Debug filtered products
+  console.log('Total products loaded:', products.length);
+  console.log('Search term:', productSearch);
+  console.log('Filtered products count:', filteredProducts.length);
 
   // Summary stats
   const totalPurchases = purchases.reduce((sum, p) => sum + Number(p.totalAmount), 0);
