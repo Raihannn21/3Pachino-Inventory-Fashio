@@ -79,10 +79,10 @@ export async function POST(
       barcode: barcode,
     };
 
-    // TODO: Add selling price when Prisma client is regenerated
-    // if (sellingPrice !== undefined && sellingPrice !== null) {
-    //   variantData.sellingPrice = parseFloat(sellingPrice);
-    // }
+    // Add selling price if provided
+    if (sellingPrice !== undefined && sellingPrice !== null) {
+      variantData.sellingPrice = parseFloat(sellingPrice);
+    }
 
     const variant = await prisma.productVariant.create({
       data: variantData,

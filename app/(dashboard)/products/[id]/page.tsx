@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import BarcodeDisplay from '@/components/ui/barcode-display';
@@ -62,6 +62,12 @@ interface Color {
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  
+  // Helper function to format numbers with dots
+  const formatNumber = (num: number) => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
   const [productId, setProductId] = useState<string>('');
   const [product, setProduct] = useState<Product | null>(null);
   const [sizes, setSizes] = useState<Size[]>([]);
@@ -563,11 +569,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2 p-3 sm:p-4 bg-red-50 rounded-lg border border-red-200">
                 <label className="text-sm font-medium text-red-700">Harga Modal</label>
-                <p className="text-lg sm:text-xl font-bold text-red-600">Rp {product.costPrice.toLocaleString()}</p>
+                <p className="text-lg sm:text-xl font-bold text-red-600">Rp {formatNumber(product.costPrice)}</p>
               </div>
               <div className="space-y-2 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
                 <label className="text-sm font-medium text-green-700">Harga Jual</label>
-                <p className="text-lg sm:text-xl font-bold text-green-600">Rp {product.sellingPrice.toLocaleString()}</p>
+                <p className="text-lg sm:text-xl font-bold text-green-600">Rp {formatNumber(product.sellingPrice)}</p>
               </div>
             </div>
 
@@ -626,115 +632,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <CardTitle className="text-lg sm:text-xl font-semibold text-slate-800">Varian Produk</CardTitle>
             <p className="text-sm text-slate-600 mt-1">Kelola ukuran dan warna untuk produk ini</p>
           </div>
-          <Dialog open={addVariantOpen} onOpenChange={setAddVariantOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                Tambah Varian
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto mx-4">
-              <DialogHeader>
-                <DialogTitle className="text-lg sm:text-xl font-semibold text-slate-800">Tambah Varian Baru</DialogTitle>
-                <p className="text-sm text-slate-600">Buat varian baru dengan ukuran dan warna</p>
-              </DialogHeader>
-              <form onSubmit={handleAddVariant} className="space-y-4 sm:space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Ukuran</label>
-                    <Select value={variantForm.sizeId} onValueChange={(value) => setVariantForm(prev => ({...prev, sizeId: value}))}>
-                      <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500">
-                        <SelectValue placeholder="Pilih ukuran" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sizes.map((size) => (
-                          <SelectItem key={size.id} value={size.id}>
-                            <div className="flex items-center">
-                              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
-                                <Ruler className="h-3 w-3 text-blue-600" />
-                              </div>
-                              {size.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Warna</label>
-                    <Select value={variantForm.colorId} onValueChange={(value) => setVariantForm(prev => ({...prev, colorId: value}))}>
-                      <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500">
-                        <SelectValue placeholder="Pilih warna" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {colors.map((color) => (
-                          <SelectItem key={color.id} value={color.id}>
-                            <div className="flex items-center">
-                              {color.hexCode && (
-                                <div 
-                                  className="w-4 h-4 rounded-full mr-2 border-2 border-white shadow-sm ring-1 ring-slate-200"
-                                  style={{ backgroundColor: color.hexCode }}
-                                />
-                              )}
-                              <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center mr-2">
-                                <Palette className="h-3 w-3 text-purple-600" />
-                              </div>
-                              {color.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Minimum Stok</label>
-                  <Input
-                    type="number"
-                    value={variantForm.minStock}
-                    onChange={(e) => setVariantForm(prev => ({...prev, minStock: e.target.value}))}
-                    placeholder="5"
-                    className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-
-                <div className="bg-amber-50 border border-amber-200 p-3 sm:p-4 rounded-lg">
-                  <p className="font-medium text-amber-900 text-sm mb-2 sm:mb-3">Info Stok</p>
-                  <ul className="space-y-1 sm:space-y-2 text-sm text-amber-700">
-                    <li className="flex items-start">
-                      <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                      Stok awal akan dimulai dari <strong>0</strong>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                      Stok akan bertambah melalui <strong>sistem produksi</strong>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                      Tidak perlu input stok manual saat membuat varian
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="bg-blue-50 border border-blue-200 p-3 sm:p-4 rounded-lg">
-                  <p className="font-medium text-blue-900 text-sm mb-2">Info Barcode</p>
-                  <p className="text-sm text-blue-700">Barcode akan dibuat otomatis setelah varian ditambahkan.</p>
-                </div>
-
-                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setAddVariantOpen(false)} className="w-full sm:w-auto">
-                    Batal
-                  </Button>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
-                    Tambah Varian
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            onClick={() => setAddVariantOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Tambah Varian
+          </Button>
         </CardHeader>
         <CardContent className="p-4 sm:p-6">
           {product.variants.length === 0 ? (
@@ -814,7 +718,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       <div>
                         <p className="text-sm text-slate-500 mb-1">Harga Jual</p>
                         <p className="text-green-600 font-bold">
-                          Rp {(variant.sellingPrice || product.sellingPrice).toLocaleString()}
+                          Rp {formatNumber(variant.sellingPrice || product.sellingPrice)}
                         </p>
                       </div>
                       <div>
@@ -914,7 +818,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         </td>
                         <td className="text-center py-4 px-4">
                           <span className="text-green-600 font-bold">
-                            Rp {(variant.sellingPrice || product.sellingPrice).toLocaleString()}
+                            Rp {formatNumber(variant.sellingPrice || product.sellingPrice)}
                           </span>
                         </td>
                         <td className="text-center py-4 px-4">
@@ -1135,7 +1039,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   type="number"
                   value={variantForm.sellingPrice}
                   onChange={(e) => setVariantForm(prev => ({...prev, sellingPrice: e.target.value}))}
-                  placeholder={`Default: ${product?.sellingPrice.toLocaleString()}`}
+                  placeholder={`Default: ${product?.sellingPrice.toLocaleString('id-ID')}`}
                   min="0"
                   step="1000"
                 />
@@ -1248,7 +1152,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   type="number"
                   value={variantForm.sellingPrice}
                   onChange={(e) => setVariantForm(prev => ({...prev, sellingPrice: e.target.value}))}
-                  placeholder={`Default: ${product?.sellingPrice.toLocaleString()}`}
+                  placeholder={`Default: ${product?.sellingPrice.toLocaleString('id-ID')}`}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   min="0"
                   step="1000"
