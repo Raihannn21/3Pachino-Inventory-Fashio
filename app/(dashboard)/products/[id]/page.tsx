@@ -1266,9 +1266,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Delete Variant Confirmation Dialog */}
       <Dialog open={deleteVariantOpen} onOpenChange={setDeleteVariantOpen}>
-        <DialogContent className="max-w-md mx-4">
-          <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl font-semibold text-red-700 flex items-center gap-2">
+        <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto mx-auto">
+          <DialogHeader className="text-center sm:text-left">
+            <DialogTitle className="text-lg sm:text-xl font-semibold text-red-700 flex items-center justify-center sm:justify-start gap-2">
               <Trash2 className="h-5 w-5" />
               Konfirmasi Hapus Varian
             </DialogTitle>
@@ -1276,19 +1276,19 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           {variantToDelete && (
             <div className="space-y-4">
               <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800 mb-2 sm:mb-3">
+                <p className="text-sm text-red-800 mb-2 sm:mb-3 text-center sm:text-left">
                   Anda akan menghapus varian berikut:
                 </p>
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
                     <Ruler className="h-4 w-4 text-red-600" />
                     <span className="font-medium text-red-700">Size: {variantToDelete.size.name}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
                     <Palette className="h-4 w-4 text-red-600" />
                     <span className="font-medium text-red-700">Color: {variantToDelete.color.name}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
                     <Package className="h-4 w-4 text-red-600" />
                     <span className="font-medium text-red-700">Stock: {variantToDelete.stock} pcs</span>
                   </div>
@@ -1296,12 +1296,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
               
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4">
-                <p className="text-sm text-yellow-800">
+                <p className="text-sm text-yellow-800 text-center sm:text-left">
                   <strong>⚠️ Peringatan:</strong> Aksi ini tidak dapat dibatalkan. Varian akan dihapus permanen dari sistem.
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row justify-center sm:justify-end gap-3 pt-2">
                 <Button 
                   type="button" 
                   variant="outline" 
