@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const barcode = searchParams.get('barcode');
+    const includeInactive = searchParams.get('includeInactive') === 'true'; // For production orders
 
     // Jika ada barcode, cari berdasarkan barcode
     if (barcode) {
@@ -40,8 +41,11 @@ export async function GET(request: NextRequest) {
     const variants = await prisma.productVariant.findMany({
       where: {
         AND: [
-          { isActive: true },
-          { product: { isActive: true } },
+          // Only filter by active status if not including inactive products
+          ...(includeInactive ? [] : [
+            { isActive: true },
+            { product: { isActive: true } }
+          ]),
           {
             OR: [
               {
@@ -85,7 +89,7 @@ export async function GET(request: NextRequest) {
         { size: { sortOrder: 'asc' } },
         { color: { name: 'asc' } }
       ],
-      take: search ? 50 : 100 // Show more products when not searching
+      take: search ? 100 : 500 // Show many more products when not searching, reasonable limit when searching
     });
 
     return NextResponse.json({

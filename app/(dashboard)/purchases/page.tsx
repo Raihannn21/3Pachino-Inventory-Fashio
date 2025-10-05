@@ -45,12 +45,14 @@ interface Supplier {
 interface ProductVariant {
   id: string;
   stock: number;
+  isActive: boolean;
   product: {
     id: string;
     name: string;
     sku: string;
     costPrice: number;
     sellingPrice: number;
+    isActive: boolean;
     category: {
       name: string;
     };
@@ -135,10 +137,12 @@ export default function PurchasesPage() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/pos/search?search=');
+      // Include inactive products for production orders since they might need to be produced
+      const response = await fetch('/api/pos/search?search=&includeInactive=true');
       const data = await response.json();
       if (response.ok) {
         setProducts(data.variants);
+        console.log(`Loaded ${data.variants.length} product variants for production orders`);
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -312,7 +316,11 @@ export default function PurchasesPage() {
   const filteredProducts = products && products.length > 0 
     ? products.filter(variant =>
         variant.product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-        variant.product.sku.toLowerCase().includes(productSearch.toLowerCase())
+        variant.product.sku.toLowerCase().includes(productSearch.toLowerCase()) ||
+        variant.size.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+        variant.color.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+        variant.product.brand.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+        variant.product.category.name.toLowerCase().includes(productSearch.toLowerCase())
       )
     : [];
 
@@ -425,29 +433,59 @@ export default function PurchasesPage() {
                 <Separator />
 
                 <div className="space-y-4">
-                  <Label>Pilih Produk untuk Diproduksi</Label>
+                  <div className="flex justify-between items-center">
+                    <Label>Pilih Produk untuk Diproduksi</Label>
+                    <span className="text-sm text-muted-foreground">
+                      {filteredProducts.length} produk tersedia
+                    </span>
+                  </div>
                   <Input
                     placeholder="Cari produk yang akan diproduksi..."
                     value={productSearch}
                     onChange={(e) => setProductSearch(e.target.value)}
                   />
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded p-2">
-                    {filteredProducts.slice(0, 20).map((variant) => (
-                      <Card key={variant.id} className="cursor-pointer hover:bg-gray-50" onClick={() => addItemToPurchase(variant)}>
-                        <CardContent className="p-3">
-                          <div className="text-sm">
-                            <div className="font-medium">{variant.product.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {variant.size.name} • {variant.color.name} • Stok: {variant.stock}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto border rounded p-2">
+                    {filteredProducts.length > 0 ? (
+                      filteredProducts.map((variant) => (
+                        <Card key={variant.id} className="cursor-pointer hover:bg-gray-50" onClick={() => addItemToPurchase(variant)}>
+                          <CardContent className="p-3">
+                            <div className="text-sm">
+                              <div className="flex items-center justify-between">
+                                <div className="font-medium">{variant.product.name}</div>
+                                {(!variant.isActive || !variant.product.isActive) && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Nonaktif
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {variant.size.name} • {variant.color.name} • Stok: {variant.stock}
+                              </div>
+                              <div className="text-xs font-medium text-green-600">
+                                Biaya Produksi: Rp {variant.product.costPrice.toLocaleString('id-ID')}
+                              </div>
                             </div>
-                            <div className="text-xs font-medium text-green-600">
-                              Biaya Produksi: Rp {variant.product.costPrice.toLocaleString('id-ID')}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="col-span-2 text-center py-8 text-muted-foreground">
+                        {productSearch ? (
+                          <>
+                            <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p>Tidak ada produk yang sesuai dengan pencarian "{productSearch}"</p>
+                            <p className="text-xs mt-1">Coba gunakan kata kunci yang berbeda</p>
+                          </>
+                        ) : (
+                          <>
+                            <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p>Belum ada produk aktif yang tersedia</p>
+                            <p className="text-xs mt-1">Pastikan produk dan varian sudah diaktifkan</p>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
