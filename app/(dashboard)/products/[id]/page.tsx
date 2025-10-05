@@ -504,6 +504,34 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const handleDeleteColor = async (colorId: string, colorName: string) => {
+    // Confirm deletion
+    const confirmed = window.confirm(`Apakah Anda yakin ingin menghapus warna "${colorName}"? Tindakan ini tidak dapat dibatalkan.`);
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`/api/colors/${colorId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success(`Warna "${colorName}" berhasil dihapus`);
+        // Refresh colors list
+        fetchColors();
+        // Reset color selection if the deleted color was selected
+        if (variantForm.colorId === colorId) {
+          setVariantForm(prev => ({...prev, colorId: ''}));
+        }
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Gagal menghapus warna');
+      }
+    } catch (error) {
+      console.error('Error deleting color:', error);
+      toast.error('Gagal menghapus warna');
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto p-8">
@@ -1000,26 +1028,54 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     <label htmlFor="existing-color" className="text-sm font-medium">Pilih dari yang ada</label>
                   </div>
                   {!variantForm.useNewColor && (
-                    <Select value={variantForm.colorId} onValueChange={(value) => setVariantForm(prev => ({...prev, colorId: value}))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih warna" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {colors.map((color) => (
-                          <SelectItem key={color.id} value={color.id}>
-                            <div className="flex items-center gap-2">
-                              {color.hexCode && (
-                                <div 
-                                  className="w-4 h-4 rounded-full border border-gray-300"
-                                  style={{ backgroundColor: color.hexCode }}
-                                />
-                              )}
-                              {color.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      <Select value={variantForm.colorId} onValueChange={(value) => setVariantForm(prev => ({...prev, colorId: value}))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih warna" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {colors.map((color) => (
+                            <SelectItem key={color.id} value={color.id}>
+                              <div className="flex items-center justify-between w-full gap-2">
+                                <div className="flex items-center gap-2">
+                                  {color.hexCode && (
+                                    <div 
+                                      className="w-4 h-4 rounded-full border border-gray-300"
+                                      style={{ backgroundColor: color.hexCode }}
+                                    />
+                                  )}
+                                  {color.name}
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleDeleteColor(color.id, color.name);
+                                  }}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {variantForm.colorId && (
+                        <button
+                          type="button"
+                          onClick={() => setVariantForm(prev => ({...prev, colorId: ''}))}
+                          className="text-sm text-red-600 hover:text-red-800 flex items-center gap-1"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Hapus pilihan warna
+                        </button>
+                      )}
+                    </div>
                   )}
                   
                   <div className="flex items-center space-x-2">
