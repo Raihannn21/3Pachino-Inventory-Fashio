@@ -8,6 +8,18 @@ export async function GET() {
       where: {
         isActive: true
       },
+      include: {
+        transactions: {
+          where: {
+            type: 'SALE'
+          },
+          select: {
+            id: true,
+            totalAmount: true,
+            transactionDate: true
+          }
+        }
+      },
       orderBy: {
         name: 'asc'
       }

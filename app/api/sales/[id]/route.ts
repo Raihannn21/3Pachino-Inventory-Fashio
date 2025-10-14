@@ -71,3 +71,96 @@ export async function GET(
     );
   }
 }
+
+// DELETE - Hapus transaksi dan rollback inventory + profit
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const transactionId = id;
+
+    // Ambil detail transaksi dengan items
+    const transaction = await prisma.transaction.findUnique({
+      where: { 
+        id: transactionId,
+        type: 'SALE'
+      },
+      include: {
+        items: {
+          include: {
+            variant: true,
+            product: true
+          }
+        }
+      }
+    });
+
+    if (!transaction) {
+      return NextResponse.json(
+        { error: 'Transaksi tidak ditemukan' },
+        { status: 404 }
+      );
+    }
+
+    // Gunakan transaction database untuk memastikan atomicity
+    await prisma.$transaction(async (tx) => {
+      // 1. Kembalikan stock untuk setiap item
+      for (const item of transaction.items) {
+        if (item.variantId) {
+          // Update stock variant
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: {
+              stock: {
+                increment: item.quantity
+              }
+            }
+          });
+
+          // Buat record stock movement untuk rollback
+          await tx.stockMovement.create({
+            data: {
+              variantId: item.variantId,
+              type: 'IN',
+              quantity: item.quantity,
+              reason: `Rollback dari penghapusan transaksi ${transaction.invoiceNumber}`
+            }
+          });
+        }
+      }
+
+      // 2. Hapus semua items transaksi
+      await tx.transactionItem.deleteMany({
+        where: { transactionId: transaction.id }
+      });
+
+      // 3. Hapus stock movements yang terkait dengan transaksi ini (jika ada relasi)
+      // Karena tidak ada field transactionId di StockMovement, kita skip bagian ini
+      // Stock movements akan tetap ada sebagai record history
+
+      // 4. Hapus transaksi
+      await tx.transaction.delete({
+        where: { id: transaction.id }
+      });
+    });
+
+    return NextResponse.json({
+      message: 'Transaksi berhasil dihapus dan inventory telah dikembalikan',
+      deletedTransaction: {
+        id: transaction.id,
+        invoiceNumber: transaction.invoiceNumber,
+        totalAmount: transaction.totalAmount,
+        itemCount: transaction.items.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Error deleting transaction:', error);
+    return NextResponse.json(
+      { error: 'Gagal menghapus transaksi' },
+      { status: 500 }
+    );
+  }
+}

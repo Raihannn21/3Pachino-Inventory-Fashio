@@ -14,9 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, Eye, Calendar, TrendingUp, Package, Users, Receipt as ReceiptIcon, ShoppingCart } from 'lucide-react';
+import { Search, Eye, Calendar, TrendingUp, Package, Users, Receipt as ReceiptIcon, ShoppingCart, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { toast } from 'sonner';
 import Receipt from '@/components/receipt/Receipt';
 
 interface TransactionItem {
@@ -91,6 +92,9 @@ export default function SalesPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptTransaction, setReceiptTransaction] = useState<Transaction | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch sales data
   const fetchSales = async (page = 1, search = '') => {
@@ -140,6 +144,41 @@ export default function SalesPage() {
   const showReceiptDialog = (transaction: Transaction) => {
     setReceiptTransaction(transaction);
     setShowReceipt(true);
+  };
+
+  // Open delete confirmation
+  const openDeleteConfirmation = (transaction: Transaction) => {
+    setTransactionToDelete(transaction);
+    setIsDeleteOpen(true);
+  };
+
+  // Delete transaction
+  const handleDeleteTransaction = async () => {
+    if (!transactionToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      const response = await fetch(`/api/sales/${transactionToDelete.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(`Transaksi ${transactionToDelete.invoiceNumber} berhasil dihapus dan inventory dikembalikan`);
+        setIsDeleteOpen(false);
+        setTransactionToDelete(null);
+        // Refresh data
+        fetchSales(currentPage, searchTerm);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Gagal menghapus transaksi');
+      }
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      toast.error('Gagal menghapus transaksi');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Calculate summary statistics
@@ -332,6 +371,14 @@ export default function SalesPage() {
                               <ReceiptIcon className="h-3 w-3 mr-1" />
                               Struk
                             </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => openDeleteConfirmation(sale)}
+                              className="text-xs px-2 py-1"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -391,6 +438,14 @@ export default function SalesPage() {
                               >
                                 <ReceiptIcon className="h-4 w-4 mr-1" />
                                 Struk
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => openDeleteConfirmation(sale)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Hapus
                               </Button>
                             </div>
                           </TableCell>
@@ -595,6 +650,53 @@ export default function SalesPage() {
                 customerName={receiptTransaction.supplier?.name || 'Walk-in Customer'}
                 onClose={() => setShowReceipt(false)}
               />
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+          <DialogContent className="w-[95vw] max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg">Konfirmasi Hapus Transaksi</DialogTitle>
+            </DialogHeader>
+            
+            {transactionToDelete && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <p className="text-sm">
+                    Apakah Anda yakin ingin menghapus transaksi <strong>{transactionToDelete.invoiceNumber}</strong>?
+                  </p>
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <p className="text-xs text-yellow-800 font-medium">⚠️ Peringatan:</p>
+                    <ul className="text-xs text-yellow-700 mt-1 space-y-1">
+                      <li>• Stock barang akan dikembalikan ke inventory</li>
+                      <li>• Total: Rp {Number(transactionToDelete.totalAmount).toLocaleString('id-ID')}</li>
+                      <li>• {transactionToDelete.items.length} item akan dikembalikan</li>
+                      <li>• Tindakan ini tidak dapat dibatalkan</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsDeleteOpen(false)}
+                    disabled={isDeleting}
+                    className="w-full sm:w-auto"
+                  >
+                    Batal
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleDeleteTransaction}
+                    disabled={isDeleting}
+                    className="w-full sm:w-auto"
+                  >
+                    {isDeleting ? 'Menghapus...' : 'Ya, Hapus Transaksi'}
+                  </Button>
+                </div>
+              </div>
             )}
           </DialogContent>
         </Dialog>
