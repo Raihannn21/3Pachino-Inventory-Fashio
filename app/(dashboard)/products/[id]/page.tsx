@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -140,15 +140,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     initParams();
   }, [params]);
 
-  useEffect(() => {
-    if (productId) {
-      fetchProduct();
-      fetchSizes();
-      fetchColors();
-    }
-  }, [productId]);
-
-  const fetchProduct = async () => {
+  const fetchProduct = useCallback(async () => {
     try {
       const response = await fetch(`/api/products/${productId}`);
       if (response.ok) {
@@ -160,9 +152,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     } finally {
       setLoading(false);
     }
-  };
+  }, [productId]);
 
-  const fetchSizes = async () => {
+  const fetchSizes = useCallback(async () => {
     try {
       const response = await fetch('/api/sizes');
       if (response.ok) {
@@ -172,9 +164,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     } catch (error) {
       console.error('Error fetching sizes:', error);
     }
-  };
+  }, []);
 
-  const fetchColors = async () => {
+  const fetchColors = useCallback(async () => {
     try {
       const response = await fetch('/api/colors');
       if (response.ok) {
@@ -184,7 +176,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     } catch (error) {
       console.error('Error fetching colors:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (productId) {
+      fetchProduct();
+      fetchSizes();
+      fetchColors();
+    }
+  }, [productId, fetchProduct, fetchSizes, fetchColors]);
 
   const handleAddVariant = async (e: React.FormEvent) => {
     e.preventDefault();

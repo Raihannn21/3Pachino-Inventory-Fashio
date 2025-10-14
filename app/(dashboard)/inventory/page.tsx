@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -131,11 +131,7 @@ export default function InventoryPage() {
   const [historyDialog, setHistoryDialog] = useState({ open: false, item: null as InventoryItem | null });
   const [adjustmentHistory, setAdjustmentHistory] = useState<AdjustmentHistoryItem[]>([]);
 
-  useEffect(() => {
-    fetchInventoryData();
-  }, [showAlertsOnly]);
-
-  const fetchInventoryData = async () => {
+  const fetchInventoryData = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -189,7 +185,11 @@ export default function InventoryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showAlertsOnly]);
+
+  useEffect(() => {
+    fetchInventoryData();
+  }, [fetchInventoryData]);
 
   const handleStockAdjustment = async () => {
     if (!adjustmentDialog.item || !adjustmentAmount || !adjustmentReason || !adjustmentType) {

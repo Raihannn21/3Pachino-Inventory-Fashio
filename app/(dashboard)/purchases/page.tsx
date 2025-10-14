@@ -482,7 +482,7 @@ export default function PurchasesPage() {
                         {productSearch ? (
                           <>
                             <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                            <p>Tidak ada produk yang sesuai dengan pencarian "{productSearch}"</p>
+                            <p>Tidak ada produk yang sesuai dengan pencarian &quot;{productSearch}&quot;</p>
                             <p className="text-xs mt-1">Coba gunakan kata kunci yang berbeda</p>
                           </>
                         ) : (
