@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Clock, AlertTriangle, CheckCircle, HelpCircle } from 'lucide-react';
 
@@ -22,11 +22,7 @@ export default function DaysRemaining({ variantId, currentStock, className }: Da
   const [status, setStatus] = useState<InventoryStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDaysRemaining();
-  }, [variantId]);
-
-  const fetchDaysRemaining = async () => {
+  const fetchDaysRemaining = useCallback(async () => {
     if (currentStock === 0) {
       setDaysRemaining(0);
       setStatus({
@@ -65,7 +61,11 @@ export default function DaysRemaining({ variantId, currentStock, className }: Da
     } finally {
       setLoading(false);
     }
-  };
+  }, [variantId, currentStock]);
+
+  useEffect(() => {
+    fetchDaysRemaining();
+  }, [fetchDaysRemaining]);
 
   const getIcon = () => {
     if (!status) return <Clock className="h-3 w-3" />;

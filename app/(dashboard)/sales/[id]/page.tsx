@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,7 @@ export default function SaleDetailPage() {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchTransaction = async () => {
+  const fetchTransaction = useCallback(async () => {
     try {
       const response = await fetch(`/api/sales/${params.id}`);
       if (response.ok) {
@@ -67,11 +67,11 @@ export default function SaleDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id, router]);
 
   useEffect(() => {
     fetchTransaction();
-  }, [params.id]);
+  }, [fetchTransaction]);
 
   if (loading) {
     return (

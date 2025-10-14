@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,7 +66,7 @@ export default function CustomersPage() {
   };
 
   // Search customers with highlighting
-  const searchCustomers = (term: string) => {
+  const searchCustomers = useCallback((term: string) => {
     if (!term.trim()) {
       setFilteredCustomers(customers);
       return;
@@ -82,7 +82,7 @@ export default function CustomersPage() {
     );
     
     setFilteredCustomers(filtered);
-  };
+  }, [customers]);
 
   // Highlight search term in text
   const highlightText = (text: string, searchTerm: string) => {

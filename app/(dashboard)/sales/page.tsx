@@ -485,7 +485,7 @@ export default function SalesPage() {
                 {salesData?.sales.length === 0 && (
                   <div className="text-center py-8">
                     <div className="text-sm text-muted-foreground">
-                      {searchTerm ? `Tidak ada transaksi yang ditemukan untuk "${searchTerm}"` : 'Belum ada transaksi penjualan'}
+                      {searchTerm ? `Tidak ada transaksi yang ditemukan untuk &quot;${searchTerm}&quot;` : 'Belum ada transaksi penjualan'}
                     </div>
                   </div>
                 )}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { usePermissions } from '@/components/providers/permission-provider';
 import { cn } from '@/lib/utils';
@@ -41,12 +41,20 @@ export default function Sidebar() {
   const [isAnimating, setIsAnimating] = useState(false);
   const { data: session } = useSession();
 
+  const handleCloseMobileMenu = useCallback(() => {
+    setIsAnimating(false);
+    // Unmount after animation completes
+    setTimeout(() => {
+      setIsMobileMenuOpen(false);
+    }, 300);
+  }, []);
+
   // Close mobile menu when route changes
   useEffect(() => {
     if (isMobileMenuOpen) {
       handleCloseMobileMenu();
     }
-  }, [pathname]);
+  }, [pathname, isMobileMenuOpen, handleCloseMobileMenu]);
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -69,13 +77,7 @@ export default function Sidebar() {
     }, 10);
   };
 
-  const handleCloseMobileMenu = () => {
-    setIsAnimating(false);
-    // Unmount after animation completes
-    setTimeout(() => {
-      setIsMobileMenuOpen(false);
-    }, 300);
-  };
+
 
   const handleLogout = async () => {
     try {
