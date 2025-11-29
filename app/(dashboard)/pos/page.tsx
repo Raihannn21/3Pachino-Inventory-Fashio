@@ -798,11 +798,11 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                   </div>
                 ) : (
                   <>
-                    {/* Hanya tampilkan list produk jika ada filter search atau dropdown dipilih */}
-                    {(searchTerm.trim() || selectedProduct) ? (
+                    {/* Hanya tampilkan list produk jika ada search, BUKAN dari dropdown */}
+                    {searchTerm.trim() ? (
                       <>
                         <div className="text-xs sm:text-sm text-muted-foreground mb-2">
-                          Menampilkan {searchResults.length} produk {searchTerm && `untuk "${searchTerm}"`}
+                          Menampilkan {searchResults.length} produk untuk "{searchTerm}"
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-h-96 overflow-y-auto">
                           {searchResults.map((variant) => {
@@ -857,12 +857,12 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                         {!isLoadingProducts && searchResults.length === 0 && (
                           <div className="text-center py-6 sm:py-8">
                             <div className="text-xs sm:text-sm text-muted-foreground">
-                              {searchTerm ? `Tidak ada produk yang ditemukan untuk "${searchTerm}"` : 'Belum ada produk tersedia'}
+                              Tidak ada produk yang ditemukan untuk "{searchTerm}"
                             </div>
                           </div>
                         )}
                       </>
-                    ) : (
+                    ) : !selectedProduct ? (
                       <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed">
                         <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                         <h3 className="text-sm font-medium text-gray-900 mb-1">Pilih Produk untuk Memulai</h3>
@@ -870,7 +870,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                           Gunakan dropdown di atas atau ketik untuk mencari produk
                         </p>
                       </div>
-                    )}
+                    ) : null}
                   </>
                 )}
               </div>
