@@ -235,8 +235,20 @@ export default function PurchasesPage() {
 
   const handleSizeChange = useCallback((size: string) => {
     setSelectedSize(size);
-    setSelectedColor('');
-  }, []);
+    
+    // Cek apakah warna yang sudah dipilih tersedia di ukuran baru
+    if (selectedColor && selectedProduct) {
+      const newAvailableColors = products
+        .filter(v => v.product.id === selectedProduct && v.size.name === size)
+        .map(v => v.color.name);
+      
+      // Jika warna saat ini tidak tersedia di ukuran baru, reset
+      if (!newAvailableColors.includes(selectedColor)) {
+        setSelectedColor('');
+      }
+      // Jika tersedia, pertahankan warna yang sudah dipilih
+    }
+  }, [selectedProduct, selectedColor, products]);
 
   const handleColorChange = useCallback((color: string) => {
     setSelectedColor(color);
