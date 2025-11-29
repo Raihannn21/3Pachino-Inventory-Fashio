@@ -255,7 +255,6 @@ export default function PurchasesPage() {
     }
     
     addItemToPurchase(selectedVariantData);
-    resetSelection();
     toast.success(`${selectedVariantData.product.name} ditambahkan ke production order`);
   }, [selectedVariantData]);
 
