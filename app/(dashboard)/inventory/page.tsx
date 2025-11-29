@@ -177,11 +177,11 @@ export default function InventoryPage() {
         setInventory(transformedInventory);
         setSummary(transformedSummary);
       } else {
-        toast.error('Gagal memuat data inventory');
+        toast.error('Gagal memuat data gudang');
       }
     } catch (error) {
       console.error('Error fetching inventory:', error);
-      toast.error('Gagal memuat data inventory');
+      toast.error('Gagal memuat data gudang');
     } finally {
       setLoading(false);
     }
@@ -320,7 +320,7 @@ export default function InventoryPage() {
               <div className="relative mb-4">
                 <Store className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-blue-600 animate-pulse" />
               </div>
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Memuat Inventory</h2>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Memuat Gudang</h2>
               <p className="text-sm text-gray-600">Mengambil data stok terbaru...</p>
               <div className="flex items-center justify-center mt-4 space-x-1">
                 <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
@@ -367,7 +367,7 @@ export default function InventoryPage() {
       <div className="space-y-6 sm:space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Inventory Management</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Gudang</h1>
             <p className="text-slate-600 mt-1 sm:mt-2 text-sm sm:text-base">Kelola dan pantau stok produk Anda secara real-time</p>
           </div>
           <Button onClick={fetchInventoryData} variant="outline" className="hover:bg-slate-50 w-full sm:w-auto">

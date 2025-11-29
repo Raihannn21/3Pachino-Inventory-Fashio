@@ -511,7 +511,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
             <div className="relative mb-4">
               <CreditCard className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-blue-600 animate-pulse" />
             </div>
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Memuat Point of Sale</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Memuat Penjualan</h2>
             <p className="text-xs sm:text-sm text-gray-600">Menyiapkan sistem kasir...</p>
             <div className="flex items-center justify-center mt-4 space-x-1">
               <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
@@ -557,7 +557,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-2">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Point of Sale</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Penjualan</h1>
           <p className="text-gray-600 mt-1 text-sm sm:text-base">
             Sistem kasir 3PACHINO
           </p>

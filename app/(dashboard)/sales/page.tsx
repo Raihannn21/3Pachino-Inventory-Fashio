@@ -203,7 +203,7 @@ export default function SalesPage() {
               <div className="relative mb-4">
                 <ShoppingCart className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-blue-600 animate-pulse" />
               </div>
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Memuat Data Penjualan</h2>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Memuat Struk Penjualan</h2>
               <p className="text-xs sm:text-sm text-gray-600">Mengambil data transaksi terbaru...</p>
               <div className="flex items-center justify-center mt-4 space-x-1">
                 <div className="h-2 w-2 bg-blue-600 rounded-full animate-bounce"></div>
@@ -260,7 +260,7 @@ export default function SalesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium">Total Penjualan</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium">Total Struk</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -485,7 +485,7 @@ export default function SalesPage() {
                 {salesData?.sales.length === 0 && (
                   <div className="text-center py-8">
                     <div className="text-sm text-muted-foreground">
-                      {searchTerm ? `Tidak ada transaksi yang ditemukan untuk &quot;${searchTerm}&quot;` : 'Belum ada transaksi penjualan'}
+                      {searchTerm ? `Tidak ada struk yang ditemukan untuk &quot;${searchTerm}&quot;` : 'Belum ada struk penjualan'}
                     </div>
                   </div>
                 )}

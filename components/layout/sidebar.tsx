@@ -20,17 +20,18 @@ import {
   Users,
   Shield,
   LogOut,
-  User
+  User,
+  FileText
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
-  { name: 'POS', href: '/pos', icon: CreditCard, permission: 'pos.view' },
-  { name: 'Penjualan', href: '/sales', icon: ShoppingCart, permission: 'sales.view' },
+  { name: 'Penjualan', href: '/pos', icon: ShoppingCart, permission: 'pos.view' },
+  { name: 'Struk', href: '/sales', icon: FileText, permission: 'sales.view' },
   { name: 'Produk', href: '/products', icon: Package, permission: 'products.view' },
-  { name: 'Inventory', href: '/inventory', icon: Store, permission: 'inventory.view' },
+  { name: 'Gudang', href: '/inventory', icon: Store, permission: 'inventory.view' },
   { name: 'Produksi', href: '/purchases', icon: Truck, permission: 'purchases.view' },
-  { name: 'Customers', href: '/suppliers', icon: Building2, permission: 'suppliers.view' },
+  { name: 'Pelanggan', href: '/suppliers', icon: Building2, permission: 'suppliers.view' },
   { name: 'Manajemen User', href: '/users', icon: Users, permission: 'users.view' },
   { name: 'Hak Akses', href: '/permissions', icon: Shield, permission: 'admin.permissions' },
 ];
