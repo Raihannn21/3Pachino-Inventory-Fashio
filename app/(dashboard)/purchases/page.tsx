@@ -103,6 +103,11 @@ export default function PurchasesPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPurchases, setTotalPurchases] = useState(0);
 
   // Form states
   const [selectedSupplier, setSelectedSupplier] = useState('');
@@ -116,15 +121,21 @@ export default function PurchasesPage() {
   const [selectedColor, setSelectedColor] = useState<string>(''); // Color name
 
   // Fetch data
-  const fetchPurchases = async () => {
+  const fetchPurchases = async (page = 1) => {
     try {
-      const response = await fetch('/api/purchases');
+      setLoading(true);
+      const response = await fetch(`/api/purchases?page=${page}&limit=10`);
       const data = await response.json();
       if (response.ok) {
         setPurchases(data.purchases);
+        setTotalPages(data.pagination.pages);
+        setTotalPurchases(data.pagination.total);
+        setCurrentPage(page);
       }
     } catch (error) {
       console.error('Error fetching purchases:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -160,10 +171,10 @@ export default function PurchasesPage() {
   };
 
   useEffect(() => {
-    fetchPurchases();
+    fetchPurchases(currentPage);
     fetchSuppliers();
     fetchProducts();
-  }, []);
+  }, [currentPage]);
 
   // Get available products (unique products only)
   const availableProducts = useMemo(() => {
@@ -268,7 +279,7 @@ export default function PurchasesPage() {
       if (existingItem) {
         return prevItems.map(item => 
           item.variantId === variant.id 
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + 1, unitPrice: Number(variant.product.costPrice) }
             : item
         );
       } else {
@@ -445,7 +456,7 @@ export default function PurchasesPage() {
   console.log('Filtered products count:', filteredProducts.length);
 
   // Summary stats
-  const totalPurchases = purchases.reduce((sum, p) => sum + Number(p.totalAmount), 0);
+  const totalPurchasesAmount = purchases.reduce((sum, p) => sum + Number(p.totalAmount), 0);
   const pendingCount = purchases.filter(p => p.status === 'PENDING').length;
 
   if (loading) {
@@ -866,7 +877,7 @@ export default function PurchasesPage() {
               <DollarSign className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-xl sm:text-2xl font-bold text-gray-900">Rp {totalPurchases.toLocaleString('id-ID')}</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">Rp {totalPurchasesAmount.toLocaleString('id-ID')}</div>
               <p className="text-xs text-gray-600">
                 {purchases.length} production orders
               </p>
@@ -890,7 +901,7 @@ export default function PurchasesPage() {
               <Truck className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-xl sm:text-2xl font-bold text-gray-900">{purchases.reduce((sum, p) => sum + p.items.length, 0)}</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{purchases.reduce((sum, p) => sum + p.items.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0), 0)}</div>
               <p className="text-xs text-gray-600">
                 Total items
               </p>
@@ -1061,6 +1072,36 @@ export default function PurchasesPage() {
                   </Table>
                 </div>
               </>
+            )}
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 border-t pt-4">
+                <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+                  Menampilkan {((currentPage - 1) * 10) + 1} - {Math.min(currentPage * 10, totalPurchases)} dari {totalPurchases} production orders
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                  >
+                    Sebelumnya
+                  </Button>
+                  <div className="flex items-center gap-2 px-3 text-sm">
+                    Halaman {currentPage} dari {totalPages}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                  >
+                    Selanjutnya
+                  </Button>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
