@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // GET - Get supplier by ID
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, context: { params: any }) {
+  const { params } = context;
   try {
     const supplier = await prisma.supplier.findUnique({
       where: {
@@ -39,10 +37,8 @@ export async function GET(
 }
 
 // PUT - Update supplier
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, context: { params: any }) {
+  const { params } = context;
   try {
     const body = await request.json();
     const { name, contact, phone, email, address } = body;
@@ -93,10 +89,8 @@ export async function PUT(
 }
 
 // DELETE - Delete supplier (soft delete)
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, context: { params: any }) {
+  const { params } = context;
   try {
     // Cek apakah supplier ada
     const supplier = await prisma.supplier.findUnique({
