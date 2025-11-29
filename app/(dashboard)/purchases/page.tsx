@@ -543,13 +543,6 @@ export default function PurchasesPage() {
                     <Label>Pilih Produk untuk Diproduksi</Label>
                   </div>
                   
-                  {/* Search Input */}
-                  <Input
-                    placeholder="Cari produk yang akan diproduksi..."
-                    value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
-                  />
-
                   {/* Cascade Dropdown - Quick Selection */}
                   <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
                     {/* Dropdown: Pilih Produk */}
@@ -705,73 +698,6 @@ export default function PurchasesPage() {
                         Reset Pilihan
                       </Button>
                     )}
-                  </div>
-
-                  {/* Product List Cards */}
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-2">
-                      Atau pilih langsung dari list ({filteredProducts.length} produk tersedia)
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto border rounded p-2">
-                      {filteredProducts.length > 0 ? (
-                        filteredProducts.map((variant) => (
-                          <Card key={variant.id} className="cursor-pointer hover:bg-gray-50 transition-shadow" onClick={() => addItemToPurchase(variant)}>
-                            <CardContent className="p-3">
-                              <div className="text-sm">
-                                <div className="flex items-center justify-between">
-                                  <div className="font-medium">{variant.product.name}</div>
-                                  {(!variant.isActive || !variant.product.isActive) && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      Nonaktif
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="flex gap-1 my-1">
-                                  <Badge variant="outline" className="text-xs">
-                                    {variant.size.name}
-                                  </Badge>
-                                  <Badge 
-                                    variant="outline" 
-                                    className="text-xs flex items-center gap-1"
-                                    style={{ backgroundColor: variant.color.hexCode + '20', borderColor: variant.color.hexCode }}
-                                  >
-                                    {variant.color.hexCode && (
-                                      <span
-                                        className="w-2.5 h-2.5 rounded-full border inline-block"
-                                        style={{ backgroundColor: variant.color.hexCode }}
-                                      />
-                                    )}
-                                    {variant.color.name}
-                                  </Badge>
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  Stok: {variant.stock}
-                                </div>
-                                <div className="text-xs font-medium text-green-600 mt-1">
-                                  Biaya: Rp {variant.product.costPrice.toLocaleString('id-ID')}
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))
-                      ) : (
-                        <div className="col-span-2 text-center py-8 text-muted-foreground">
-                          {productSearch ? (
-                            <>
-                              <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                              <p>Tidak ada produk yang sesuai dengan pencarian &quot;{productSearch}&quot;</p>
-                              <p className="text-xs mt-1">Coba gunakan kata kunci yang berbeda</p>
-                            </>
-                          ) : (
-                            <>
-                              <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                              <p>Belum ada produk aktif yang tersedia</p>
-                              <p className="text-xs mt-1">Pastikan produk dan varian sudah diaktifkan</p>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </div>
 
