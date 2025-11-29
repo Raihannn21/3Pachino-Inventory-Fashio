@@ -260,6 +260,29 @@ export default function PurchasesPage() {
     setSelectedColor('');
   }, []);
 
+  // Add item to purchase
+  const addItemToPurchase = useCallback((variant: ProductVariant) => {
+    setPurchaseItems(prevItems => {
+      const existingItem = prevItems.find(item => item.variantId === variant.id);
+      
+      if (existingItem) {
+        return prevItems.map(item => 
+          item.variantId === variant.id 
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        return [...prevItems, {
+          variantId: variant.id,
+          productId: variant.product.id,
+          quantity: 1,
+          unitPrice: Number(variant.product.costPrice),
+          variant
+        }];
+      }
+    });
+  }, []);
+
   const addSelectedToProduction = useCallback(() => {
     if (!selectedVariantData) {
       toast.error('Pilih produk, ukuran, dan warna terlebih dahulu');
@@ -268,28 +291,7 @@ export default function PurchasesPage() {
     
     addItemToPurchase(selectedVariantData);
     toast.success(`${selectedVariantData.product.name} ditambahkan ke production order`);
-  }, [selectedVariantData]);
-
-  // Add item to purchase
-  const addItemToPurchase = (variant: ProductVariant) => {
-    const existingItem = purchaseItems.find(item => item.variantId === variant.id);
-    
-    if (existingItem) {
-      setPurchaseItems(purchaseItems.map(item => 
-        item.variantId === variant.id 
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      ));
-    } else {
-      setPurchaseItems([...purchaseItems, {
-        variantId: variant.id,
-        productId: variant.product.id,
-        quantity: 1,
-        unitPrice: Number(variant.product.costPrice),
-        variant
-      }]);
-    }
-  };
+  }, [selectedVariantData, addItemToPurchase]);
 
   // Update item quantity
   const updateItemQuantity = (variantId: string, quantity: number) => {
