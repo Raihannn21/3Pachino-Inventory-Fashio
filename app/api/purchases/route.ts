@@ -153,71 +153,37 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Buat production order dengan Prisma transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Buat production order
-      const production = await tx.transaction.create({
-        data: {
-          type: 'PURCHASE', // Gunakan PURCHASE type untuk production orders
-          invoiceNumber,
-          totalAmount: total,
-          notes: `Production Order: ${notes || 'Produksi barang jadi'}`,
-          status: 'PENDING',
-          userId: defaultUser.id, // Gunakan user default yang sudah ada
-          items: {
-            create: transactionItems
-          }
-        },
-        include: {
-          items: {
-            include: {
-              variant: {
-                include: {
-                  product: true,
-                  size: true,
-                  color: true
-                }
-              },
-              product: true
-            }
+    // Buat production order (stock belum ditambah, menunggu status COMPLETED)
+    const result = await prisma.transaction.create({
+      data: {
+        type: 'PURCHASE', // Gunakan PURCHASE type untuk production orders
+        invoiceNumber,
+        totalAmount: total,
+        notes: `Production Order: ${notes || 'Produksi barang jadi'}`,
+        status: 'PENDING', // Status PENDING, stock belum bertambah
+        userId: defaultUser.id,
+        items: {
+          create: transactionItems
+        }
+      },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: true,
+                size: true,
+                color: true
+              }
+            },
+            product: true
           }
         }
-      });
-
-      // 2. Update stok (menambah karena produksi selesai)
-      for (const item of items) {
-        console.log(`Updating stock for variant ${item.variantId}, adding ${item.quantity} units`);
-        
-        // Update stok variant (produksi menambah stok)
-        const updatedVariant = await tx.productVariant.update({
-          where: { id: item.variantId },
-          data: {
-            stock: {
-              increment: item.quantity
-            }
-          }
-        });
-        
-        console.log(`Stock updated successfully. New stock: ${updatedVariant.stock}`);
-
-        // Buat stock movement
-        await tx.stockMovement.create({
-          data: {
-            variantId: item.variantId,
-            type: 'IN',
-            quantity: item.quantity,
-            reason: 'PRODUCTION',
-            reference: production.invoiceNumber,
-            createdBy: "cm3jcpr1s0000140hwjjcchcj" // TODO: Ambil dari session
-          }
-        });
       }
-
-      return production;
     });
 
     return NextResponse.json({
-      message: 'Production Order berhasil dibuat dan stok telah diupdate',
+      message: 'Production Order berhasil dibuat. Klik "Complete" untuk menambah stok.',
       production: result
     }, { status: 201 });
 
