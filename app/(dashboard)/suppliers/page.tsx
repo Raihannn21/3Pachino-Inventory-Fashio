@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Building2, Phone, Mail, MapPin, Eye, Search, Edit } from 'lucide-react';
+import { Plus, Building2, Phone, Mail, MapPin, Eye, Search, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Customer {
@@ -37,6 +37,9 @@ export default function CustomersPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -181,6 +184,39 @@ export default function CustomersPage() {
     setPhone(customer.phone || '');
     setAddress(customer.address || '');
     setIsEditOpen(true);
+  };
+
+  // Open delete dialog
+  const openDeleteDialog = (customer: Customer) => {
+    setDeletingCustomer(customer);
+    setIsDeleteOpen(true);
+  };
+
+  // Delete customer
+  const deleteCustomer = async () => {
+    if (!deletingCustomer) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/suppliers/${deletingCustomer.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Supplier berhasil dihapus!');
+        setIsDeleteOpen(false);
+        setDeletingCustomer(null);
+        fetchCustomers();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Gagal menghapus supplier');
+      }
+    } catch (error) {
+      console.error('Error deleting supplier:', error);
+      toast.error('Gagal menghapus supplier');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Update customer
@@ -435,6 +471,113 @@ export default function CustomersPage() {
               </div>
             </DialogContent>
           </Dialog>
+
+          {/* Edit Customer Dialog */}
+          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+            <DialogContent className="w-[95vw] max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-lg sm:text-xl">Edit Customer</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Nama Customer</Label>
+                  <Input
+                    id="edit-name"
+                    placeholder="Masukkan nama customer"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-contact">Kontak</Label>
+                  <Input
+                    id="edit-contact"
+                    placeholder="Masukkan kontak"
+                    value={contact}
+                    onChange={(e) => setContact(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-phone">No. Telepon</Label>
+                  <Input
+                    id="edit-phone"
+                    placeholder="Masukkan no. telepon"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-address">Alamat</Label>
+                  <Textarea
+                    id="edit-address"
+                    placeholder="Masukkan alamat"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    rows={3}
+                    className="min-h-[80px]"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 sm:justify-end mt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditOpen(false);
+                    resetForm();
+                    setEditingCustomer(null);
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  Batal
+                </Button>
+                <Button 
+                  onClick={updateCustomer}
+                  disabled={isEditing}
+                  className="w-full sm:w-auto"
+                >
+                  {isEditing ? 'Menyimpan...' : 'Simpan Perubahan'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Delete Customer Dialog */}
+          <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+            <DialogContent className="w-[95vw] max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-lg sm:text-xl">Hapus Supplier</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Apakah Anda yakin ingin menghapus supplier <span className="font-semibold text-gray-900">{deletingCustomer?.name}</span>?
+                </p>
+                <p className="text-sm text-red-600">
+                  ⚠️ Tindakan ini tidak dapat dibatalkan!
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 sm:justify-end mt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsDeleteOpen(false);
+                    setDeletingCustomer(null);
+                  }}
+                  className="w-full sm:w-auto"
+                  disabled={isDeleting}
+                >
+                  Batal
+                </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={deleteCustomer}
+                  disabled={isDeleting}
+                  className="w-full sm:w-auto"
+                >
+                  {isDeleting ? 'Menghapus...' : 'Hapus Supplier'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Summary Card */}
@@ -591,6 +734,15 @@ export default function CustomersPage() {
                               <Eye className="h-3 w-3 mr-1" />
                               History
                             </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="flex-1 text-xs"
+                              onClick={() => openDeleteDialog(customer)}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Delete
+                            </Button>
                           </div>
                         </div>
                       </CardContent>
@@ -671,6 +823,14 @@ export default function CustomersPage() {
                               >
                                 <Eye className="h-4 w-4 mr-1" />
                                 View History
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => openDeleteDialog(customer)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Delete
                               </Button>
                             </div>
                           </TableCell>

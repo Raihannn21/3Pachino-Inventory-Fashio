@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ interface ProductVariant {
   id: string;
   stock: number;
   barcode?: string;
+  sellingPrice?: number; // Harga jual per variant
   product: {
     id: string;
     name: string;
@@ -54,6 +55,21 @@ interface Customer {
   address?: string;
 }
 
+interface GroupedProduct {
+  productId: string;
+  productName: string;
+  productSku: string;
+  category: string;
+  brand: string;
+  priceRange: { min: number; max: number };
+  totalStock: number;
+  variantCount: number;
+  sizes: string[];
+  colors: Array<{ name: string; hexCode?: string }>;
+  variants: ProductVariant[];
+  isExpanded?: boolean;
+}
+
 export default function POSPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,6 +89,11 @@ export default function POSPage() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [sendWhatsApp, setSendWhatsApp] = useState(false);
+  
+  // Cascade dropdown states
+  const [selectedProduct, setSelectedProduct] = useState<string>(''); // Product ID
+  const [selectedSize, setSelectedSize] = useState<string>(''); // Size name
+  const [selectedColor, setSelectedColor] = useState<string>(''); // Color name
 
   // Load all products on component mount
   const loadAllProducts = async () => {
@@ -111,12 +132,83 @@ export default function POSPage() {
     }
   };
 
+  // Get available products (all products, no filter)
+  const availableProducts = useMemo(() => {
+    // Group by product ID (unique products only)
+    const uniqueProducts = new Map<string, { id: string; name: string; brand: string; category: string }>();
+    allProducts.forEach(v => {
+      if (!uniqueProducts.has(v.product.id)) {
+        uniqueProducts.set(v.product.id, {
+          id: v.product.id,
+          name: v.product.name,
+          brand: v.product.brand.name,
+          category: v.product.category.name
+        });
+      }
+    });
+    
+    return Array.from(uniqueProducts.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [allProducts]);
+
+  // Get available sizes for selected product
+  const availableSizes = useMemo(() => {
+    if (!selectedProduct) return [];
+    
+    const sizes = new Set<string>();
+    allProducts
+      .filter(v => v.product.id === selectedProduct && v.stock > 0)
+      .forEach(v => sizes.add(v.size.name));
+    
+    const sizeOrder: { [key: string]: number } = { 'S': 1, 'M': 2, 'L': 3, 'XL': 4, 'XXL': 5, 'XXXL': 6 };
+    return Array.from(sizes).sort((a, b) => (sizeOrder[a] || 999) - (sizeOrder[b] || 999));
+  }, [allProducts, selectedProduct]);
+
+  // Get available stock (real stock - cart quantity)
+  const getAvailableStock = useCallback((variantId: string, originalStock: number) => {
+    const cartItem = cart.find(item => item.variant.id === variantId);
+    const stockInCart = cartItem ? cartItem.quantity : 0;
+    return originalStock - stockInCart;
+  }, [cart]);
+
+  // Get available colors for selected product and size
+  const availableColors = useMemo(() => {
+    if (!selectedProduct || !selectedSize) return [];
+    
+    const colors: Array<{ name: string; hexCode: string; stock: number; variantId: string }> = [];
+    allProducts
+      .filter(v => v.product.id === selectedProduct && v.size.name === selectedSize && v.stock > 0)
+      .forEach(v => {
+        const availableStock = getAvailableStock(v.id, v.stock);
+        if (availableStock > 0) {
+          colors.push({
+            name: v.color.name,
+            hexCode: v.color.hexCode || '',
+            stock: availableStock,
+            variantId: v.id
+          });
+        }
+      });
+    
+    return colors.sort((a, b) => a.name.localeCompare(b.name));
+  }, [allProducts, selectedProduct, selectedSize, getAvailableStock]);
+
+  // Get selected variant data
+  const selectedVariantData = useMemo(() => {
+    if (!selectedProduct || !selectedSize || !selectedColor) return null;
+    
+    return allProducts.find(
+      v => v.product.id === selectedProduct && 
+           v.size.name === selectedSize && 
+           v.color.name === selectedColor
+    );
+  }, [allProducts, selectedProduct, selectedSize, selectedColor]);
+
+  // Get available sizes, colors, and categories
   // Search products
   const searchProducts = useCallback(async (term: string) => {
     setIsSearching(true);
     try {
       if (!term.trim()) {
-        // If search is empty, show all products
         setSearchResults(allProducts);
         setIsSearching(false);
         return;
@@ -154,9 +246,58 @@ export default function POSPage() {
     return () => clearTimeout(timer);
   }, [searchTerm, allProducts, searchProducts]);
 
+  // Handle product selection (reset size and color)
+  const handleProductChange = (productId: string) => {
+    setSelectedProduct(productId);
+    setSelectedSize(''); // Reset size
+    setSelectedColor(''); // Reset color
+  };
+
+  // Handle size selection (reset color)
+  const handleSizeChange = (size: string) => {
+    setSelectedSize(size);
+    setSelectedColor(''); // Reset color
+  };
+
+  // Handle color selection
+  const handleColorChange = (color: string) => {
+    setSelectedColor(color);
+  };
+
+  // Reset all selections
+  const resetSelection = () => {
+    setSelectedProduct('');
+    setSelectedSize('');
+    setSelectedColor('');
+  };
+
+  // Add selected variant to cart
+  const addSelectedToCart = () => {
+    if (!selectedVariantData) {
+      toast.error('Pilih produk, ukuran, dan warna terlebih dahulu');
+      return;
+    }
+    
+    const availableStock = getAvailableStock(selectedVariantData.id, selectedVariantData.stock);
+    if (availableStock < 1) {
+      toast.error('Stok habis atau sudah ada di keranjang');
+      return;
+    }
+    
+    addToCart(selectedVariantData);
+    resetSelection(); // Reset after adding
+  };
+
+  // Clear all filters and selections
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    resetSelection();
+  };
+
   // Add to cart
   const addToCart = (variant: ProductVariant) => {
     const existingItem = cart.find(item => item.variant.id === variant.id);
+    const availableStock = getAvailableStock(variant.id, variant.stock);
     
     if (existingItem) {
       if (existingItem.quantity >= variant.stock) {
@@ -165,7 +306,7 @@ export default function POSPage() {
       }
       updateQuantity(variant.id, existingItem.quantity + 1);
     } else {
-      if (variant.stock < 1) {
+      if (availableStock < 1) {
         toast.error('Stok habis');
         return;
       }
@@ -223,7 +364,10 @@ export default function POSPage() {
   };
 
   // Calculate totals
-  const subtotal = cart.reduce((sum, item) => sum + (item.variant.product.sellingPrice * item.quantity), 0);
+  const subtotal = cart.reduce((sum, item) => {
+    const price = item.variant.sellingPrice || item.variant.product.sellingPrice;
+    return sum + (price * item.quantity);
+  }, 0);
   const discountAmount = (subtotal * discount) / 100;
   const total = subtotal - discountAmount;
 
@@ -250,7 +394,7 @@ ${customerName ? `👤 Customer: ${customerName}` : ''}
 
 🛍️ Items:
 ${cart.map(item => {
-  const price = item.variant.product.sellingPrice;
+  const price = item.variant.sellingPrice || item.variant.product.sellingPrice;
   const itemTotal = price * item.quantity;
   return `• ${item.variant.product.name} (${item.quantity}x) ${item.variant.size.name} • ${item.variant.color.name}
   @Rp ${price.toLocaleString('id-ID')} = Rp ${itemTotal.toLocaleString('id-ID')}`;
@@ -405,19 +549,205 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
         <div className="xl:col-span-2">
           <Card>
             <CardHeader className="pb-3 sm:pb-6">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <Search className="h-4 w-4 sm:h-5 sm:w-5" />
-                Cari Produk
+              <CardTitle className="flex items-center justify-between text-lg sm:text-xl">
+                <div className="flex items-center gap-2">
+                  <Search className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Cari Produk
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    // Trigger barcode scanner (can be implemented later)
+                    toast.info('Fitur barcode scanner akan segera tersedia');
+                  }}
+                  className="hidden sm:flex gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 5v14"></path>
+                    <path d="M8 5v14"></path>
+                    <path d="M12 5v14"></path>
+                    <path d="M17 5v14"></path>
+                    <path d="M21 5v14"></path>
+                  </svg>
+                  Scan Barcode
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-3 sm:space-y-4">
+                {/* Search Input */}
                 <Input
                   placeholder="Cari produk, SKU, atau scan barcode..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="text-base sm:text-lg"
                 />
+
+                {/* Dropdown Cascade - Quick Selection */}
+                {!isLoadingProducts && (
+                  <div className="space-y-3">
+                    {/* Dropdown: Pilih Produk */}
+                    <div>
+                      <Label htmlFor="product-select" className="text-sm font-medium">
+                        Pilih Nama Produk
+                      </Label>
+                      <Select value={selectedProduct} onValueChange={handleProductChange}>
+                        <SelectTrigger id="product-select" className="mt-1">
+                          <SelectValue placeholder="-- Pilih Produk --" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableProducts.map(product => (
+                            <SelectItem key={product.id} value={product.id}>
+                              {product.name} - {product.brand}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {availableProducts.length === 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Tidak ada produk tersedia
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Dropdown: Pilih Ukuran */}
+                    <div>
+                      <Label htmlFor="size-select" className="text-sm font-medium">
+                        Pilih Ukuran
+                      </Label>
+                      <Select 
+                        value={selectedSize} 
+                        onValueChange={handleSizeChange}
+                        disabled={!selectedProduct}
+                      >
+                        <SelectTrigger id="size-select" className="mt-1">
+                          <SelectValue placeholder={selectedProduct ? "-- Pilih Ukuran --" : "Pilih produk terlebih dahulu"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableSizes.map((size: string) => (
+                            <SelectItem key={size} value={size}>
+                              {size}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedProduct && availableSizes.length === 0 && (
+                        <p className="text-xs text-red-500 mt-1">
+                          Tidak ada ukuran tersedia (stok habis)
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Dropdown: Pilih Warna */}
+                    <div>
+                      <Label htmlFor="color-select" className="text-sm font-medium">
+                        Pilih Warna
+                      </Label>
+                      <Select 
+                        value={selectedColor} 
+                        onValueChange={handleColorChange}
+                        disabled={!selectedProduct || !selectedSize}
+                      >
+                        <SelectTrigger id="color-select" className="mt-1">
+                          <SelectValue placeholder={selectedSize ? "-- Pilih Warna --" : "Pilih ukuran terlebih dahulu"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableColors.map(color => (
+                            <SelectItem key={color.name} value={color.name}>
+                              <div className="flex items-center gap-2">
+                                {color.hexCode && (
+                                  <span
+                                    className="w-4 h-4 rounded-full border inline-block"
+                                    style={{ backgroundColor: color.hexCode }}
+                                  />
+                                )}
+                                {color.name} (Stok: {color.stock})
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedSize && availableColors.length === 0 && (
+                        <p className="text-xs text-red-500 mt-1">
+                          Tidak ada warna tersedia (stok habis)
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Selected Variant Info & Add Button */}
+                    {selectedVariantData && (
+                      <div className="pt-3 border-t bg-blue-50 p-4 rounded-lg">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-semibold text-sm">
+                                {selectedVariantData.product.name}
+                              </h4>
+                              <p className="text-xs text-muted-foreground">
+                                {selectedVariantData.product.brand.name} • {selectedVariantData.product.category.name}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Badge variant="secondary">
+                              {selectedVariantData.size.name}
+                            </Badge>
+                            <Badge 
+                              variant="secondary"
+                              style={{ 
+                                backgroundColor: selectedVariantData.color.hexCode + '30',
+                                borderColor: selectedVariantData.color.hexCode 
+                              }}
+                            >
+                              <span
+                                className="w-3 h-3 rounded-full border inline-block mr-1"
+                                style={{ backgroundColor: selectedVariantData.color.hexCode }}
+                              />
+                              {selectedVariantData.color.name}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center pt-2">
+                            <div>
+                              <p className="text-lg font-bold text-primary">
+                                Rp {(selectedVariantData.sellingPrice || selectedVariantData.product.sellingPrice).toLocaleString('id-ID')}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Stok tersedia: {getAvailableStock(selectedVariantData.id, selectedVariantData.stock)}
+                              </p>
+                            </div>
+                            <Button
+                              onClick={addSelectedToCart}
+                              disabled={getAvailableStock(selectedVariantData.id, selectedVariantData.stock) < 1}
+                              size="lg"
+                              className="gap-2"
+                            >
+                              <ShoppingCart className="h-4 w-4" />
+                              Tambah
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Clear Button */}
+                    {(selectedProduct || searchTerm) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={clearAllFilters}
+                        className="w-full"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                          <path d="M3 6h18"></path>
+                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                        </svg>
+                        Reset Semua
+                      </Button>
+                    )}
+                  </div>
+                )}
 
                 {isLoadingProducts ? (
                   <div className="text-center py-8 sm:py-12">
@@ -451,39 +781,54 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                     <div className="text-xs sm:text-sm text-muted-foreground mb-2">
                       Menampilkan {searchResults.length} produk {searchTerm && `untuk "${searchTerm}"`}
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4 max-h-80 sm:max-h-96 overflow-y-auto">
-                      {searchResults.map((variant) => (
-                        <Card key={variant.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => addToCart(variant)}>
-                          <CardContent className="p-3 sm:p-4">
-                            <div className="space-y-2">
-                              <h3 className="font-medium text-sm sm:text-base leading-tight">{variant.product.name}</h3>
-                              <div className="flex flex-wrap gap-1">
-                                <Badge variant="outline" className="text-xs">
-                                  {variant.size.name}
-                                </Badge>
-                                <Badge 
-                                  variant="outline" 
-                                  className="text-xs"
-                                  style={{ backgroundColor: variant.color.hexCode + '20', borderColor: variant.color.hexCode }}
-                                >
-                                  {variant.color.name}
-                                </Badge>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-h-96 overflow-y-auto">
+                      {searchResults.map((variant) => {
+                        const availableStock = getAvailableStock(variant.id, variant.stock);
+                        const isOutOfStock = availableStock <= 0;
+                        
+                        return (
+                          <Card 
+                            key={variant.id} 
+                            className={`cursor-pointer hover:shadow-md transition-shadow ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                            onClick={() => !isOutOfStock && addToCart(variant)}
+                          >
+                            <CardContent className="p-3 sm:p-4">
+                              <div className="space-y-2">
+                                <h3 className="font-medium text-sm sm:text-base leading-tight">{variant.product.name}</h3>
+                                <div className="flex flex-wrap gap-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    {variant.size.name}
+                                  </Badge>
+                                  <Badge 
+                                    variant="outline" 
+                                    className="text-xs flex items-center gap-1"
+                                    style={{ backgroundColor: variant.color.hexCode + '20', borderColor: variant.color.hexCode }}
+                                  >
+                                    {variant.color.hexCode && (
+                                      <span
+                                        className="w-2.5 h-2.5 rounded-full border inline-block"
+                                        style={{ backgroundColor: variant.color.hexCode }}
+                                      />
+                                    )}
+                                    {variant.color.name}
+                                  </Badge>
+                                </div>
+                                <div className="flex justify-between items-center gap-2">
+                                  <span className="font-bold text-primary text-sm sm:text-base">
+                                    Rp {(variant.sellingPrice || variant.product.sellingPrice).toLocaleString('id-ID')}
+                                  </span>
+                                  <Badge variant={availableStock > 10 ? 'secondary' : availableStock > 0 ? 'destructive' : 'outline'} className="text-xs">
+                                    Stok: {availableStock}
+                                  </Badge>
+                                </div>
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {variant.product.brand.name} • {variant.product.category.name}
+                                </div>
                               </div>
-                              <div className="flex justify-between items-center gap-2">
-                                <span className="font-bold text-primary text-sm sm:text-base">
-                                  Rp {variant.product.sellingPrice.toLocaleString('id-ID')}
-                                </span>
-                                <Badge variant={variant.stock > 10 ? 'secondary' : variant.stock > 0 ? 'destructive' : 'outline'} className="text-xs">
-                                  Stok: {variant.stock}
-                                </Badge>
-                              </div>
-                              <div className="text-xs text-muted-foreground truncate">
-                                {variant.product.brand.name} • {variant.product.category.name}
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
 
                     {!isLoadingProducts && searchResults.length === 0 && (
@@ -540,7 +885,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                               </Badge>
                             </div>
                             <div className="text-xs text-muted-foreground mt-1">
-                              Rp {item.variant.product.sellingPrice.toLocaleString('id-ID')}
+                              Rp {(item.variant.sellingPrice || item.variant.product.sellingPrice).toLocaleString('id-ID')}
                             </div>
                           </div>
                           <div className="flex items-center gap-1 sm:gap-2">

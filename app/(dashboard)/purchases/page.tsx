@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -109,6 +109,11 @@ export default function PurchasesPage() {
   const [notes, setNotes] = useState('');
   const [purchaseItems, setPurchaseItems] = useState<PurchaseItem[]>([]);
   const [productSearch, setProductSearch] = useState('');
+  
+  // Cascade dropdown states for product selection
+  const [selectedProduct, setSelectedProduct] = useState<string>(''); // Product ID
+  const [selectedSize, setSelectedSize] = useState<string>(''); // Size name
+  const [selectedColor, setSelectedColor] = useState<string>(''); // Color name
 
   // Fetch data
   const fetchPurchases = async () => {
@@ -159,6 +164,100 @@ export default function PurchasesPage() {
     fetchSuppliers();
     fetchProducts();
   }, []);
+
+  // Get available products (unique products only)
+  const availableProducts = useMemo(() => {
+    const uniqueProducts = new Map<string, { id: string; name: string; brand: string; category: string }>();
+    products.forEach(v => {
+      if (!uniqueProducts.has(v.product.id)) {
+        uniqueProducts.set(v.product.id, {
+          id: v.product.id,
+          name: v.product.name,
+          brand: v.product.brand.name,
+          category: v.product.category.name
+        });
+      }
+    });
+    return Array.from(uniqueProducts.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [products]);
+
+  // Get available sizes for selected product
+  const availableSizes = useMemo(() => {
+    if (!selectedProduct) return [];
+    
+    const sizes = new Set<string>();
+    products
+      .filter(v => v.product.id === selectedProduct)
+      .forEach(v => sizes.add(v.size.name));
+    
+    const sizeOrder: { [key: string]: number } = { 'S': 1, 'M': 2, 'L': 3, 'XL': 4, 'XXL': 5, 'XXXL': 6 };
+    return Array.from(sizes).sort((a, b) => (sizeOrder[a] || 999) - (sizeOrder[b] || 999));
+  }, [products, selectedProduct]);
+
+  // Get available colors for selected product and size
+  const availableColors = useMemo(() => {
+    if (!selectedProduct || !selectedSize) return [];
+    
+    const colorsMap = new Map<string, { name: string; hexCode: string; stock: number; variantId: string }>();
+    products
+      .filter(v => v.product.id === selectedProduct && v.size.name === selectedSize)
+      .forEach(v => {
+        if (!colorsMap.has(v.color.name)) {
+          colorsMap.set(v.color.name, {
+            name: v.color.name,
+            hexCode: v.color.hexCode || '',
+            stock: v.stock,
+            variantId: v.id
+          });
+        }
+      });
+    
+    return Array.from(colorsMap.values());
+  }, [products, selectedProduct, selectedSize]);
+
+  // Get selected variant data
+  const selectedVariantData = useMemo(() => {
+    if (!selectedProduct || !selectedSize || !selectedColor) return null;
+    
+    return products.find(
+      v => v.product.id === selectedProduct && 
+           v.size.name === selectedSize && 
+           v.color.name === selectedColor
+    ) || null;
+  }, [products, selectedProduct, selectedSize, selectedColor]);
+
+  // Handlers for cascade dropdown
+  const handleProductChange = useCallback((productId: string) => {
+    setSelectedProduct(productId);
+    setSelectedSize('');
+    setSelectedColor('');
+  }, []);
+
+  const handleSizeChange = useCallback((size: string) => {
+    setSelectedSize(size);
+    setSelectedColor('');
+  }, []);
+
+  const handleColorChange = useCallback((color: string) => {
+    setSelectedColor(color);
+  }, []);
+
+  const resetSelection = useCallback(() => {
+    setSelectedProduct('');
+    setSelectedSize('');
+    setSelectedColor('');
+  }, []);
+
+  const addSelectedToProduction = useCallback(() => {
+    if (!selectedVariantData) {
+      toast.error('Pilih produk, ukuran, dan warna terlebih dahulu');
+      return;
+    }
+    
+    addItemToPurchase(selectedVariantData);
+    resetSelection();
+    toast.success(`${selectedVariantData.product.name} ditambahkan ke production order`);
+  }, [selectedVariantData]);
 
   // Add item to purchase
   const addItemToPurchase = (variant: ProductVariant) => {
@@ -443,57 +542,237 @@ export default function PurchasesPage() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <Label>Pilih Produk untuk Diproduksi</Label>
-                    <span className="text-sm text-muted-foreground">
-                      {filteredProducts.length} produk tersedia
-                    </span>
                   </div>
+                  
+                  {/* Search Input */}
                   <Input
                     placeholder="Cari produk yang akan diproduksi..."
                     value={productSearch}
                     onChange={(e) => setProductSearch(e.target.value)}
                   />
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto border rounded p-2">
-                    {filteredProducts.length > 0 ? (
-                      filteredProducts.map((variant) => (
-                        <Card key={variant.id} className="cursor-pointer hover:bg-gray-50" onClick={() => addItemToPurchase(variant)}>
-                          <CardContent className="p-3">
-                            <div className="text-sm">
-                              <div className="flex items-center justify-between">
-                                <div className="font-medium">{variant.product.name}</div>
-                                {(!variant.isActive || !variant.product.isActive) && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    Nonaktif
-                                  </Badge>
+
+                  {/* Cascade Dropdown - Quick Selection */}
+                  <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
+                    {/* Dropdown: Pilih Produk */}
+                    <div>
+                      <Label htmlFor="product-select-purchase" className="text-sm font-medium">
+                        Pilih Nama Produk
+                      </Label>
+                      <Select value={selectedProduct} onValueChange={handleProductChange}>
+                        <SelectTrigger id="product-select-purchase" className="mt-1 bg-white">
+                          <SelectValue placeholder="-- Pilih Produk --" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableProducts.map(product => (
+                            <SelectItem key={product.id} value={product.id}>
+                              {product.name} - {product.brand}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {availableProducts.length === 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Tidak ada produk tersedia
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Dropdown: Pilih Ukuran */}
+                    <div>
+                      <Label htmlFor="size-select-purchase" className="text-sm font-medium">
+                        Pilih Ukuran
+                      </Label>
+                      <Select 
+                        value={selectedSize} 
+                        onValueChange={handleSizeChange}
+                        disabled={!selectedProduct}
+                      >
+                        <SelectTrigger id="size-select-purchase" className="mt-1 bg-white">
+                          <SelectValue placeholder={selectedProduct ? "-- Pilih Ukuran --" : "Pilih produk terlebih dahulu"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableSizes.map((size: string) => (
+                            <SelectItem key={size} value={size}>
+                              {size}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedProduct && availableSizes.length === 0 && (
+                        <p className="text-xs text-red-500 mt-1">
+                          Tidak ada ukuran tersedia
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Dropdown: Pilih Warna */}
+                    <div>
+                      <Label htmlFor="color-select-purchase" className="text-sm font-medium">
+                        Pilih Warna
+                      </Label>
+                      <Select 
+                        value={selectedColor} 
+                        onValueChange={handleColorChange}
+                        disabled={!selectedProduct || !selectedSize}
+                      >
+                        <SelectTrigger id="color-select-purchase" className="mt-1 bg-white">
+                          <SelectValue placeholder={selectedSize ? "-- Pilih Warna --" : "Pilih ukuran terlebih dahulu"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableColors.map(color => (
+                            <SelectItem key={color.name} value={color.name}>
+                              <div className="flex items-center gap-2">
+                                {color.hexCode && (
+                                  <span
+                                    className="w-4 h-4 rounded-full border inline-block"
+                                    style={{ backgroundColor: color.hexCode }}
+                                  />
                                 )}
+                                {color.name} (Stok: {color.stock})
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                {variant.size.name} • {variant.color.name} • Stok: {variant.stock}
-                              </div>
-                              <div className="text-xs font-medium text-green-600">
-                                Biaya Produksi: Rp {variant.product.costPrice.toLocaleString('id-ID')}
-                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedSize && availableColors.length === 0 && (
+                        <p className="text-xs text-red-500 mt-1">
+                          Tidak ada warna tersedia
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Selected Variant Info & Add Button */}
+                    {selectedVariantData && (
+                      <div className="pt-3 border-t bg-blue-50 p-4 rounded-lg">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-semibold text-sm">
+                                {selectedVariantData.product.name}
+                              </h4>
+                              <p className="text-xs text-muted-foreground">
+                                {selectedVariantData.product.brand.name} • {selectedVariantData.product.category.name}
+                              </p>
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))
-                    ) : (
-                      <div className="col-span-2 text-center py-8 text-muted-foreground">
-                        {productSearch ? (
-                          <>
-                            <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                            <p>Tidak ada produk yang sesuai dengan pencarian &quot;{productSearch}&quot;</p>
-                            <p className="text-xs mt-1">Coba gunakan kata kunci yang berbeda</p>
-                          </>
-                        ) : (
-                          <>
-                            <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                            <p>Belum ada produk aktif yang tersedia</p>
-                            <p className="text-xs mt-1">Pastikan produk dan varian sudah diaktifkan</p>
-                          </>
-                        )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Badge variant="secondary">
+                              {selectedVariantData.size.name}
+                            </Badge>
+                            <Badge 
+                              variant="secondary"
+                              style={{ 
+                                backgroundColor: selectedVariantData.color.hexCode + '30',
+                                borderColor: selectedVariantData.color.hexCode 
+                              }}
+                            >
+                              <span
+                                className="w-3 h-3 rounded-full border inline-block mr-1"
+                                style={{ backgroundColor: selectedVariantData.color.hexCode }}
+                              />
+                              {selectedVariantData.color.name}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center pt-2">
+                            <div>
+                              <p className="text-lg font-bold text-green-600">
+                                Rp {selectedVariantData.product.costPrice.toLocaleString('id-ID')}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Stok tersedia: {selectedVariantData.stock}
+                              </p>
+                            </div>
+                            <Button
+                              onClick={addSelectedToProduction}
+                              size="lg"
+                              className="gap-2"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Tambah
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     )}
+
+                    {/* Reset Button */}
+                    {selectedProduct && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={resetSelection}
+                        className="w-full"
+                      >
+                        Reset Pilihan
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Product List Cards */}
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-2">
+                      Atau pilih langsung dari list ({filteredProducts.length} produk tersedia)
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto border rounded p-2">
+                      {filteredProducts.length > 0 ? (
+                        filteredProducts.map((variant) => (
+                          <Card key={variant.id} className="cursor-pointer hover:bg-gray-50 transition-shadow" onClick={() => addItemToPurchase(variant)}>
+                            <CardContent className="p-3">
+                              <div className="text-sm">
+                                <div className="flex items-center justify-between">
+                                  <div className="font-medium">{variant.product.name}</div>
+                                  {(!variant.isActive || !variant.product.isActive) && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Nonaktif
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex gap-1 my-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    {variant.size.name}
+                                  </Badge>
+                                  <Badge 
+                                    variant="outline" 
+                                    className="text-xs flex items-center gap-1"
+                                    style={{ backgroundColor: variant.color.hexCode + '20', borderColor: variant.color.hexCode }}
+                                  >
+                                    {variant.color.hexCode && (
+                                      <span
+                                        className="w-2.5 h-2.5 rounded-full border inline-block"
+                                        style={{ backgroundColor: variant.color.hexCode }}
+                                      />
+                                    )}
+                                    {variant.color.name}
+                                  </Badge>
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  Stok: {variant.stock}
+                                </div>
+                                <div className="text-xs font-medium text-green-600 mt-1">
+                                  Biaya: Rp {variant.product.costPrice.toLocaleString('id-ID')}
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))
+                      ) : (
+                        <div className="col-span-2 text-center py-8 text-muted-foreground">
+                          {productSearch ? (
+                            <>
+                              <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                              <p>Tidak ada produk yang sesuai dengan pencarian &quot;{productSearch}&quot;</p>
+                              <p className="text-xs mt-1">Coba gunakan kata kunci yang berbeda</p>
+                            </>
+                          ) : (
+                            <>
+                              <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                              <p>Belum ada produk aktif yang tersedia</p>
+                              <p className="text-xs mt-1">Pastikan produk dan varian sudah diaktifkan</p>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
