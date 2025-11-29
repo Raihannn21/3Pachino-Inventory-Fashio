@@ -596,13 +596,14 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-3 sm:space-y-4">
-                {/* Search Input */}
+                {/* Search Input - Dinonaktifkan
                 <Input
                   placeholder="Cari produk, SKU, atau scan barcode..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="text-base sm:text-lg"
                 />
+                */}
 
                 {/* Dropdown Cascade - Quick Selection */}
                 {!isLoadingProducts && (
