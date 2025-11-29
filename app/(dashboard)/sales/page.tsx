@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -14,11 +13,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, Eye, Calendar, TrendingUp, Package, Users, Receipt as ReceiptIcon, ShoppingCart, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { Eye, Calendar, TrendingUp, Package, Users, Receipt as ReceiptIcon, ShoppingCart, Trash2, ChevronDown } from 'lucide-react';
+import { format, startOfDay, endOfDay } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { toast } from 'sonner';
 import Receipt from '@/components/receipt/Receipt';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DayPicker, DateRange } from 'react-day-picker';
+import 'react-day-picker/dist/style.css';
 
 interface TransactionItem {
   id: string;
@@ -86,7 +88,8 @@ interface SalesData {
 export default function SalesPage() {
   const [salesData, setSalesData] = useState<SalesData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -97,7 +100,7 @@ export default function SalesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch sales data
-  const fetchSales = async (page = 1, search = '') => {
+  const fetchSales = async (page = 1) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -105,8 +108,9 @@ export default function SalesPage() {
         limit: '10'
       });
 
-      if (search) {
-        params.append('search', search);
+      if (dateRange?.from && dateRange?.to) {
+        params.append('startDate', dateRange.from.toISOString());
+        params.append('endDate', dateRange.to.toISOString());
       }
 
       const response = await fetch(`/api/sales?${params}`);
@@ -125,13 +129,24 @@ export default function SalesPage() {
   };
 
   useEffect(() => {
-    fetchSales(currentPage, searchTerm);
-  }, [currentPage, searchTerm]);
+    fetchSales(currentPage);
+  }, [currentPage, dateRange]);
 
-  // Handle search
-  const handleSearch = () => {
-    setCurrentPage(1);
-    fetchSales(1, searchTerm);
+  // Handle date range change
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range);
+    if (range?.from && range?.to) {
+      setCurrentPage(1);
+      setOpen(false);
+    }
+  };
+
+  // Format date range for display
+  const formatDateRange = () => {
+    if (dateRange?.from && dateRange?.to) {
+      return `${format(dateRange.from, 'dd MMM yyyy', { locale: id })} - ${format(dateRange.to, 'dd MMM yyyy', { locale: id })}`;
+    }
+    return 'Pilih Tanggal';
   };
 
   // View transaction detail
@@ -168,7 +183,7 @@ export default function SalesPage() {
         setIsDeleteOpen(false);
         setTransactionToDelete(null);
         // Refresh data
-        fetchSales(currentPage, searchTerm);
+        fetchSales(currentPage);
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || 'Gagal menghapus transaksi');
@@ -296,28 +311,59 @@ export default function SalesPage() {
           </Card>
         </div>
 
-        {/* Search and Filter */}
+        {/* Date Filter */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg sm:text-xl">Daftar Transaksi</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Cari berdasarkan nomor invoice atau customer..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8 text-sm"
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="justify-between text-left font-normal w-full sm:w-auto"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      {formatDateRange()}
+                    </div>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <DayPicker
+                    mode="range"
+                    selected={dateRange}
+                    onSelect={handleDateRangeChange}
+                    numberOfMonths={2}
+                    locale={id}
+                    className="p-3"
+                    classNames={{
+                      months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                      month: "space-y-4",
+                      caption: "flex justify-center pt-1 relative items-center",
+                      caption_label: "text-sm font-medium",
+                      nav: "space-x-1 flex items-center",
+                      nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+                      nav_button_previous: "absolute left-1",
+                      nav_button_next: "absolute right-1",
+                      table: "w-full border-collapse space-y-1",
+                      head_row: "flex",
+                      head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+                      row: "flex w-full mt-2",
+                      cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                      day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
+                      day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                      day_today: "bg-accent text-accent-foreground",
+                      day_outside: "text-muted-foreground opacity-50",
+                      day_disabled: "text-muted-foreground opacity-50",
+                      day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
+                      day_hidden: "invisible",
+                    }}
                   />
-                </div>
-              </div>
-              <Button onClick={handleSearch} className="w-full sm:w-auto">
-                Cari
-              </Button>
+                </PopoverContent>
+              </Popover>
             </div>
 
             {loading ? (
@@ -485,7 +531,7 @@ export default function SalesPage() {
                 {salesData?.sales.length === 0 && (
                   <div className="text-center py-8">
                     <div className="text-sm text-muted-foreground">
-                      {searchTerm ? `Tidak ada struk yang ditemukan untuk &quot;${searchTerm}&quot;` : 'Belum ada struk penjualan'}
+                      Tidak ada transaksi pada periode ini
                     </div>
                   </div>
                 )}
