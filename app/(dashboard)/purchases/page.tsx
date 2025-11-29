@@ -108,6 +108,11 @@ export default function PurchasesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalPurchases, setTotalPurchases] = useState(0);
+  
+  // Stats dari API (untuk semua data, bukan hanya halaman saat ini)
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
 
   // Form states
   const [selectedSupplier, setSelectedSupplier] = useState('');
@@ -131,6 +136,13 @@ export default function PurchasesPage() {
         setTotalPages(data.pagination.pages);
         setTotalPurchases(data.pagination.total);
         setCurrentPage(page);
+        
+        // Update stats dari API
+        if (data.stats) {
+          setTotalItems(data.stats.totalItems);
+          setTotalAmount(data.stats.totalAmount);
+          setPendingCount(data.stats.pendingCount);
+        }
       }
     } catch (error) {
       console.error('Error fetching purchases:', error);
@@ -455,9 +467,9 @@ export default function PurchasesPage() {
   console.log('Search term:', productSearch);
   console.log('Filtered products count:', filteredProducts.length);
 
-  // Summary stats
-  const totalPurchasesAmount = purchases.reduce((sum, p) => sum + Number(p.totalAmount), 0);
-  const pendingCount = purchases.filter(p => p.status === 'PENDING').length;
+  // Summary stats - tidak perlu menghitung lagi, sudah dari API
+  // const totalPurchasesAmount = purchases.reduce((sum, p) => sum + Number(p.totalAmount), 0);
+  // const pendingCount = purchases.filter(p => p.status === 'PENDING').length;
 
   if (loading) {
     return (
@@ -877,9 +889,9 @@ export default function PurchasesPage() {
               <DollarSign className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-xl sm:text-2xl font-bold text-gray-900">Rp {totalPurchasesAmount.toLocaleString('id-ID')}</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">Rp {totalAmount.toLocaleString('id-ID')}</div>
               <p className="text-xs text-gray-600">
-                {purchases.length} production orders
+                {totalPurchases} production orders
               </p>
             </CardContent>
           </Card>
@@ -901,7 +913,7 @@ export default function PurchasesPage() {
               <Truck className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-xl sm:text-2xl font-bold text-gray-900">{purchases.reduce((sum, p) => sum + p.items.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0), 0)}</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{totalItems}</div>
               <p className="text-xs text-gray-600">
                 Total items
               </p>

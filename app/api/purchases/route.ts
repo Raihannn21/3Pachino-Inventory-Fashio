@@ -61,6 +61,28 @@ export async function GET(request: NextRequest) {
       prisma.transaction.count({ where })
     ]);
 
+    // Calculate total items across all purchases (not just current page)
+    const allPurchases = await prisma.transaction.findMany({
+      where,
+      include: {
+        items: {
+          select: {
+            quantity: true
+          }
+        }
+      }
+    });
+
+    const totalItems = allPurchases.reduce((sum, p) => 
+      sum + p.items.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0), 
+    0);
+
+    // Calculate total amount across all purchases
+    const totalAmount = allPurchases.reduce((sum, p) => sum + Number(p.totalAmount || 0), 0);
+
+    // Count pending orders
+    const pendingCount = allPurchases.filter(p => p.status === 'PENDING').length;
+
     return NextResponse.json({
       purchases,
       pagination: {
@@ -68,6 +90,11 @@ export async function GET(request: NextRequest) {
         limit,
         total,
         pages: Math.ceil(total / limit)
+      },
+      stats: {
+        totalItems,
+        totalAmount,
+        pendingCount
       }
     });
   } catch (error) {
