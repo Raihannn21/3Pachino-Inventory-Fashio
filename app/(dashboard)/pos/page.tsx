@@ -802,7 +802,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                     {searchTerm.trim() ? (
                       <>
                         <div className="text-xs sm:text-sm text-muted-foreground mb-2">
-                          Menampilkan {searchResults.length} produk untuk "{searchTerm}"
+                          Menampilkan {searchResults.length} produk untuk &quot;{searchTerm}&quot;
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-h-96 overflow-y-auto">
                           {searchResults.map((variant) => {
@@ -857,7 +857,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                         {!isLoadingProducts && searchResults.length === 0 && (
                           <div className="text-center py-6 sm:py-8">
                             <div className="text-xs sm:text-sm text-muted-foreground">
-                              Tidak ada produk yang ditemukan untuk "{searchTerm}"
+                              Tidak ada produk yang ditemukan untuk &quot;{searchTerm}&quot;
                             </div>
                           </div>
                         )}
