@@ -161,14 +161,16 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const itemTotal = Number(variant.product.sellingPrice) * item.quantity;
+      // Gunakan variant.sellingPrice jika ada, jika tidak gunakan product.sellingPrice
+      const price = variant.sellingPrice ?? Number(variant.product.sellingPrice);
+      const itemTotal = price * item.quantity;
       subtotal += itemTotal;
 
       transactionItems.push({
         productId: variant.productId,
         variantId: item.variantId,
         quantity: item.quantity,
-        unitPrice: Number(variant.product.sellingPrice),
+        unitPrice: price,
         totalPrice: itemTotal
       });
     }
