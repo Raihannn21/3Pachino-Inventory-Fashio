@@ -3,7 +3,7 @@ import JsBarcode from 'jsbarcode';
 
 interface ProductVariant {
   id: string;
-  barcode: string;
+  barcode: string | undefined;
   stock: number;
   size: {
     name: string;
@@ -51,6 +51,11 @@ export async function generateBarcodeLabels(
 
   for (let i = 0; i < variants.length; i++) {
     const variant = variants[i];
+
+    // Skip if no barcode
+    if (!variant.barcode) {
+      continue;
+    }
 
     // Calculate position
     const x = marginX + currentCol * (labelWidth + gapX);
