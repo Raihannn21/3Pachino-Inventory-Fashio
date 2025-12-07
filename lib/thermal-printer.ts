@@ -301,6 +301,15 @@ class ThermalPrinter {
         .align('left')
         .line(separator);
 
+      // Hitung total jumlah barang (sum dari semua qty)
+      const totalQty = receiptData.items.reduce((sum, item) => sum + item.quantity, 0);
+      const qtyLine = this.createRow(`Jumlah Barang:`, `${totalQty} barang`, PRINTER_WIDTH);
+      
+      encoder
+        .align('left')
+        .line(LEFT_MARGIN + qtyLine)
+        .newline();
+
       // Total - BOLD dan BESAR seperti PDF
       const totalLabel = 'TOTAL:';
       const totalAmountFormatted = this.formatCurrency(receiptData.totalAmount);
