@@ -125,19 +125,30 @@ class ThermalPrinter {
 
   /**
    * Send data to printer
+   * Optimized for mobile devices with smaller chunks and longer delays
    */
   private async sendData(data: Uint8Array): Promise<void> {
     if (!this.printer?.characteristic) {
       throw new Error('Printer belum terkoneksi');
     }
 
-    // Split data into chunks (max 512 bytes for Bluetooth)
-    const chunkSize = 512;
+    // Use smaller chunk size for mobile stability (was 512, now 128)
+    // Mobile Bluetooth connections need smaller packets to prevent buffer overflow
+    const chunkSize = 128;
+    
     for (let i = 0; i < data.length; i += chunkSize) {
       const chunk = data.slice(i, Math.min(i + chunkSize, data.length));
-      await this.printer.characteristic.writeValue(chunk);
-      // Small delay between chunks
-      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Use writeWithoutResponse if available (faster for thermal printers)
+      if (this.printer.characteristic.properties.writeWithoutResponse) {
+        await this.printer.characteristic.writeValueWithoutResponse(chunk);
+      } else {
+        await this.printer.characteristic.writeValue(chunk);
+      }
+      
+      // Longer delay for mobile devices (was 50ms, now 100ms)
+      // This prevents printer buffer overflow on slower mobile connections
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
 
