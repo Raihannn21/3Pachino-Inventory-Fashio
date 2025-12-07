@@ -57,17 +57,17 @@ export async function generateBarcodeLabels(
       continue;
     }
 
-    // Calculate position
-    const x = marginX + currentCol * (labelWidth + gapX);
-    const y = marginY + currentRow * (labelHeight + gapY);
-
-    // Check if we need a new page
+    // Check if we need a new page BEFORE calculating position
     if (currentRow >= rowsPerPage) {
       pdf.addPage();
       currentPage++;
       currentRow = 0;
       currentCol = 0;
     }
+
+    // Calculate position
+    const x = marginX + currentCol * (labelWidth + gapX);
+    const y = marginY + currentRow * (labelHeight + gapY);
 
     // Draw label border (optional, for cutting guide)
     pdf.setDrawColor(200, 200, 200);
