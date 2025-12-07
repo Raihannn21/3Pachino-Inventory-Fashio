@@ -3,7 +3,7 @@ import JsBarcode from 'jsbarcode';
 
 interface ProductVariant {
   id: string;
-  barcode: string | undefined;
+  barcode?: string;
   stock: number;
   size: {
     name: string;
