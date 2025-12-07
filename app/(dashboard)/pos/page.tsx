@@ -45,6 +45,7 @@ interface ProductVariant {
 interface CartItem {
   variant: ProductVariant;
   quantity: number;
+  customPrice?: number; // Harga custom untuk nego (optional)
 }
 
 interface Customer {
@@ -94,6 +95,7 @@ export default function POSPage() {
   const [selectedProduct, setSelectedProduct] = useState<string>(''); // Product ID
   const [selectedSize, setSelectedSize] = useState<string>(''); // Size name
   const [selectedColor, setSelectedColor] = useState<string>(''); // Color name
+  const [customPrice, setCustomPrice] = useState<string>(''); // Custom price untuk nego
 
   // Load all products on component mount
   const loadAllProducts = async () => {
@@ -233,7 +235,65 @@ export default function POSPage() {
   useEffect(() => {
     loadAllProducts();
     loadCustomers();
+    
+    // Load cart dari localStorage
+    try {
+      const savedCart = localStorage.getItem('pos_cart');
+      const savedCustomerData = localStorage.getItem('pos_customer');
+      
+      if (savedCart) {
+        const parsedCart = JSON.parse(savedCart);
+        setCart(parsedCart);
+      }
+      
+      if (savedCustomerData) {
+        const customerData = JSON.parse(savedCustomerData);
+        setSelectedCustomer(customerData.selectedCustomer || '');
+        setCustomerName(customerData.customerName || '');
+        setCustomerPhone(customerData.customerPhone || '');
+        setCustomerAddress(customerData.customerAddress || '');
+        setNotes(customerData.notes || '');
+        setDiscount(customerData.discount || 0);
+      }
+    } catch (error) {
+      console.error('Error loading cart from localStorage:', error);
+    }
   }, []);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      if (cart.length > 0) {
+        localStorage.setItem('pos_cart', JSON.stringify(cart));
+      } else {
+        localStorage.removeItem('pos_cart');
+      }
+    } catch (error) {
+      console.error('Error saving cart to localStorage:', error);
+    }
+  }, [cart]);
+
+  // Save customer data to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      const customerData = {
+        selectedCustomer,
+        customerName,
+        customerPhone,
+        customerAddress,
+        notes,
+        discount
+      };
+      
+      if (customerName || customerPhone || notes || discount > 0) {
+        localStorage.setItem('pos_customer', JSON.stringify(customerData));
+      } else {
+        localStorage.removeItem('pos_customer');
+      }
+    } catch (error) {
+      console.error('Error saving customer data to localStorage:', error);
+    }
+  }, [selectedCustomer, customerName, customerPhone, customerAddress, notes, discount]);
 
   // Debounced search
   useEffect(() => {
@@ -289,6 +349,7 @@ export default function POSPage() {
     setSelectedProduct('');
     setSelectedSize('');
     setSelectedColor('');
+    setCustomPrice(''); // Reset custom price
   };
 
   // Add selected variant to cart
@@ -304,7 +365,15 @@ export default function POSPage() {
       return;
     }
     
-    addToCart(selectedVariantData);
+    // Parse custom price jika diisi
+    const parsedCustomPrice = customPrice ? parseFloat(customPrice) : undefined;
+    if (customPrice && (isNaN(parsedCustomPrice!) || parsedCustomPrice! <= 0)) {
+      toast.error('Harga custom tidak valid');
+      return;
+    }
+    
+    addToCart(selectedVariantData, parsedCustomPrice);
+    setCustomPrice(''); // Reset custom price setelah add
     // Jangan reset selection agar filter tetap terpilih
   };
 
@@ -314,8 +383,8 @@ export default function POSPage() {
     resetSelection();
   };
 
-  // Add to cart
-  const addToCart = (variant: ProductVariant) => {
+  // Add to cart with optional custom price
+  const addToCart = (variant: ProductVariant, customPriceValue?: number) => {
     const existingItem = cart.find(item => item.variant.id === variant.id);
     const availableStock = getAvailableStock(variant.id, variant.stock);
     
@@ -330,7 +399,11 @@ export default function POSPage() {
         toast.error('Stok habis');
         return;
       }
-      setCart([...cart, { variant, quantity: 1 }]);
+      setCart([...cart, { 
+        variant, 
+        quantity: 1,
+        customPrice: customPriceValue // Simpan custom price jika ada
+      }]);
       toast.success(`${variant.product.name} ditambahkan ke keranjang`);
     }
   };
@@ -355,6 +428,15 @@ export default function POSPage() {
     ));
   };
 
+  // Update custom price for cart item
+  const updatePrice = (variantId: string, newPrice: number | undefined) => {
+    setCart(cart.map(item => 
+      item.variant.id === variantId 
+        ? { ...item, customPrice: newPrice }
+        : item
+    ));
+  };
+
   // Remove from cart
   const removeFromCart = (variantId: string) => {
     setCart(cart.filter(item => item.variant.id !== variantId));
@@ -370,6 +452,14 @@ export default function POSPage() {
     setNotes('');
     setDiscount(0);
     setSendWhatsApp(false);
+    
+    // Clear localStorage
+    try {
+      localStorage.removeItem('pos_cart');
+      localStorage.removeItem('pos_customer');
+    } catch (error) {
+      console.error('Error clearing localStorage:', error);
+    }
   };
 
   // Handle customer selection
@@ -385,7 +475,8 @@ export default function POSPage() {
 
   // Calculate totals
   const subtotal = cart.reduce((sum, item) => {
-    const price = item.variant.sellingPrice || item.variant.product.sellingPrice;
+    // Gunakan customPrice jika ada, fallback ke default price
+    const price = item.customPrice ?? item.variant.sellingPrice ?? item.variant.product.sellingPrice;
     return sum + (price * item.quantity);
   }, 0);
   const discountAmount = (subtotal * discount) / 100;
@@ -414,7 +505,7 @@ ${customerName ? `👤 Customer: ${customerName}` : ''}
 
 🛍️ Items:
 ${cart.map(item => {
-  const price = item.variant.sellingPrice || item.variant.product.sellingPrice;
+  const price = item.customPrice ?? item.variant.sellingPrice ?? item.variant.product.sellingPrice;
   const itemTotal = price * item.quantity;
   return `• ${item.variant.product.name} (${item.quantity}x) ${item.variant.size.name} • ${item.variant.color.name}
   @Rp ${price.toLocaleString('id-ID')} = Rp ${itemTotal.toLocaleString('id-ID')}`;
@@ -461,7 +552,9 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
           customerPhone,
           items: cart.map(item => ({
             variantId: item.variant.id,
-            quantity: item.quantity
+            quantity: item.quantity,
+            // Kirim customPrice jika ada (harga nego)
+            price: item.customPrice ?? item.variant.sellingPrice ?? item.variant.product.sellingPrice
           })),
           discount,
           notes
@@ -728,15 +821,42 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                               {selectedVariantData.color.name}
                             </Badge>
                           </div>
+                          
+                          {/* Harga Default */}
+                          <div className="pt-2">
+                            <p className="text-xs text-muted-foreground mb-1">Harga Default:</p>
+                            <p className="text-lg font-bold text-primary">
+                              Rp {(selectedVariantData.sellingPrice || selectedVariantData.product.sellingPrice).toLocaleString('id-ID')}
+                            </p>
+                          </div>
+
+                          {/* Input Harga Custom (Optional) - NEGO */}
+                          <div className="pt-2 space-y-1">
+                            <Label htmlFor="custom-price" className="text-xs font-medium text-gray-700">
+                              Harga Jual (Opsional - untuk nego):
+                            </Label>
+                            <Input
+                              id="custom-price"
+                              type="number"
+                              placeholder="Kosongkan untuk pakai harga default"
+                              value={customPrice}
+                              onChange={(e) => setCustomPrice(e.target.value)}
+                              className="text-sm"
+                              min="0"
+                              step="1000"
+                            />
+                            {customPrice && (
+                              <p className="text-xs text-blue-600">
+                                💰 Harga jual: Rp {parseFloat(customPrice).toLocaleString('id-ID')}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Stock & Add Button */}
                           <div className="flex justify-between items-center pt-2">
-                            <div>
-                              <p className="text-lg font-bold text-primary">
-                                Rp {(selectedVariantData.sellingPrice || selectedVariantData.product.sellingPrice).toLocaleString('id-ID')}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Stok tersedia: {getAvailableStock(selectedVariantData.id, selectedVariantData.stock)}
-                              </p>
-                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Stok tersedia: {getAvailableStock(selectedVariantData.id, selectedVariantData.stock)}
+                            </p>
                             <Button
                               onClick={addSelectedToCart}
                               disabled={getAvailableStock(selectedVariantData.id, selectedVariantData.stock) < 1}
@@ -904,45 +1024,91 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                 ) : (
                   <>
                     <div className="space-y-2 sm:space-y-3 max-h-60 sm:max-h-64 overflow-y-auto">
-                      {cart.map((item) => (
-                        <div key={item.variant.id} className="flex items-start gap-3 p-2 sm:p-3 border rounded-lg">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-xs sm:text-sm leading-tight">
-                              {item.variant.product.name}
-                            </h4>
-                            <div className="flex gap-1 mt-1">
-                              <Badge variant="outline" className="text-xs">
-                                {item.variant.size.name}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                {item.variant.color.name}
-                              </Badge>
+                      {cart.map((item) => {
+                        const defaultPrice = item.variant.sellingPrice || item.variant.product.sellingPrice;
+                        const currentPrice = item.customPrice ?? defaultPrice;
+                        const isCustomPrice = item.customPrice !== undefined;
+                        
+                        return (
+                          <div key={item.variant.id} className="flex flex-col gap-2 p-2 sm:p-3 border rounded-lg">
+                            {/* Row 1: Product Info & Qty Controls */}
+                            <div className="flex items-start gap-3">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-xs sm:text-sm leading-tight">
+                                  {item.variant.product.name}
+                                </h4>
+                                <div className="flex gap-1 mt-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    {item.variant.size.name}
+                                  </Badge>
+                                  <Badge variant="outline" className="text-xs">
+                                    {item.variant.color.name}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 sm:gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => updateQuantity(item.variant.id, item.quantity - 1)}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="w-6 sm:w-8 text-center text-xs sm:text-sm font-medium">{item.quantity}</span>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => updateQuantity(item.variant.id, item.quantity + 1)}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Rp {(item.variant.sellingPrice || item.variant.product.sellingPrice).toLocaleString('id-ID')}
+
+                            {/* Row 2: Price Info & Edit */}
+                            <div className="flex items-center gap-2 border-t pt-2">
+                              <div className="flex-1 space-y-1">
+                                <div className="text-[10px] text-muted-foreground">
+                                  Default: Rp {defaultPrice.toLocaleString('id-ID')}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Label htmlFor={`price-${item.variant.id}`} className="text-xs font-medium whitespace-nowrap">
+                                    Harga Jual:
+                                  </Label>
+                                  <Input
+                                    id={`price-${item.variant.id}`}
+                                    type="number"
+                                    value={item.customPrice ?? ''}
+                                    placeholder={defaultPrice.toString()}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      updatePrice(item.variant.id, val ? parseFloat(val) : undefined);
+                                    }}
+                                    className="h-8 text-xs flex-1"
+                                    min="0"
+                                    step="1000"
+                                  />
+                                </div>
+                                {isCustomPrice && (
+                                  <div className="text-[10px] text-blue-600">
+                                    💰 Harga custom (nego)
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs font-bold">
+                                  Rp {(currentPrice * item.quantity).toLocaleString('id-ID')}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground">
+                                  @{currentPrice.toLocaleString('id-ID')}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 sm:gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              onClick={() => updateQuantity(item.variant.id, item.quantity - 1)}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-6 sm:w-8 text-center text-xs sm:text-sm font-medium">{item.quantity}</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              onClick={() => updateQuantity(item.variant.id, item.quantity + 1)}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     <Separator />

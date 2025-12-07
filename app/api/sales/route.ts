@@ -161,8 +161,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Gunakan variant.sellingPrice jika ada, jika tidak gunakan product.sellingPrice
-      const price = variant.sellingPrice ?? Number(variant.product.sellingPrice);
+      // PRIORITAS: 1) custom price dari frontend (nego), 2) variant.sellingPrice, 3) product.sellingPrice
+      const price = item.price ?? variant.sellingPrice ?? Number(variant.product.sellingPrice);
       const itemTotal = price * item.quantity;
       subtotal += itemTotal;
 
