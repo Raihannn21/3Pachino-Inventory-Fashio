@@ -261,39 +261,42 @@ export default function Receipt({ transaction, customerName, onClose }: ReceiptP
     
     setIsGeneratingPDF(true);
     try {
-      // Capture the receipt as image
+      // Capture the receipt as image with fixed width
       const canvas = await html2canvas(receiptRef.current, {
-        scale: 2,
+        scale: 3, // Higher scale for better quality
         backgroundColor: '#ffffff',
         logging: false,
         useCORS: true,
         allowTaint: true,
+        width: 302, // 80mm * 3.78 pixels/mm = ~302px
+        windowWidth: 302,
         height: receiptRef.current.scrollHeight,
-        width: receiptRef.current.scrollWidth
       });
 
       const imgData = canvas.toDataURL('image/png');
       
-      // Calculate dimensions
-      const imgWidth = 76; // PDF width in mm
+      // PDF dimensions for 80mm thermal paper
+      const pdfWidth = 80; // 80mm width
+      const imgWidth = 76; // Content width with 2mm margins on each side
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
       // Calculate dynamic PDF height based on content
-      const pdfHeight = Math.max(120, imgHeight + 10); // Minimum 120mm or content height + margin
+      const pdfHeight = Math.max(100, imgHeight + 10); // Minimum 100mm or content height + margin
       
-      // Create PDF with dynamic height
+      // Create PDF with 80mm width
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: [80, pdfHeight] // Dynamic height based on content
+        format: [pdfWidth, pdfHeight]
       });
 
       // Check if content needs multiple pages
       const maxHeightPerPage = 280; // Maximum height per page in mm
+      const marginX = (pdfWidth - imgWidth) / 2; // Center horizontally
       
       if (imgHeight <= maxHeightPerPage) {
-        // Single page
-        pdf.addImage(imgData, 'PNG', 2, 2, imgWidth, imgHeight);
+        // Single page - centered
+        pdf.addImage(imgData, 'PNG', marginX, 2, imgWidth, imgHeight);
       } else {
         // Multiple pages needed
         let currentY = 0;
@@ -327,7 +330,7 @@ export default function Receipt({ transaction, customerName, onClose }: ReceiptP
           );
           
           const pageImgData = pageCanvas.toDataURL('image/png');
-          pdf.addImage(pageImgData, 'PNG', 2, 2, imgWidth, remainingHeight);
+          pdf.addImage(pageImgData, 'PNG', marginX, 2, imgWidth, remainingHeight);
           
           currentY += maxHeightPerPage;
           pageNumber++;
