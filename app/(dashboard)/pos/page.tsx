@@ -12,9 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { Logo } from '@/components/ui/logo';
+import usbPrinter, { isUSBPrintSupported } from '@/lib/usb-printer';
+import { thermalPrinter } from '@/lib/thermal-printer';
 
 interface ProductVariant {
   id: string;
@@ -97,6 +99,10 @@ export default function POSPage() {
   const [isSubstituteModalOpen, setIsSubstituteModalOpen] = useState(false);
   const [substituteTargetVariant, setSubstituteTargetVariant] = useState<ProductVariant | null>(null); // Variant yang dipesan (stok 0)
   const [availableSubstitutes, setAvailableSubstitutes] = useState<ProductVariant[]>([]); // List variant pengganti
+  
+  // Print receipt states
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [lastTransaction, setLastTransaction] = useState<any>(null);
   
   // Cascade dropdown states
   const [selectedProduct, setSelectedProduct] = useState<string>(''); // Product ID
@@ -637,6 +643,86 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
     }
   };
 
+  // Print receipt via USB
+  const handlePrintUSB = async () => {
+    if (!lastTransaction) {
+      toast.error('Data transaksi tidak ditemukan');
+      return;
+    }
+
+    try {
+      // Connect to USB printer
+      const connected = await usbPrinter.connect();
+      if (!connected) {
+        toast.error('Gagal connect ke printer USB');
+        return;
+      }
+
+      // Prepare receipt data
+      const receiptData = {
+        invoiceNumber: lastTransaction.invoiceNumber,
+        date: new Date(lastTransaction.createdAt).toLocaleString('id-ID'),
+        customerName: lastTransaction.supplier?.name,
+        items: lastTransaction.items.map((item: any) => ({
+          name: item.variant?.product?.name || item.product?.name || 'Product',
+          variant: item.variant ? `${item.variant.size?.name} • ${item.variant.color?.name}` : '',
+          quantity: item.quantity,
+          price: item.unitPrice,
+          subtotal: item.totalPrice
+        })),
+        totalAmount: lastTransaction.totalAmount,
+        notes: lastTransaction.notes
+      };
+
+      await usbPrinter.printReceipt(receiptData);
+      toast.success('Print berhasil!');
+      
+    } catch (error: any) {
+      console.error('USB Print error:', error);
+      toast.error(error.message || 'Gagal print via USB');
+    }
+  };
+
+  // Print receipt via Bluetooth
+  const handlePrintBluetooth = async () => {
+    if (!lastTransaction) {
+      toast.error('Data transaksi tidak ditemukan');
+      return;
+    }
+
+    try {
+      // Connect to Bluetooth printer
+      const connected = await thermalPrinter.connect();
+      if (!connected) {
+        toast.error('Gagal connect ke printer Bluetooth');
+        return;
+      }
+
+      // Prepare receipt data
+      const receiptData = {
+        invoiceNumber: lastTransaction.invoiceNumber,
+        date: new Date(lastTransaction.createdAt).toLocaleString('id-ID'),
+        customerName: lastTransaction.supplier?.name,
+        items: lastTransaction.items.map((item: any) => ({
+          name: item.variant?.product?.name || item.product?.name || 'Product',
+          variant: item.variant ? `${item.variant.size?.name} • ${item.variant.color?.name}` : '',
+          quantity: item.quantity,
+          price: item.unitPrice,
+          subtotal: item.totalPrice
+        })),
+        totalAmount: lastTransaction.totalAmount,
+        notes: lastTransaction.notes
+      };
+
+      await thermalPrinter.printReceipt(receiptData);
+      toast.success('Print berhasil!');
+      
+    } catch (error: any) {
+      console.error('Bluetooth Print error:', error);
+      toast.error(error.message || 'Gagal print via Bluetooth');
+    }
+  };
+
   // Process payment
   const processPayment = async () => {
     if (cart.length === 0) {
@@ -673,6 +759,9 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
       if (response.ok) {
         toast.success('Transaksi berhasil diproses!');
         
+        // Simpan transaction data untuk print
+        setLastTransaction(data.transaction);
+        
         // Send WhatsApp if enabled
         if (sendWhatsApp && customerPhone.trim()) {
           await handleSendWhatsApp(data.transaction);
@@ -681,8 +770,8 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
         clearCart();
         setIsCheckoutOpen(false);
         
-        // Redirect ke halaman penjualan
-        router.push('/sales');
+        // Show print dialog
+        setIsPrintDialogOpen(true);
       } else {
         toast.error(data.error || 'Gagal memproses transaksi');
       }
@@ -1513,6 +1602,76 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                   }}
                 >
                   Batal
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Print Receipt Dialog */}
+          <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+            <DialogContent className="w-[95vw] max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-lg sm:text-xl">Print Struk</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 sm:space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Pilih metode print untuk mencetak struk transaksi
+                </p>
+
+                {/* Print USB Button */}
+                {isUSBPrintSupported() && (
+                  <Button
+                    variant="outline"
+                    className="w-full h-auto py-4 flex-col gap-2"
+                    onClick={async () => {
+                      await handlePrintUSB();
+                      setIsPrintDialogOpen(false);
+                      router.push('/sales');
+                    }}
+                  >
+                    <Printer className="h-6 w-6" />
+                    <div className="text-center">
+                      <div className="font-semibold">Print via USB</div>
+                      <div className="text-xs text-muted-foreground">
+                        Untuk PC/Laptop dengan printer USB
+                      </div>
+                    </div>
+                  </Button>
+                )}
+
+                {/* Print Bluetooth Button */}
+                {thermalPrinter.isBluetoothSupported() && (
+                  <Button
+                    variant="outline"
+                    className="w-full h-auto py-4 flex-col gap-2"
+                    onClick={async () => {
+                      await handlePrintBluetooth();
+                      setIsPrintDialogOpen(false);
+                      router.push('/sales');
+                    }}
+                  >
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                    </svg>
+                    <div className="text-center">
+                      <div className="font-semibold">Print via Bluetooth</div>
+                      <div className="text-xs text-muted-foreground">
+                        Untuk mobile/tablet dengan printer Bluetooth
+                      </div>
+                    </div>
+                  </Button>
+                )}
+
+                {/* Skip Print Button */}
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => {
+                    setIsPrintDialogOpen(false);
+                    router.push('/sales');
+                  }}
+                >
+                  Lewati Print
                 </Button>
               </div>
             </DialogContent>
