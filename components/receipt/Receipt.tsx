@@ -15,15 +15,27 @@ import {
   Calendar,
   Hash,
   User,
-  MessageCircle
+  MessageCircle,
+  Bluetooth,
+  BluetoothConnected
 } from 'lucide-react';
 import { toast } from "sonner";
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { 
+  thermalPrinter, 
+  isBluetoothSupported, 
+  type ReceiptData 
+} from '@/lib/thermal-printer';
 
-// Print CSS untuk memastikan hanya receipt yang dicetak
+// Print CSS optimized untuk thermal printer 80mm
 const printStyles = `
   @media print {
+    @page {
+      size: 80mm auto;
+      margin: 0;
+    }
+    
     body * {
       visibility: hidden;
     }
@@ -35,8 +47,7 @@ const printStyles = `
       position: absolute;
       left: 0;
       top: 0;
-      width: 100%;
-      min-height: 100vh;
+      width: 80mm;
       background: white;
       overflow: visible;
     }
@@ -44,52 +55,63 @@ const printStyles = `
       display: none !important;
     }
     
-    /* Override responsive styles for print */
+    /* Optimize for 80mm thermal paper */
     .receipt-print-area .receipt-content {
-      padding: 1.5rem !important;
+      padding: 2mm !important;
+      width: 76mm !important;
       page-break-inside: avoid;
     }
     
     .receipt-print-area .store-name {
-      font-size: 1.5rem !important;
+      font-size: 18pt !important;
+      font-weight: bold !important;
     }
     
     .receipt-print-area .store-info {
-      font-size: 0.875rem !important;
+      font-size: 10pt !important;
     }
     
     .receipt-print-area .invoice-info span,
     .receipt-print-area .total-row {
-      font-size: 0.875rem !important;
+      font-size: 10pt !important;
     }
     
     .receipt-print-area .total-final {
-      font-size: 1.125rem !important;
+      font-size: 14pt !important;
+      font-weight: bold !important;
     }
     
     .receipt-print-area .item-name {
-      font-size: 0.875rem !important;
+      font-size: 10pt !important;
     }
     
     .receipt-print-area .item-variant {
-      font-size: 0.75rem !important;
+      font-size: 9pt !important;
     }
     
-    /* Allow tables to break across pages if needed */
+    /* Hide watermark for print */
+    .receipt-print-area img,
+    .receipt-print-area .watermark {
+      display: none !important;
+    }
+    
+    /* Receipt items layout */
     .receipt-items {
       page-break-inside: auto;
     }
     
     .receipt-item {
       page-break-inside: avoid;
-      flex-direction: row !important;
-      justify-content: space-between !important;
-      align-items: flex-start !important;
+      display: flex !important;
+      flex-direction: column !important;
+      margin-bottom: 3mm !important;
     }
     
     .item-qty-price {
-      text-align: right !important;
-      flex-direction: column !important;
+      text-align: left !important;
+      display: flex !important;
+      flex-direction: row !important;
+      justify-content: space-between !important;
     }
   }
 `;
@@ -128,6 +150,9 @@ interface ReceiptProps {
 
 export default function Receipt({ transaction, customerName, onClose }: ReceiptProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isThermalConnected, setIsThermalConnected] = useState(false);
+  const [isConnectingThermal, setIsConnectingThermal] = useState(false);
+  const [isPrintingThermal, setIsPrintingThermal] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
 
   const formatCurrency = (amount: number) => {
@@ -154,6 +179,81 @@ export default function Receipt({ transaction, customerName, onClose }: ReceiptP
 
     // Langsung cetak tanpa window baru
     window.print();
+  };
+
+  // Thermal Printer Functions
+  const handleConnectThermal = async () => {
+    if (!isBluetoothSupported()) {
+      toast.error('Browser Anda tidak mendukung Bluetooth. Gunakan Chrome atau Edge.');
+      return;
+    }
+
+    setIsConnectingThermal(true);
+    try {
+      await thermalPrinter.connect();
+      setIsThermalConnected(true);
+      toast.success('Printer thermal berhasil terkoneksi!');
+    } catch (error: any) {
+      console.error('Error connecting thermal printer:', error);
+      if (error.name === 'NotFoundError') {
+        toast.error('Tidak ada printer ditemukan. Pastikan printer Bluetooth aktif.');
+      } else if (error.name === 'SecurityError') {
+        toast.error('Akses Bluetooth ditolak. Izinkan akses Bluetooth di browser.');
+      } else {
+        toast.error('Gagal terkoneksi ke printer thermal.');
+      }
+    } finally {
+      setIsConnectingThermal(false);
+    }
+  };
+
+  const handleDisconnectThermal = async () => {
+    try {
+      await thermalPrinter.disconnect();
+      setIsThermalConnected(false);
+      toast.success('Printer thermal terputus');
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+    }
+  };
+
+  const handlePrintThermal = async () => {
+    if (!isThermalConnected) {
+      toast.error('Printer belum terkoneksi. Silakan connect terlebih dahulu.');
+      return;
+    }
+
+    setIsPrintingThermal(true);
+    try {
+      const receiptData: ReceiptData = {
+        invoiceNumber: transaction.invoiceNumber,
+        date: formatDate(transaction.transactionDate),
+        items: transaction.items.map(item => {
+          const product = item.variant?.product || item.product;
+          return {
+            name: product?.name || 'Unknown Product',
+            variant: item.variant 
+              ? `${item.variant.size?.name} • ${item.variant.color?.name}`
+              : undefined,
+            quantity: item.quantity,
+            price: item.price,
+            subtotal: item.subtotal
+          };
+        }),
+        totalAmount: transaction.totalAmount,
+        notes: transaction.notes,
+        customerName: customerName
+      };
+
+      await thermalPrinter.printReceipt(receiptData);
+      toast.success('Struk berhasil dicetak ke printer thermal!');
+    } catch (error: any) {
+      console.error('Error printing to thermal:', error);
+      toast.error('Gagal mencetak ke printer thermal. Coba reconnect printer.');
+      setIsThermalConnected(false);
+    } finally {
+      setIsPrintingThermal(false);
+    }
   };
 
   const handleDownloadPDF = async () => {
@@ -356,14 +456,54 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
       <div className="space-y-3 sm:space-y-4">
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row flex-wrap gap-2 mb-3 sm:mb-4 no-print">
+        {/* Thermal Printer Section */}
+        {isBluetoothSupported() && (
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto border-b sm:border-b-0 sm:border-r border-gray-200 pb-2 sm:pb-0 sm:pr-2 mb-2 sm:mb-0">
+            {!isThermalConnected ? (
+              <Button 
+                onClick={handleConnectThermal} 
+                variant="default" 
+                size="sm"
+                disabled={isConnectingThermal}
+                className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700"
+              >
+                <Bluetooth className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="text-xs sm:text-sm">
+                  {isConnectingThermal ? 'Connecting...' : 'Connect Thermal'}
+                </span>
+              </Button>
+            ) : (
+              <>
+                <Button 
+                  onClick={handlePrintThermal} 
+                  variant="default" 
+                  size="sm"
+                  disabled={isPrintingThermal}
+                  className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700"
+                >
+                  <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="text-xs sm:text-sm">
+                    {isPrintingThermal ? 'Printing...' : 'Print Thermal'}
+                  </span>
+                </Button>
+                <Button 
+                  onClick={handleDisconnectThermal} 
+                  variant="outline" 
+                  size="sm"
+                  className="flex-1 sm:flex-none"
+                >
+                  <BluetoothConnected className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="text-xs sm:text-sm">Disconnect</span>
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+        
         <div className="flex flex-wrap gap-2">
           <Button onClick={handlePrint} variant="outline" size="sm" className="flex-1 sm:flex-none">
             <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="text-xs sm:text-sm">Cetak</span>
-          </Button>
-          <Button onClick={handlePrintVersion} variant="outline" size="sm" className="flex-1 sm:flex-none">
-            <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="text-xs sm:text-sm">Print Version</span>
+            <span className="text-xs sm:text-sm">Cetak Browser</span>
           </Button>
           <Button 
             onClick={handleDownloadPDF} 
