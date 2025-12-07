@@ -46,6 +46,8 @@ interface CartItem {
   variant: ProductVariant;
   quantity: number;
   customPrice?: number; // Harga custom untuk nego (optional)
+  substituteFromVariantId?: string; // ID variant yang actual dijual (jika substitute)
+  substituteFromSize?: string; // Nama size yang actual dijual (untuk display)
 }
 
 interface Customer {
@@ -90,6 +92,11 @@ export default function POSPage() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [sendWhatsApp, setSendWhatsApp] = useState(false);
+  
+  // Substitute modal states
+  const [isSubstituteModalOpen, setIsSubstituteModalOpen] = useState(false);
+  const [substituteTargetVariant, setSubstituteTargetVariant] = useState<ProductVariant | null>(null); // Variant yang dipesan (stok 0)
+  const [availableSubstitutes, setAvailableSubstitutes] = useState<ProductVariant[]>([]); // List variant pengganti
   
   // Cascade dropdown states
   const [selectedProduct, setSelectedProduct] = useState<string>(''); // Product ID
@@ -152,13 +159,13 @@ export default function POSPage() {
     return Array.from(uniqueProducts.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [allProducts]);
 
-  // Get available sizes for selected product
+  // Get available sizes for selected product (SEMUA size termasuk stok 0)
   const availableSizes = useMemo(() => {
     if (!selectedProduct) return [];
     
     const sizes = new Set<string>();
     allProducts
-      .filter(v => v.product.id === selectedProduct && v.stock > 0)
+      .filter(v => v.product.id === selectedProduct) // Tampilkan semua size, tidak filter stok
       .forEach(v => sizes.add(v.size.name));
     
     const sizeOrder: { [key: string]: number } = { 'S': 1, 'M': 2, 'L': 3, 'XL': 4, 'XXL': 5, 'XXXL': 6 };
@@ -172,23 +179,33 @@ export default function POSPage() {
     return originalStock - stockInCart;
   }, [cart]);
 
-  // Get available colors for selected product and size
+  // Get total stock for each size
+  const getSizeStockInfo = useCallback((sizeName: string) => {
+    if (!selectedProduct) return 0;
+    let totalStock = 0;
+    allProducts
+      .filter(v => v.product.id === selectedProduct && v.size.name === sizeName)
+      .forEach(v => {
+        totalStock += getAvailableStock(v.id, v.stock);
+      });
+    return totalStock;
+  }, [allProducts, selectedProduct, getAvailableStock]);
+
+  // Get available colors for selected product and size (SEMUA warna termasuk stok 0)
   const availableColors = useMemo(() => {
     if (!selectedProduct || !selectedSize) return [];
     
     const colors: Array<{ name: string; hexCode: string; stock: number; variantId: string }> = [];
     allProducts
-      .filter(v => v.product.id === selectedProduct && v.size.name === selectedSize && v.stock > 0)
+      .filter(v => v.product.id === selectedProduct && v.size.name === selectedSize) // Tampilkan semua warna
       .forEach(v => {
         const availableStock = getAvailableStock(v.id, v.stock);
-        if (availableStock > 0) {
-          colors.push({
-            name: v.color.name,
-            hexCode: v.color.hexCode || '',
-            stock: availableStock,
-            variantId: v.id
-          });
-        }
+        colors.push({
+          name: v.color.name,
+          hexCode: v.color.hexCode || '',
+          stock: availableStock, // Tetap tampilkan meski stok 0
+          variantId: v.id
+        });
       });
     
     return colors.sort((a, b) => a.name.localeCompare(b.name));
@@ -352,6 +369,65 @@ export default function POSPage() {
     setCustomPrice(''); // Reset custom price
   };
 
+  // Open substitute modal - cari size lain yang available
+  const openSubstituteModal = (targetVariant: ProductVariant) => {
+    // Cari variant lain dari product yang sama, color sama, tapi size berbeda dan stok > 0
+    const substitutes = allProducts.filter(v => {
+      const isSameProduct = v.product.id === targetVariant.product.id;
+      const isSameColor = v.color.name === targetVariant.color.name;
+      const isDifferentSize = v.size.name !== targetVariant.size.name;
+      const hasStock = v.stock > 0;
+      const notInCart = !cart.some(item => item.variant.id === v.id);
+      
+      return isSameProduct && isSameColor && isDifferentSize && hasStock && notInCart;
+    });
+    
+    setSubstituteTargetVariant(targetVariant);
+    setAvailableSubstitutes(substitutes);
+    setIsSubstituteModalOpen(true);
+  };
+
+  // Add to cart with substitute
+  const handleSubstituteAdd = (substituteVariant: ProductVariant, customPriceValue?: number) => {
+    if (!substituteTargetVariant) return;
+    
+    // Cek apakah kombinasi variant + substitute sudah ada di cart
+    const existingItem = cart.find(item => 
+      item.variant.id === substituteTargetVariant.id && 
+      item.substituteFromVariantId === substituteVariant.id
+    );
+    
+    if (existingItem) {
+      // Jika sudah ada, tambah quantity
+      const availableStock = getAvailableStock(substituteVariant.id, substituteVariant.stock);
+      if (existingItem.quantity >= availableStock) {
+        toast.error('Stok tidak mencukupi');
+        return;
+      }
+      setCart(cart.map(item => 
+        item.variant.id === substituteTargetVariant.id && item.substituteFromVariantId === substituteVariant.id
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      ));
+      toast.success('Quantity ditambah');
+    } else {
+      // Jika belum ada, tambah item baru
+      setCart([...cart, { 
+        variant: substituteTargetVariant, // Variant yang dipesan customer (M)
+        quantity: 1,
+        customPrice: customPriceValue,
+        substituteFromVariantId: substituteVariant.id, // Variant yang actual dijual (S)
+        substituteFromSize: substituteVariant.size.name // Nama size actual ("S")
+      }]);
+      toast.success(`${substituteTargetVariant.product.name} ${substituteTargetVariant.size.name} ditambahkan (diganti dari ${substituteVariant.size.name})`);
+    }
+    
+    setIsSubstituteModalOpen(false);
+    setSubstituteTargetVariant(null);
+    setAvailableSubstitutes([]);
+    setCustomPrice(''); // Reset custom price
+  };
+
   // Add selected variant to cart
   const addSelectedToCart = () => {
     if (!selectedVariantData) {
@@ -409,37 +485,66 @@ export default function POSPage() {
   };
 
   // Update quantity
-  const updateQuantity = (variantId: string, newQuantity: number) => {
+  const updateQuantity = (variantId: string, newQuantity: number, substituteFromVariantId?: string) => {
     if (newQuantity <= 0) {
-      removeFromCart(variantId);
+      removeFromCart(variantId, substituteFromVariantId);
       return;
     }
 
-    const variant = cart.find(item => item.variant.id === variantId)?.variant;
-    if (variant && newQuantity > variant.stock) {
-      toast.error('Stok tidak mencukupi');
-      return;
+    // Find the actual variant to check stock (substitute if exists, otherwise original)
+    const cartItem = cart.find(item => {
+      if (substituteFromVariantId) {
+        return item.variant.id === variantId && item.substituteFromVariantId === substituteFromVariantId;
+      }
+      return item.variant.id === variantId && !item.substituteFromVariantId;
+    });
+    
+    if (cartItem) {
+      // Check stock from substitute variant if exists, otherwise from original variant
+      const variantToCheck = substituteFromVariantId 
+        ? allProducts.find(v => v.id === substituteFromVariantId)
+        : cartItem.variant;
+      
+      if (variantToCheck && newQuantity > variantToCheck.stock) {
+        toast.error('Stok tidak mencukupi');
+        return;
+      }
     }
 
-    setCart(cart.map(item => 
-      item.variant.id === variantId 
+    setCart(cart.map(item => {
+      if (substituteFromVariantId) {
+        return (item.variant.id === variantId && item.substituteFromVariantId === substituteFromVariantId)
+          ? { ...item, quantity: newQuantity }
+          : item;
+      }
+      return (item.variant.id === variantId && !item.substituteFromVariantId)
         ? { ...item, quantity: newQuantity }
-        : item
-    ));
+        : item;
+    }));
   };
 
   // Update custom price for cart item
-  const updatePrice = (variantId: string, newPrice: number | undefined) => {
-    setCart(cart.map(item => 
-      item.variant.id === variantId 
+  const updatePrice = (variantId: string, newPrice: number | undefined, substituteFromVariantId?: string) => {
+    setCart(cart.map(item => {
+      if (substituteFromVariantId) {
+        return (item.variant.id === variantId && item.substituteFromVariantId === substituteFromVariantId)
+          ? { ...item, customPrice: newPrice }
+          : item;
+      }
+      return (item.variant.id === variantId && !item.substituteFromVariantId)
         ? { ...item, customPrice: newPrice }
-        : item
-    ));
+        : item;
+    }));
   };
 
   // Remove from cart
-  const removeFromCart = (variantId: string) => {
-    setCart(cart.filter(item => item.variant.id !== variantId));
+  const removeFromCart = (variantId: string, substituteFromVariantId?: string) => {
+    setCart(cart.filter(item => {
+      if (substituteFromVariantId) {
+        return !(item.variant.id === variantId && item.substituteFromVariantId === substituteFromVariantId);
+      }
+      return !(item.variant.id === variantId && !item.substituteFromVariantId);
+    }));
   };
 
   // Clear cart
@@ -554,7 +659,9 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
             variantId: item.variant.id,
             quantity: item.quantity,
             // Kirim customPrice jika ada (harga nego)
-            price: item.customPrice ?? item.variant.sellingPrice ?? item.variant.product.sellingPrice
+            price: item.customPrice ?? item.variant.sellingPrice ?? item.variant.product.sellingPrice,
+            // Kirim substituteFromVariantId jika item adalah substitute
+            substituteFromVariantId: item.substituteFromVariantId
           })),
           discount,
           notes
@@ -739,11 +846,24 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                           <SelectValue placeholder={selectedProduct ? "-- Pilih Ukuran --" : "Pilih produk terlebih dahulu"} />
                         </SelectTrigger>
                         <SelectContent>
-                          {availableSizes.map((size: string) => (
-                            <SelectItem key={size} value={size}>
-                              {size}
-                            </SelectItem>
-                          ))}
+                          {availableSizes.map((size: string) => {
+                            const sizeStock = getSizeStockInfo(size);
+                            return (
+                              <SelectItem 
+                                key={size} 
+                                value={size}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className={sizeStock === 0 ? 'text-gray-400' : ''}>
+                                    {size} (Stok: {sizeStock})
+                                  </span>
+                                  {sizeStock === 0 && (
+                                    <span className="text-xs text-red-500 font-semibold">• HABIS</span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                       {selectedProduct && availableSizes.length === 0 && (
@@ -768,7 +888,10 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                         </SelectTrigger>
                         <SelectContent>
                           {availableColors.map(color => (
-                            <SelectItem key={color.name} value={color.name}>
+                            <SelectItem 
+                              key={color.name} 
+                              value={color.name}
+                            >
                               <div className="flex items-center gap-2">
                                 {color.hexCode && (
                                   <span
@@ -776,7 +899,12 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                                     style={{ backgroundColor: color.hexCode }}
                                   />
                                 )}
-                                {color.name} (Stok: {color.stock})
+                                <span className={color.stock === 0 ? 'text-gray-400' : ''}>
+                                  {color.name} (Stok: {color.stock})
+                                </span>
+                                {color.stock === 0 && (
+                                  <span className="text-xs text-red-500 font-semibold">• HABIS</span>
+                                )}
                               </div>
                             </SelectItem>
                           ))}
@@ -852,20 +980,50 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                             )}
                           </div>
 
-                          {/* Stock & Add Button */}
-                          <div className="flex justify-between items-center pt-2">
-                            <p className="text-xs text-muted-foreground">
-                              Stok tersedia: {getAvailableStock(selectedVariantData.id, selectedVariantData.stock)}
-                            </p>
-                            <Button
-                              onClick={addSelectedToCart}
-                              disabled={getAvailableStock(selectedVariantData.id, selectedVariantData.stock) < 1}
-                              size="lg"
-                              className="gap-2"
-                            >
-                              <ShoppingCart className="h-4 w-4" />
-                              Tambah
-                            </Button>
+                          {/* Stock & Add Button OR Substitute Button */}
+                          <div className="pt-2">
+                            {getAvailableStock(selectedVariantData.id, selectedVariantData.stock) > 0 ? (
+                              // Stock Available - Show normal add button
+                              <div className="flex justify-between items-center">
+                                <p className="text-xs text-muted-foreground">
+                                  Stok tersedia: {getAvailableStock(selectedVariantData.id, selectedVariantData.stock)}
+                                </p>
+                                <Button
+                                  onClick={addSelectedToCart}
+                                  size="lg"
+                                  className="gap-2"
+                                >
+                                  <ShoppingCart className="h-4 w-4" />
+                                  Tambah
+                                </Button>
+                              </div>
+                            ) : (
+                              // Stock Habis - Show substitute button
+                              <div className="space-y-2">
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                  <div className="flex items-center gap-2 text-red-700 mb-2">
+                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    <p className="text-sm font-semibold">Stok Habis!</p>
+                                  </div>
+                                  <p className="text-xs text-red-600 mb-3">
+                                    Size {selectedVariantData.size.name} tidak tersedia
+                                  </p>
+                                  <Button
+                                    onClick={() => openSubstituteModal(selectedVariantData)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full gap-2 border-orange-300 bg-orange-50 hover:bg-orange-100 text-orange-700"
+                                  >
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                    </svg>
+                                    Ganti dengan Size Lain
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1028,22 +1186,31 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                         const defaultPrice = item.variant.sellingPrice || item.variant.product.sellingPrice;
                         const currentPrice = item.customPrice ?? defaultPrice;
                         const isCustomPrice = item.customPrice !== undefined;
+                        // Create unique key: combine variant.id with substituteFromVariantId if exists
+                        const uniqueKey = item.substituteFromVariantId 
+                          ? `${item.variant.id}-sub-${item.substituteFromVariantId}`
+                          : item.variant.id;
                         
                         return (
-                          <div key={item.variant.id} className="flex flex-col gap-2 p-2 sm:p-3 border rounded-lg">
+                          <div key={uniqueKey} className="flex flex-col gap-2 p-2 sm:p-3 border rounded-lg">
                             {/* Row 1: Product Info & Qty Controls */}
                             <div className="flex items-start gap-3">
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-medium text-xs sm:text-sm leading-tight">
                                   {item.variant.product.name}
                                 </h4>
-                                <div className="flex gap-1 mt-1">
+                                <div className="flex gap-1 mt-1 flex-wrap">
                                   <Badge variant="outline" className="text-xs">
                                     {item.variant.size.name}
                                   </Badge>
                                   <Badge variant="outline" className="text-xs">
                                     {item.variant.color.name}
                                   </Badge>
+                                  {item.substituteFromSize && (
+                                    <Badge variant="default" className="text-xs bg-orange-500 hover:bg-orange-600">
+                                      🔄 Diganti dari {item.substituteFromSize}
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
                               <div className="flex items-center gap-1 sm:gap-2">
@@ -1051,7 +1218,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                                   variant="outline"
                                   size="sm"
                                   className="h-7 w-7 p-0"
-                                  onClick={() => updateQuantity(item.variant.id, item.quantity - 1)}
+                                  onClick={() => updateQuantity(item.variant.id, item.quantity - 1, item.substituteFromVariantId)}
                                 >
                                   <Minus className="h-3 w-3" />
                                 </Button>
@@ -1060,7 +1227,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                                   variant="outline"
                                   size="sm"
                                   className="h-7 w-7 p-0"
-                                  onClick={() => updateQuantity(item.variant.id, item.quantity + 1)}
+                                  onClick={() => updateQuantity(item.variant.id, item.quantity + 1, item.substituteFromVariantId)}
                                 >
                                   <Plus className="h-3 w-3" />
                                 </Button>
@@ -1084,7 +1251,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                                     placeholder={defaultPrice.toString()}
                                     onChange={(e) => {
                                       const val = e.target.value;
-                                      updatePrice(item.variant.id, val ? parseFloat(val) : undefined);
+                                      updatePrice(item.variant.id, val ? parseFloat(val) : undefined, item.substituteFromVariantId);
                                     }}
                                     className="h-8 text-xs flex-1"
                                     min="0"
@@ -1274,6 +1441,82 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
               </div>
             </CardContent>
           </Card>
+
+          {/* Substitute Size Modal - Moved outside cart conditional */}
+          <Dialog open={isSubstituteModalOpen} onOpenChange={setIsSubstituteModalOpen}>
+            <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-lg sm:text-xl">Pilih Size Pengganti</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 sm:space-y-4">
+                {substituteTargetVariant && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-700">
+                      <strong>Diminta:</strong> {substituteTargetVariant.product.name} - Size {substituteTargetVariant.size.name} ({substituteTargetVariant.color.name})
+                    </p>
+                    <p className="text-xs text-red-600 mt-1">
+                      Stok habis! Pilih size lain sebagai pengganti.
+                    </p>
+                  </div>
+                )}
+
+                {availableSubstitutes.length === 0 ? (
+                  <div className="p-4 text-center text-muted-foreground">
+                    <p>Tidak ada size pengganti yang tersedia</p>
+                    <p className="text-xs mt-2">Semua size lain juga habis atau sudah ada di keranjang</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {availableSubstitutes.map((substitute) => (
+                      <div 
+                        key={substitute.id}
+                        className="p-3 border rounded-md hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">
+                              Size {substitute.size.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Stok: {substitute.stock} pcs
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Harga: Rp {(substitute.sellingPrice ?? substitute.product.sellingPrice).toLocaleString('id-ID')}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              const parsedPrice = customPrice ? parseFloat(customPrice) : undefined;
+                              handleSubstituteAdd(substitute, parsedPrice);
+                              setIsSubstituteModalOpen(false);
+                              setSubstituteTargetVariant(null);
+                              setAvailableSubstitutes([]);
+                            }}
+                            className="ml-3"
+                          >
+                            Pilih
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setIsSubstituteModalOpen(false);
+                    setSubstituteTargetVariant(null);
+                    setAvailableSubstitutes([]);
+                  }}
+                >
+                  Batal
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

@@ -142,14 +142,18 @@ export async function POST(request: NextRequest) {
 
     // Validasi stok dan hitung total
     for (const item of items) {
+      // Determine which variant to check/deduct stock from
+      // If item has substituteFromVariantId, validate/deduct from that instead
+      const variantIdToCheck = item.substituteFromVariantId || item.variantId;
+      
       const variant = await prisma.productVariant.findUnique({
-        where: { id: item.variantId },
+        where: { id: variantIdToCheck },
         include: { product: true }
       });
 
       if (!variant) {
         return NextResponse.json(
-          { error: `Varian produk dengan ID ${item.variantId} tidak ditemukan` },
+          { error: `Varian produk dengan ID ${variantIdToCheck} tidak ditemukan` },
           { status: 400 }
         );
       }
@@ -168,7 +172,7 @@ export async function POST(request: NextRequest) {
 
       transactionItems.push({
         productId: variant.productId,
-        variantId: item.variantId,
+        variantId: item.variantId, // Keep original requested variant for customer receipt
         quantity: item.quantity,
         unitPrice: price,
         totalPrice: itemTotal
@@ -249,9 +253,12 @@ export async function POST(request: NextRequest) {
 
       // 2. Update stok dan buat stock movement
       for (const item of items) {
+        // Use substitute variant for stock deduction if present
+        const variantIdToDeduct = item.substituteFromVariantId || item.variantId;
+        
         // Update stok variant
         await tx.productVariant.update({
-          where: { id: item.variantId },
+          where: { id: variantIdToDeduct },
           data: {
             stock: {
               decrement: item.quantity
@@ -259,10 +266,10 @@ export async function POST(request: NextRequest) {
           }
         });
 
-        // Buat stock movement
+        // Buat stock movement - record actual variant that was sold
         await tx.stockMovement.create({
           data: {
-            variantId: item.variantId,
+            variantId: variantIdToDeduct,
             type: 'OUT',
             quantity: item.quantity,
             reason: 'SALE',
