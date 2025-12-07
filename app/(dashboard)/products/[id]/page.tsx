@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import BarcodeDisplay from '@/components/ui/barcode-display';
-import { ArrowLeft, Plus, Edit, Package, Palette, Ruler, Trash2 } from 'lucide-react';
+import { generateBarcodeLabels } from '@/lib/barcode-label-pdf';
+import { ArrowLeft, Plus, Edit, Package, Palette, Ruler, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ProductVariant {
@@ -437,6 +438,43 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     setDeleteProductOpen(true);
   };
 
+  const handleDownloadAllBarcodes = async () => {
+    if (!product || product.variants.length === 0) {
+      toast.error('Tidak ada varian untuk didownload');
+      return;
+    }
+
+    // Filter only variants with barcode
+    const variantsWithBarcode = product.variants.filter(v => v.barcode);
+    
+    if (variantsWithBarcode.length === 0) {
+      toast.error('Tidak ada barcode yang tersedia');
+      return;
+    }
+
+    try {
+      toast.loading('Membuat PDF barcode...');
+      
+      // Transform data for PDF generator
+      const variantsData = variantsWithBarcode.map(variant => ({
+        ...variant,
+        product: {
+          name: product.name,
+          sku: product.sku,
+        },
+      }));
+
+      await generateBarcodeLabels(variantsData, product.name);
+      
+      toast.dismiss();
+      toast.success(`Berhasil download ${variantsWithBarcode.length} barcode label`);
+    } catch (error) {
+      console.error('Error generating barcode PDF:', error);
+      toast.dismiss();
+      toast.error('Gagal membuat PDF barcode');
+    }
+  };
+
   const confirmDeleteProduct = async () => {
     try {
       const response = await fetch(`/api/products/${productId}`, {
@@ -609,6 +647,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <Button
+            onClick={handleDownloadAllBarcodes}
+            className="bg-green-600 hover:bg-green-700 text-white"
+            disabled={!product.variants.some(v => v.barcode)}
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Download Semua Barcode
+          </Button>
           <Button
             onClick={openEditProduct}
             className="bg-blue-600 hover:bg-blue-700 text-white"

@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { generateQRCode, generateVariantQRData } from '@/lib/barcode';
+import { useState, useRef } from 'react';
+import Barcode from 'react-barcode';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -29,32 +28,43 @@ interface BarcodeDisplayProps {
 }
 
 export default function BarcodeDisplay({ variant }: BarcodeDisplayProps) {
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
-  const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const barcodeRef = useRef<HTMLDivElement>(null);
 
-  const generateQR = async () => {
-    setLoading(true);
-    try {
-      const qrData = generateVariantQRData(variant);
-      const qrUrl = await generateQRCode(qrData);
-      setQrCodeUrl(qrUrl);
-    } catch (error) {
-      console.error('Error generating QR code:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const downloadQR = () => {
-    if (!qrCodeUrl) return;
+  const downloadBarcode = () => {
+    if (!barcodeRef.current) return;
     
-    const link = document.createElement('a');
-    link.href = qrCodeUrl;
-    link.download = `barcode-${variant.barcode}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      // Get SVG element dari react-barcode
+      const svg = barcodeRef.current.querySelector('svg');
+      if (!svg) return;
+
+      // Convert SVG to canvas
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const img = new Image();
+      
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        
+        // Download
+        const link = document.createElement('a');
+        link.download = `barcode-${variant.barcode}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      };
+      
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    } catch (error) {
+      console.error('Failed to download barcode:', error);
+    }
   };
 
   const copyBarcode = async () => {
@@ -73,7 +83,6 @@ export default function BarcodeDisplay({ variant }: BarcodeDisplayProps) {
         <Button 
           variant="outline" 
           size="sm"
-          onClick={generateQR}
           disabled={!variant.barcode}
         >
           <QrCode className="h-4 w-4 mr-2" />
@@ -82,7 +91,7 @@ export default function BarcodeDisplay({ variant }: BarcodeDisplayProps) {
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Barcode & QR Code</DialogTitle>
+          <DialogTitle>Barcode Produk</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
@@ -94,9 +103,9 @@ export default function BarcodeDisplay({ variant }: BarcodeDisplayProps) {
             <p><strong>Stok:</strong> {variant.stock} pcs</p>
           </div>
 
-          {/* Barcode */}
+          {/* Barcode Text */}
           <div className="space-y-2">
-            <Label>Barcode</Label>
+            <Label>Kode Barcode</Label>
             <div className="flex items-center gap-2">
               <code className="bg-gray-100 px-3 py-2 rounded flex-1 font-mono text-sm">
                 {variant.barcode}
@@ -112,35 +121,27 @@ export default function BarcodeDisplay({ variant }: BarcodeDisplayProps) {
             </div>
           </div>
 
-          {/* QR Code */}
+          {/* Barcode 1D Display */}
           <div className="space-y-2">
-            <Label>QR Code</Label>
-            <div className="flex flex-col items-center space-y-3">
-              {loading ? (
-                <div className="w-48 h-48 bg-gray-100 rounded flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-              ) : qrCodeUrl ? (
-                <Image 
-                  src={qrCodeUrl} 
-                  alt="QR Code" 
-                  width={192}
-                  height={192}
-                  unoptimized
-                  className="w-48 h-48 border rounded"
+            <Label>Barcode (Code 128)</Label>
+            <div className="flex flex-col items-center space-y-3 p-4 bg-white border rounded">
+              <div ref={barcodeRef}>
+                <Barcode 
+                  value={variant.barcode} 
+                  format="CODE128"
+                  width={2}
+                  height={80}
+                  displayValue={true}
+                  fontSize={14}
+                  margin={10}
+                  background="#ffffff"
                 />
-              ) : (
-                <div className="w-48 h-48 bg-gray-100 rounded flex items-center justify-center">
-                  <QrCode className="h-12 w-12 text-gray-400" />
-                </div>
-              )}
+              </div>
               
-              {qrCodeUrl && (
-                <Button onClick={downloadQR} size="sm" className="w-full">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download QR Code
-                </Button>
-              )}
+              <Button onClick={downloadBarcode} size="sm" className="w-full">
+                <Download className="h-4 w-4 mr-2" />
+                Download Barcode
+              </Button>
             </div>
           </div>
 
@@ -148,9 +149,9 @@ export default function BarcodeDisplay({ variant }: BarcodeDisplayProps) {
           <div className="text-xs text-muted-foreground bg-blue-50 p-3 rounded">
             <p><strong>Cara menggunakan:</strong></p>
             <ul className="mt-1 space-y-1 list-disc list-inside">
-              <li>Scan QR code untuk melihat detail produk</li>
-              <li>Gunakan barcode untuk pencarian cepat</li>
-              <li>Download QR code untuk label produk</li>
+              <li>Scan barcode dengan barcode scanner</li>
+              <li>Download barcode untuk label produk</li>
+              <li>Copy kode untuk pencarian manual</li>
             </ul>
           </div>
         </div>
