@@ -453,21 +453,24 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
 
     try {
-      toast.loading('Membuat PDF barcode...');
+      toast.loading(`Membuat PDF ${variantsWithBarcode.length} halaman...`);
       
-      // Transform data for PDF generator
-      const variantsData = variantsWithBarcode.map(variant => ({
-        ...variant,
-        product: {
-          name: product.name,
-          sku: product.sku,
-        },
-      }));
+      // Each variant gets a full page (32 labels per variant)
+      const labelsPerPage = 32;
+      const allLabels = variantsWithBarcode.flatMap(variant => 
+        Array(labelsPerPage).fill({
+          ...variant,
+          product: {
+            name: product.name,
+            sku: product.sku,
+          },
+        })
+      );
 
-      await generateBarcodeLabels(variantsData, product.name);
+      await generateBarcodeLabels(allLabels, product.name);
       
       toast.dismiss();
-      toast.success(`Berhasil download ${variantsWithBarcode.length} barcode label`);
+      toast.success(`Berhasil download ${variantsWithBarcode.length} halaman (${labelsPerPage} stiker per halaman)`);
     } catch (error) {
       console.error('Error generating barcode PDF:', error);
       toast.dismiss();
