@@ -18,18 +18,17 @@ export interface VariantForExport {
   productName: string;
   size: string;
   color: string;
-  stock?: number;
+  sellingPrice?: number;
 }
 
 export const exportBarcodesToExcel = (variants: VariantForExport[], productName: string) => {
   // Format data for Excel
   const excelData = variants.map((variant, index) => ({
     'No': index + 1,
-    'Barcode': variant.barcode,
-    'Nama Produk': variant.productName,
+    'Nama': variant.productName,
     'Ukuran': variant.size,
     'Warna': variant.color,
-    'Stok': variant.stock || 0,
+    'Barcode': variant.barcode,
   }));
 
   // Create worksheet
@@ -38,11 +37,10 @@ export const exportBarcodesToExcel = (variants: VariantForExport[], productName:
   // Set column widths
   worksheet['!cols'] = [
     { wch: 5 },  // No
-    { wch: 20 }, // Barcode
-    { wch: 30 }, // Nama Produk
-    { wch: 10 }, // Ukuran
+    { wch: 30 }, // Nama
+    { wch: 12 }, // Ukuran
     { wch: 15 }, // Warna
-    { wch: 10 }, // Stok
+    { wch: 20 }, // Barcode
   ];
 
   // Create workbook

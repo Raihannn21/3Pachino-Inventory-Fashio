@@ -499,7 +499,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         productName: product.name,
         size: variant.size.name,
         color: variant.color.name,
-        stock: variant.stock,
+        sellingPrice: variant.sellingPrice || product.sellingPrice,
       }));
 
       exportBarcodesToExcel(excelData, product.name);
