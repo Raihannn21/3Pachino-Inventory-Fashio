@@ -110,6 +110,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [deleteVariantOpen, setDeleteVariantOpen] = useState(false);
   const [editProductOpen, setEditProductOpen] = useState(false);
   const [deleteProductOpen, setDeleteProductOpen] = useState(false);
+  const [lowStockDialogOpen, setLowStockDialogOpen] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [variantToDelete, setVariantToDelete] = useState<ProductVariant | null>(null);
 
@@ -810,7 +811,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   <span className="text-sm font-medium text-gray-600">Total Varian:</span>
                   <span className="font-bold text-gray-900">{product.variants.length}</span>
                 </div>
-                <div className="flex justify-between items-center p-2 sm:p-3 bg-red-50 rounded-lg">
+                <div 
+                  className="flex justify-between items-center p-2 sm:p-3 bg-red-50 rounded-lg cursor-pointer hover:bg-red-100 transition-colors"
+                  onClick={() => setLowStockDialogOpen(true)}
+                  title="Klik untuk melihat detail"
+                >
                   <span className="text-sm font-medium text-red-600">Stok Rendah:</span>
                   <span className="font-bold text-red-600">
                     {product.variants.filter(v => v.stock <= v.minStock).length}
@@ -1699,6 +1704,101 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Ya, Hapus Produk
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Low Stock Dialog */}
+      <Dialog open={lowStockDialogOpen} onOpenChange={setLowStockDialogOpen}>
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl font-semibold text-red-700">Varian Stok Rendah</DialogTitle>
+            <p className="text-sm text-slate-600">Daftar varian yang stoknya mencapai atau di bawah minimum stok</p>
+          </DialogHeader>
+          
+          {product && (
+            <div className="space-y-4">
+              {product.variants.filter(v => v.stock <= v.minStock).length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Package className="h-8 w-8 text-green-600" />
+                  </div>
+                  <p className="text-slate-600">Semua varian memiliki stok yang cukup</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {product.variants
+                    .filter(v => v.stock <= v.minStock)
+                    .map((variant) => (
+                      <div key={variant.id} className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <Ruler className="h-3 w-3 text-blue-600" />
+                                </div>
+                                <span className="font-semibold text-slate-700">{variant.size.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {variant.color.hexCode && (
+                                  <div 
+                                    className="w-4 h-4 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-200"
+                                    style={{ backgroundColor: variant.color.hexCode }}
+                                  />
+                                )}
+                                <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
+                                  <Palette className="h-3 w-3 text-purple-600" />
+                                </div>
+                                <span className="font-semibold text-slate-700">{variant.color.name}</span>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <span className="text-slate-500">Stok Saat Ini:</span>
+                                <span className="ml-2 font-bold text-red-600">{variant.stock}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-500">Min. Stok:</span>
+                                <span className="ml-2 font-semibold text-slate-700">{variant.minStock}</span>
+                              </div>
+                              {variant.barcode && (
+                                <div className="col-span-2">
+                                  <span className="text-slate-500">Barcode:</span>
+                                  <code className="ml-2 text-xs bg-white px-2 py-1 rounded font-mono">{variant.barcode}</code>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              openEditVariant(variant);
+                              setLowStockDialogOpen(false);
+                            }}
+                            className="shrink-0"
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+              
+              <div className="flex justify-end pt-4">
+                <Button 
+                  variant="outline"
+                  onClick={() => setLowStockDialogOpen(false)}
+                >
+                  Tutup
                 </Button>
               </div>
             </div>
