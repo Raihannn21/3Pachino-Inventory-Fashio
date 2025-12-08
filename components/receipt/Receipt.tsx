@@ -272,66 +272,23 @@ export default function Receipt({ transaction, customerName, onClose }: ReceiptP
 
       const imgData = canvas.toDataURL('image/png');
       
-      // PDF dimensions for A4 paper
+      // Calculate PDF dimensions to fit content in one page (dynamic height)
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Create PDF with dynamic height (one long page, no splitting)
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4' // Standard A4 size
+        format: [imgWidth, imgHeight + 20] // Width x Dynamic height + margins
       });
 
-      // Calculate image dimensions to fit A4 with margins
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pdfWidth - 20; // 10mm margins on each side
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // Add image centered with margins
       const marginX = 10;
       const marginY = 10;
+      const contentWidth = imgWidth - 20;
       
-      // Check if content needs multiple pages
-      const maxHeightPerPage = pdfHeight - 20; // Leave margins
-      
-      if (imgHeight <= maxHeightPerPage) {
-        // Single page
-        pdf.addImage(imgData, 'PNG', marginX, marginY, imgWidth, imgHeight);
-      } else {
-        // Multiple pages needed
-        let currentY = 0;
-        let pageNumber = 1;
-        
-        while (currentY < imgHeight) {
-          if (pageNumber > 1) {
-            pdf.addPage();
-          }
-          
-          const remainingHeight = Math.min(maxHeightPerPage, imgHeight - currentY);
-          
-          // Create a temporary canvas for this page section
-          const pageCanvas = document.createElement('canvas');
-          const pageCtx = pageCanvas.getContext('2d')!;
-          
-          const scaleFactor = canvas.width / imgWidth;
-          const sourceY = currentY * scaleFactor;
-          const sourceHeight = remainingHeight * scaleFactor;
-          
-          pageCanvas.width = canvas.width;
-          pageCanvas.height = sourceHeight;
-          
-          // Draw the section of the original canvas
-          pageCtx.drawImage(
-            canvas,
-            0, sourceY, // Source x, y
-            canvas.width, sourceHeight, // Source width, height
-            0, 0, // Destination x, y
-            canvas.width, sourceHeight // Destination width, height
-          );
-          
-          const pageImgData = pageCanvas.toDataURL('image/png');
-          pdf.addImage(pageImgData, 'PNG', marginX, marginY, imgWidth, remainingHeight);
-          
-          currentY += maxHeightPerPage;
-          pageNumber++;
-        }
-      }
+      pdf.addImage(imgData, 'PNG', marginX, marginY, contentWidth, imgHeight);
 
       pdf.save(`Struk-${transaction.invoiceNumber}.pdf`);
       
