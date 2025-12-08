@@ -11,7 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import BarcodeDisplay from '@/components/ui/barcode-display';
 import { generateBarcodeLabels, generateFullPageLabels } from '@/lib/barcode-label-pdf';
-import { ArrowLeft, Plus, Edit, Package, Palette, Ruler, Trash2, Printer } from 'lucide-react';
+import { exportBarcodesToExcel } from '@/lib/excel-export';
+import { ArrowLeft, Plus, Edit, Package, Palette, Ruler, Trash2, Printer, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ProductVariant {
@@ -478,6 +479,37 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const handleDownloadBarcodesExcel = () => {
+    if (!product || product.variants.length === 0) {
+      toast.error('Tidak ada varian untuk didownload');
+      return;
+    }
+
+    // Filter only variants with barcode
+    const variantsWithBarcode = product.variants.filter(v => v.barcode);
+    
+    if (variantsWithBarcode.length === 0) {
+      toast.error('Tidak ada barcode yang tersedia');
+      return;
+    }
+
+    try {
+      const excelData = variantsWithBarcode.map(variant => ({
+        barcode: variant.barcode!,
+        productName: product.name,
+        size: variant.size.name,
+        color: variant.color.name,
+        stock: variant.stock,
+      }));
+
+      exportBarcodesToExcel(excelData, product.name);
+      toast.success(`Berhasil download ${variantsWithBarcode.length} barcode ke Excel`);
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      toast.error('Gagal export ke Excel');
+    }
+  };
+
   const handlePrintVariantLabels = async (variant: ProductVariant) => {
     if (!variant.barcode) {
       toast.error('Variant tidak memiliki barcode');
@@ -684,7 +716,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             disabled={!product.variants.some(v => v.barcode)}
           >
             <Printer className="h-4 w-4 mr-2" />
-            Download Semua Barcode
+            Download PDF Barcode
+          </Button>
+          <Button
+            onClick={handleDownloadBarcodesExcel}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            disabled={!product.variants.some(v => v.barcode)}
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Download Excel
           </Button>
           <Button
             onClick={openEditProduct}

@@ -13,6 +13,50 @@ export interface TransactionForExport {
   invoiceNumber: string;
 }
 
+export interface VariantForExport {
+  barcode: string;
+  productName: string;
+  size: string;
+  color: string;
+  stock?: number;
+}
+
+export const exportBarcodesToExcel = (variants: VariantForExport[], productName: string) => {
+  // Format data for Excel
+  const excelData = variants.map((variant, index) => ({
+    'No': index + 1,
+    'Barcode': variant.barcode,
+    'Nama Produk': variant.productName,
+    'Ukuran': variant.size,
+    'Warna': variant.color,
+    'Stok': variant.stock || 0,
+  }));
+
+  // Create worksheet
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+  // Set column widths
+  worksheet['!cols'] = [
+    { wch: 5 },  // No
+    { wch: 20 }, // Barcode
+    { wch: 30 }, // Nama Produk
+    { wch: 10 }, // Ukuran
+    { wch: 15 }, // Warna
+    { wch: 10 }, // Stok
+  ];
+
+  // Create workbook
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Barcode List');
+
+  // Generate filename with timestamp
+  const timestamp = new Date().toISOString().slice(0, 10);
+  const fileName = `Barcode_${productName.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.xlsx`;
+
+  // Download file
+  XLSX.writeFile(workbook, fileName);
+};
+
 export const exportTransactionsToExcel = (transactions: TransactionForExport[], period: number, filePrefix: string = 'Transaksi') => {
   // Format data for Excel
   const excelData = transactions.map((transaction, index) => ({
