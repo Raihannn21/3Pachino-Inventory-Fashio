@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import BarcodeDisplay from '@/components/ui/barcode-display';
-import { generateBarcodeLabels } from '@/lib/barcode-label-pdf';
+import { generateBarcodeLabels, generateFullPageLabels } from '@/lib/barcode-label-pdf';
 import { ArrowLeft, Plus, Edit, Package, Palette, Ruler, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -475,6 +475,34 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const handlePrintVariantLabels = async (variant: ProductVariant) => {
+    if (!variant.barcode) {
+      toast.error('Variant tidak memiliki barcode');
+      return;
+    }
+
+    try {
+      toast.loading('Membuat PDF label...');
+      
+      const variantData = {
+        ...variant,
+        product: {
+          name: product!.name,
+          sku: product!.sku,
+        },
+      };
+
+      await generateFullPageLabels(variantData);
+      
+      toast.dismiss();
+      toast.success('Berhasil download 1 halaman label (32 stiker)');
+    } catch (error) {
+      console.error('Error generating variant labels:', error);
+      toast.dismiss();
+      toast.error('Gagal membuat PDF label');
+    }
+  };
+
   const confirmDeleteProduct = async () => {
     try {
       const response = await fetch(`/api/products/${productId}`, {
@@ -891,16 +919,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                           {variant.barcode || 'Auto-generated'}
                         </code>
                         {variant.barcode && (
-                          <BarcodeDisplay 
-                            variant={{
-                              ...variant,
-                              barcode: variant.barcode,
-                              product: {
-                                name: product.name,
-                                sku: product.sku,
-                              }
-                            }} 
-                          />
+                          <>
+                            <BarcodeDisplay 
+                              variant={{
+                                ...variant,
+                                barcode: variant.barcode,
+                                product: {
+                                  name: product.name,
+                                  sku: product.sku,
+                                }
+                              }} 
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePrintVariantLabels(variant)}
+                              className="shrink-0"
+                              title="Print 1 Halaman Label"
+                            >
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -997,6 +1036,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         </td>
                         <td className="text-center py-4 px-4">
                           <div className="flex items-center justify-center gap-2">
+                            {variant.barcode && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePrintVariantLabels(variant)}
+                                className="hover:bg-green-100"
+                                title="Print 1 Halaman Label"
+                              >
+                                <Printer className="h-4 w-4 text-green-600" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"

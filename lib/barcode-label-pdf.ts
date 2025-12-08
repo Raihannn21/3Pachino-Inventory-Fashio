@@ -143,3 +143,26 @@ export async function generateBarcodeLabels(
 export async function generateSingleBarcodeLabel(variant: ProductVariant): Promise<void> {
   await generateBarcodeLabels([variant], variant.product.name);
 }
+
+/**
+ * Generate full page of labels for a single variant (repeated)
+ * Useful for printing multiple stickers of the same product variant
+ */
+export async function generateFullPageLabels(
+  variant: ProductVariant,
+  quantity?: number
+): Promise<void> {
+  if (!variant.barcode) {
+    throw new Error('Variant does not have a barcode');
+  }
+
+  // Calculate labels per page (4 cols x 8 rows = 32 labels)
+  const labelsPerPage = 32;
+  const actualQuantity = quantity || labelsPerPage;
+  
+  // Create array with repeated variant
+  const repeatedVariants = Array(actualQuantity).fill(variant);
+  
+  // Generate PDF with repeated labels
+  await generateBarcodeLabels(repeatedVariants, variant.product.name);
+}
