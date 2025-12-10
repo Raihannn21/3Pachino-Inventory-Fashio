@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,8 @@ import {
   User,
   MessageCircle,
   Bluetooth,
-  BluetoothConnected
+  BluetoothConnected,
+  Loader2
 } from 'lucide-react';
 import { toast } from "sonner";
 import html2canvas from 'html2canvas';
@@ -155,6 +156,40 @@ export default function Receipt({ transaction, customerName, onClose }: ReceiptP
   const [isPrintingThermal, setIsPrintingThermal] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
 
+  // Check connection status on mount and set interval to check
+  useEffect(() => {
+    const checkConnection = async () => {
+      // Try to initialize connection first
+      if (!thermalPrinter.isConnected()) {
+        const wasConnected = localStorage.getItem('thermal_printer_connected');
+        if (wasConnected === 'true') {
+          console.log('Attempting auto-reconnect...');
+          const success = await thermalPrinter.initializeConnection();
+          if (success) {
+            toast.success('Printer thermal auto-reconnected!', {
+              description: 'Printer tersambung kembali secara otomatis.',
+              duration: 3000,
+            });
+          }
+        }
+      }
+      
+      const connected = thermalPrinter.isConnected();
+      setIsThermalConnected(connected);
+    };
+
+    // Check immediately
+    checkConnection();
+
+    // Check every 3 seconds
+    const interval = setInterval(() => {
+      const connected = thermalPrinter.isConnected();
+      setIsThermalConnected(connected);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -192,7 +227,9 @@ export default function Receipt({ transaction, customerName, onClose }: ReceiptP
     try {
       await thermalPrinter.connect();
       setIsThermalConnected(true);
-      toast.success('Printer thermal berhasil terkoneksi!');
+      toast.success('Printer thermal berhasil terkoneksi dan akan auto-reconnect!', {
+        description: 'Printer akan otomatis tersambung kembali jika terputus.',
+      });
     } catch (error: any) {
       console.error('Error connecting thermal printer:', error);
       if (error.name === 'NotFoundError') {
@@ -211,7 +248,7 @@ export default function Receipt({ transaction, customerName, onClose }: ReceiptP
     try {
       await thermalPrinter.disconnect();
       setIsThermalConnected(false);
-      toast.success('Printer thermal terputus');
+      toast.info('Printer thermal terputus. Auto-reconnect disabled.');
     } catch (error) {
       console.error('Error disconnecting:', error);
     }
@@ -528,7 +565,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                 <div className="store-info text-xs sm:text-sm text-gray-600 mt-2">
                   <p>Premium Fashion Store</p>
                   <p>Telp: 0813-9590-7612</p>
-                  <p>Telp: 0813-9590-7612</p>
+                  {/* <p>Telp: 0813-9590-7612</p> */}
                 </div>
               </div>
 

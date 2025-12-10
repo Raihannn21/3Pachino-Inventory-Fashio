@@ -31,35 +31,48 @@ class ThermalPrinter {
   private printer: PrinterDevice | null = null;
   private readonly PRINTER_SERVICE_UUID = '000018f0-0000-1000-8000-00805f9b34fb';
   private readonly PRINTER_CHARACTERISTIC_UUID = '00002af1-0000-1000-8000-00805f9b34fb';
+  private reconnectAttempts = 0;
+  private readonly MAX_RECONNECT_ATTEMPTS = 3;
+  private isReconnecting = false;
+  private savedDevice: BluetoothDevice | null = null;
 
-  /**
-   * Check if Web Bluetooth API is supported
-   */
-  isBluetoothSupported(): boolean {
-    return typeof navigator !== 'undefined' && 'bluetooth' in navigator;
+  constructor() {
+    // Don't auto-reconnect in constructor (causes issues)
+    // Will reconnect on first interaction or explicit call
   }
 
   /**
-   * Connect to Bluetooth thermal printer
+   * Initialize and auto-reconnect if previously connected
+   * Call this manually from component
    */
-  async connect(): Promise<boolean> {
-    if (!this.isBluetoothSupported()) {
-      throw new Error('Web Bluetooth API tidak didukung di browser ini. Gunakan Chrome atau Edge.');
+  async initializeConnection(): Promise<boolean> {
+    if (this.isConnected()) {
+      return true; // Already connected
     }
 
     try {
-      // Request Bluetooth device - acceptAllDevices untuk kompatibilitas maksimal
-      const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: [
-          this.PRINTER_SERVICE_UUID,
-          '000018f0-0000-1000-8000-00805f9b34fb', // Standard printer service
-          '49535343-fe7d-4ae5-8fa9-9fafd205e455', // Serial port service
-          '0000fff0-0000-1000-8000-00805f9b34fb', // Custom service 1
-          '0000ffe0-0000-1000-8000-00805f9b34fb', // Custom service 2
-        ]
-      });
+      const wasConnected = localStorage.getItem('thermal_printer_connected');
+      
+      if (wasConnected === 'true' && this.savedDevice) {
+        console.log('Auto-reconnecting to saved printer...');
+        const success = await this.reconnectToDevice(this.savedDevice);
+        if (success) {
+          console.log('Auto-reconnect successful');
+          return true;
+        }
+      }
+    } catch (error) {
+      console.log('Auto-reconnect failed:', error);
+    }
+    
+    return false;
+  }
 
+  /**
+   * Reconnect to a specific device
+   */
+  private async reconnectToDevice(device: BluetoothDevice): Promise<boolean> {
+    try {
       if (!device.gatt) {
         throw new Error('GATT tidak tersedia pada device');
       }
@@ -99,7 +112,101 @@ class ThermalPrinter {
         characteristic
       };
 
+      // Setup disconnect listener for auto-reconnect
+      device.addEventListener('gattserverdisconnected', this.onDisconnected.bind(this));
+
+      // Save to localStorage and memory
+      this.savedDevice = device;
+      localStorage.setItem('thermal_printer_connected', 'true');
+      localStorage.setItem('thermal_printer_device_id', device.id);
+      localStorage.setItem('thermal_printer_device_name', device.name || 'Unknown');
+      
+      console.log('Printer reconnected successfully');
       return true;
+    } catch (error) {
+      console.error('Error reconnecting to printer:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Handle disconnection event - attempt auto-reconnect
+   */
+  private async onDisconnected(): Promise<void> {
+    console.log('Printer disconnected');
+    
+    // Don't auto-reconnect if user manually disconnected
+    const wasConnected = localStorage.getItem('thermal_printer_connected');
+    if (wasConnected !== 'true' || this.isReconnecting || !this.savedDevice) {
+      return;
+    }
+
+    // Try to reconnect
+    if (this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
+      this.isReconnecting = true;
+      this.reconnectAttempts++;
+      
+      console.log(`Auto-reconnect attempt ${this.reconnectAttempts}/${this.MAX_RECONNECT_ATTEMPTS}...`);
+      
+      // Wait before reconnecting
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const success = await this.reconnectToDevice(this.savedDevice);
+      
+      if (success) {
+        this.reconnectAttempts = 0; // Reset on success
+        console.log('Auto-reconnect successful');
+      } else if (this.reconnectAttempts >= this.MAX_RECONNECT_ATTEMPTS) {
+        console.log('Auto-reconnect failed after max attempts');
+        localStorage.removeItem('thermal_printer_connected');
+      }
+      
+      this.isReconnecting = false;
+    }
+  }
+
+  /**
+   * Check if Web Bluetooth API is supported
+   */
+  isBluetoothSupported(): boolean {
+    return typeof navigator !== 'undefined' && 'bluetooth' in navigator;
+  }
+
+  /**
+   * Connect to Bluetooth thermal printer
+   */
+  async connect(): Promise<boolean> {
+    if (!this.isBluetoothSupported()) {
+      throw new Error('Web Bluetooth API tidak didukung di browser ini. Gunakan Chrome atau Edge.');
+    }
+
+    try {
+      // Request Bluetooth device - acceptAllDevices untuk kompatibilitas maksimal
+      const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: [
+          this.PRINTER_SERVICE_UUID,
+          '000018f0-0000-1000-8000-00805f9b34fb', // Standard printer service
+          '49535343-fe7d-4ae5-8fa9-9fafd205e455', // Serial port service
+          '0000fff0-0000-1000-8000-00805f9b34fb', // Custom service 1
+          '0000ffe0-0000-1000-8000-00805f9b34fb', // Custom service 2
+        ]
+      });
+
+      const success = await this.reconnectToDevice(device);
+      
+      if (success) {
+        // Setup disconnect listener for auto-reconnect
+        device.addEventListener('gattserverdisconnected', this.onDisconnected.bind(this));
+        
+        // Save device to memory for future reconnects
+        this.savedDevice = device;
+        
+        // Reset reconnect attempts on successful manual connection
+        this.reconnectAttempts = 0;
+      }
+
+      return success;
     } catch (error) {
       console.error('Error connecting to printer:', error);
       throw error;
@@ -110,10 +217,18 @@ class ThermalPrinter {
    * Disconnect from printer
    */
   async disconnect(): Promise<void> {
+    // Clear localStorage to prevent auto-reconnect
+    localStorage.removeItem('thermal_printer_connected');
+    localStorage.removeItem('thermal_printer_device_id');
+    localStorage.removeItem('thermal_printer_device_name');
+    
     if (this.printer?.device?.gatt?.connected) {
       await this.printer.device.gatt.disconnect();
     }
+    
     this.printer = null;
+    this.savedDevice = null;
+    this.reconnectAttempts = 0;
   }
 
   /**
@@ -121,6 +236,21 @@ class ThermalPrinter {
    */
   isConnected(): boolean {
     return this.printer?.device?.gatt?.connected ?? false;
+  }
+
+  /**
+   * Check if printer is currently attempting to reconnect
+   */
+  isReconnectingNow(): boolean {
+    return this.isReconnecting;
+  }
+
+  /**
+   * Get saved printer device ID
+   */
+  getSavedPrinterDeviceId(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('thermal_printer_device_id');
   }
 
   /**
@@ -200,8 +330,18 @@ class ThermalPrinter {
    * Layout: 2 spasi margin + 44 char content + 2 spasi sisa = 48 total (centered)
    */
   async printReceipt(receiptData: ReceiptData): Promise<void> {
+    // Try to reconnect if not connected
     if (!this.isConnected()) {
-      throw new Error('Printer belum terkoneksi. Silakan connect terlebih dahulu.');
+      const wasConnected = localStorage.getItem('thermal_printer_connected');
+      if (wasConnected === 'true' && this.savedDevice) {
+        console.log('Printer disconnected, attempting to reconnect...');
+        const reconnected = await this.reconnectToDevice(this.savedDevice);
+        if (!reconnected) {
+          throw new Error('Printer terputus dan gagal reconnect. Silakan connect ulang.');
+        }
+      } else {
+        throw new Error('Printer belum terkoneksi. Silakan connect terlebih dahulu.');
+      }
     }
 
     try {
@@ -224,7 +364,8 @@ class ThermalPrinter {
         .size('normal')  // Normal size untuk alamat dan telp
         .bold(false)
         .line(LEFT_MARGIN + 'Pasar Andir Basement Blok M 25-26')
-        .line(LEFT_MARGIN + 'Telp: 0813-9590-4612')
+        .line(LEFT_MARGIN + 'Telp: 0813-9590-7612')
+        .line(LEFT_MARGIN + 'Admin: 0813-2159-3295')
         .newline();
 
       // Separator - dengan left margin (44 char)
@@ -409,9 +550,12 @@ export const thermalPrinter = new ThermalPrinter();
 // Export helper functions
 export const connectThermalPrinter = () => thermalPrinter.connect();
 export const disconnectThermalPrinter = () => thermalPrinter.disconnect();
+export const initializeThermalPrinter = () => thermalPrinter.initializeConnection();
 export const printThermalReceipt = (data: ReceiptData) => thermalPrinter.printReceipt(data);
 export const testThermalPrint = () => thermalPrinter.testPrint();
 export const isThermalPrinterConnected = () => thermalPrinter.isConnected();
+export const isThermalPrinterReconnecting = () => thermalPrinter.isReconnectingNow();
+export const getSavedThermalPrinterDeviceId = () => thermalPrinter.getSavedPrinterDeviceId();
 export const isBluetoothSupported = () => thermalPrinter.isBluetoothSupported();
 
 export type { ReceiptData, ReceiptItem };

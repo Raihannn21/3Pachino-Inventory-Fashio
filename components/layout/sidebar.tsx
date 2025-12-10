@@ -40,8 +40,6 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const { data: session } = useSession();
 
   const handleCloseMobileMenu = useCallback(() => {
@@ -79,32 +77,6 @@ export default function Sidebar() {
     setTimeout(() => {
       setIsAnimating(true);
     }, 10);
-  };
-
-  // Handle swipe to close (only horizontal swipe, not vertical scroll)
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStartX(e.touches[0].clientX);
-    setTouchStartY(e.touches[0].clientY);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX === null || touchStartY === null) return;
-    
-    const touchEndX = e.changedTouches[0].clientX;
-    const touchEndY = e.changedTouches[0].clientY;
-    
-    const diffX = touchStartX - touchEndX;
-    const diffY = Math.abs(touchStartY - touchEndY);
-    
-    // Only close if:
-    // 1. Horizontal swipe left > 100px
-    // 2. Vertical movement < 30px (to differentiate from scroll)
-    if (diffX > 100 && diffY < 30) {
-      handleCloseMobileMenu();
-    }
-    
-    setTouchStartX(null);
-    setTouchStartY(null);
   };
 
   const handleLogout = async () => {
@@ -294,9 +266,6 @@ export default function Sidebar() {
               "landscape:w-[240px] landscape:max-w-[40vw]",
               isAnimating ? "translate-x-0" : "-translate-x-full"
             )}
-            style={{ touchAction: 'pan-y' }}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header without Close Button */}
@@ -305,7 +274,7 @@ export default function Sidebar() {
             </div>
             
             {/* Navigation Items */}
-            <div className="flex-1 overflow-y-auto py-4 overscroll-contain" style={{ touchAction: 'pan-y' }}>
+            <div className="flex-1 overflow-y-auto py-4 overscroll-contain">
               <NavigationItems onItemClick={handleCloseMobileMenu} />
             </div>
             
