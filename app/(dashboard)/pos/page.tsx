@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Printer } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Printer, Scan } from 'lucide-react';
 import { toast } from 'sonner';
 import { Logo } from '@/components/ui/logo';
 import usbPrinter, { isUSBPrintSupported } from '@/lib/usb-printer';
@@ -103,6 +103,11 @@ export default function POSPage() {
   // Print receipt states
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<any>(null);
+  
+  // Barcode scanner states
+  const [scannerBuffer, setScannerBuffer] = useState<string>('');
+  const [isScannerActive, setIsScannerActive] = useState<boolean>(true);
+  const scannerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Cascade dropdown states
   const [selectedProduct, setSelectedProduct] = useState<string>(''); // Product ID
@@ -328,6 +333,107 @@ export default function POSPage() {
 
     return () => clearTimeout(timer);
   }, [searchTerm, allProducts, searchProducts]);
+
+  // Barcode Scanner - Keyboard Listener
+  useEffect(() => {
+    if (!isScannerActive) return;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ignore jika user sedang ketik di input field
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      // Ignore jika dialog terbuka
+      if (document.querySelector('[role="dialog"]')) {
+        return;
+      }
+
+      // Clear timeout sebelumnya
+      if (scannerTimeoutRef.current) {
+        clearTimeout(scannerTimeoutRef.current);
+      }
+
+      // Jika Enter ditekan, process barcode
+      if (e.key === 'Enter' && scannerBuffer.length > 0) {
+        e.preventDefault();
+        handleBarcodeScanned(scannerBuffer.trim());
+        setScannerBuffer('');
+        return;
+      }
+
+      // Jika karakter biasa, tambahkan ke buffer
+      if (e.key.length === 1) {
+        setScannerBuffer(prev => prev + e.key);
+        
+        // Auto-reset buffer setelah 100ms (jika tidak ada input lagi)
+        scannerTimeoutRef.current = setTimeout(() => {
+          setScannerBuffer('');
+        }, 100);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+      if (scannerTimeoutRef.current) {
+        clearTimeout(scannerTimeoutRef.current);
+      }
+    };
+  }, [isScannerActive, scannerBuffer]);
+
+  // Handle Barcode Scanned
+  const handleBarcodeScanned = useCallback(async (barcode: string) => {
+    console.log('Barcode scanned:', barcode);
+    
+    // Cari variant berdasarkan barcode
+    const variant = allProducts.find(v => v.barcode === barcode);
+    
+    if (!variant) {
+      toast.error(`Barcode tidak ditemukan: ${barcode}`);
+      return;
+    }
+
+    // Cek apakah sudah ada di cart
+    const existingItem = cart.find(item => item.variant.id === variant.id);
+    
+    if (existingItem) {
+      // Cek stok tersedia
+      const availableStock = getAvailableStock(variant.id, variant.stock);
+      
+      if (availableStock <= 0) {
+        toast.error(`Stok ${variant.product.name} (${variant.size.name} - ${variant.color.name}) habis!`);
+        return;
+      }
+      
+      // Tambah quantity
+      updateQuantity(variant.id, existingItem.quantity + 1);
+      toast.success(`${variant.product.name} (${variant.size.name} - ${variant.color.name}) +1`, {
+        icon: '📦',
+        duration: 2000,
+      });
+    } else {
+      // Cek stok
+      if (variant.stock <= 0) {
+        toast.error(`Stok ${variant.product.name} (${variant.size.name} - ${variant.color.name}) habis!`);
+        return;
+      }
+      
+      // Tambah item baru ke cart
+      const newItem: CartItem = {
+        variant: variant,
+        quantity: 1,
+      };
+      
+      setCart(prev => [...prev, newItem]);
+      toast.success(`${variant.product.name} (${variant.size.name} - ${variant.color.name}) ditambahkan ke keranjang`, {
+        icon: '✅',
+        duration: 2000,
+      });
+    }
+  }, [allProducts, cart, getAvailableStock]);
 
   // Handle product selection (reset size and color)
   const handleProductChange = (productId: string) => {
@@ -850,6 +956,32 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
           <p className="text-gray-600 mt-1 text-sm sm:text-base">
             Sistem kasir 3PACHINO
           </p>
+        </div>
+        
+        {/* Scanner Status Indicator */}
+        <div className="flex items-center gap-3">
+          <div 
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all ${
+              isScannerActive 
+                ? 'bg-green-50 border-green-500 text-green-700' 
+                : 'bg-gray-50 border-gray-300 text-gray-500'
+            }`}
+            title={isScannerActive ? 'Scanner aktif - Siap menerima scan' : 'Scanner nonaktif'}
+          >
+            <Scan className={`h-4 w-4 ${isScannerActive ? 'animate-pulse' : ''}`} />
+            <span className="text-sm font-medium hidden sm:inline">
+              {isScannerActive ? 'Scanner Aktif' : 'Scanner Nonaktif'}
+            </span>
+            <div className={`w-2 h-2 rounded-full ${isScannerActive ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsScannerActive(!isScannerActive)}
+            className="hidden sm:flex"
+          >
+            {isScannerActive ? 'Nonaktifkan' : 'Aktifkan'} Scanner
+          </Button>
         </div>
       </div>
 

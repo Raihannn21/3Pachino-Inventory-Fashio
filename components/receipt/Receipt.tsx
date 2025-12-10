@@ -528,6 +528,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                 <div className="store-info text-xs sm:text-sm text-gray-600 mt-2">
                   <p>Premium Fashion Store</p>
                   <p>Telp: 0813-9590-7612</p>
+                  <p>Telp: 0813-9590-7612</p>
                 </div>
               </div>
 
