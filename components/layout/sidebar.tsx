@@ -40,6 +40,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const { data: session } = useSession();
 
   const handleCloseMobileMenu = useCallback(() => {
@@ -79,7 +80,24 @@ export default function Sidebar() {
     }, 10);
   };
 
+  // Handle swipe to close
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
 
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+    
+    // If swipe left more than 50px, close menu
+    if (diff > 50) {
+      handleCloseMobileMenu();
+    }
+    
+    setTouchStartX(null);
+  };
 
   const handleLogout = async () => {
     try {
@@ -120,10 +138,16 @@ export default function Sidebar() {
           onLogout?.();
           handleLogout();
         }}
-        className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 transition-colors"
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          onLogout?.();
+          handleLogout();
+        }}
+        className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 transition-colors active:bg-red-100"
+        style={{ touchAction: 'manipulation' }}
       >
-        <LogOut className="h-4 w-4 mr-2" />
-        Logout
+        <LogOut className="h-4 w-4 mr-2 pointer-events-none" />
+        <span className="pointer-events-none">Logout</span>
       </Button>
     </div>
   );
@@ -157,21 +181,29 @@ export default function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
-              onClick={onItemClick}
+              onClick={(e) => {
+                onItemClick?.();
+              }}
+              onTouchEnd={(e) => {
+                // Prevent double-firing on touch devices
+                e.preventDefault();
+                window.location.href = item.href;
+              }}
               className={cn(
-                'group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out',
+                'group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out cursor-pointer select-none',
                 isActive
                   ? 'bg-blue-100 text-blue-900 shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100'
               )}
+              style={{ touchAction: 'manipulation' }}
             >
               <item.icon
                 className={cn(
-                  'mr-3 h-5 w-5 flex-shrink-0 transition-colors',
+                  'mr-3 h-5 w-5 flex-shrink-0 transition-colors pointer-events-none',
                   isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'
                 )}
               />
-              {item.name}
+              <span className="pointer-events-none">{item.name}</span>
             </Link>
           );
         })}
@@ -182,7 +214,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Mobile Header */}
-      <div className="md:hidden bg-white border-b px-4 py-3 flex items-center justify-between">
+      <div className="md:hidden bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-[9998]">
         <Logo size="sidebar" showText={true} linkable={true} usePng={true} />
         <Button
           variant="ghost"
@@ -196,9 +228,19 @@ export default function Sidebar() {
               handleOpenMobileMenu();
             }
           }}
-          className="p-2"
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (isMobileMenuOpen) {
+              handleCloseMobileMenu();
+            } else {
+              handleOpenMobileMenu();
+            }
+          }}
+          className="p-2 active:bg-gray-100"
+          style={{ touchAction: 'manipulation' }}
         >
-          <Menu className="h-6 w-6" />
+          <Menu className="h-6 w-6 pointer-events-none" />
         </Button>
       </div>
 
@@ -222,28 +264,40 @@ export default function Sidebar() {
 
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
+        <div className="md:hidden fixed inset-0 z-[9999] flex">
           {/* Backdrop */}
           <div 
             className={cn(
-              "fixed inset-0 bg-black transition-opacity duration-300",
+              "fixed inset-0 bg-black transition-opacity duration-300 z-[9999]",
               isAnimating ? "bg-opacity-50" : "bg-opacity-0"
             )}
             onClick={handleCloseMobileMenu}
+            onTouchEnd={(e) => {
+              e.stopPropagation();
+              handleCloseMobileMenu();
+            }}
           />
           
           {/* Sidebar */}
-          <div className={cn(
-            "relative flex flex-col w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out",
-            isAnimating ? "translate-x-0" : "-translate-x-full"
-          )}>
+          <div 
+            className={cn(
+              "relative flex flex-col bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-[10000]",
+              "w-[280px] sm:w-[320px] max-w-[85vw]",
+              "landscape:w-[240px] landscape:max-w-[40vw]",
+              isAnimating ? "translate-x-0" : "-translate-x-full"
+            )}
+            style={{ touchAction: 'pan-y' }}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header without Close Button */}
             <div className="p-4 border-b bg-white sticky top-0 z-10">
               <Logo size="sidebar" showText={true} linkable={true} usePng={true} />
             </div>
             
             {/* Navigation Items */}
-            <div className="flex-1 overflow-y-auto py-4">
+            <div className="flex-1 overflow-y-auto py-4 overscroll-contain" style={{ touchAction: 'pan-y' }}>
               <NavigationItems onItemClick={handleCloseMobileMenu} />
             </div>
             
