@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -77,6 +77,7 @@ interface GroupedProduct {
 
 export default function POSPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<ProductVariant[]>([]);
   const [allProducts, setAllProducts] = useState<ProductVariant[]>([]);
@@ -434,6 +435,21 @@ export default function POSPage() {
       });
     }
   }, [allProducts, cart, getAvailableStock]);
+
+  // Process barcode from URL query parameter (from other pages)
+  useEffect(() => {
+    const barcodeFromUrl = searchParams.get('scan');
+    
+    if (barcodeFromUrl && allProducts.length > 0) {
+      // Wait a bit for page to fully load
+      setTimeout(() => {
+        handleBarcodeScanned(barcodeFromUrl);
+        
+        // Clean URL (remove query parameter)
+        router.replace('/pos', { scroll: false });
+      }, 500);
+    }
+  }, [searchParams, allProducts, handleBarcodeScanned, router]);
 
   // Handle product selection (reset size and color)
   const handleProductChange = (productId: string) => {
