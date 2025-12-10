@@ -41,6 +41,7 @@ export default function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const { data: session } = useSession();
 
   const handleCloseMobileMenu = useCallback(() => {
@@ -80,23 +81,30 @@ export default function Sidebar() {
     }, 10);
   };
 
-  // Handle swipe to close
+  // Handle swipe to close (only horizontal swipe, not vertical scroll)
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX);
+    setTouchStartY(e.touches[0].clientY);
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX === null) return;
+    if (touchStartX === null || touchStartY === null) return;
     
     const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX - touchEndX;
+    const touchEndY = e.changedTouches[0].clientY;
     
-    // If swipe left more than 50px, close menu
-    if (diff > 50) {
+    const diffX = touchStartX - touchEndX;
+    const diffY = Math.abs(touchStartY - touchEndY);
+    
+    // Only close if:
+    // 1. Horizontal swipe left > 100px
+    // 2. Vertical movement < 30px (to differentiate from scroll)
+    if (diffX > 100 && diffY < 30) {
       handleCloseMobileMenu();
     }
     
     setTouchStartX(null);
+    setTouchStartY(null);
   };
 
   const handleLogout = async () => {
