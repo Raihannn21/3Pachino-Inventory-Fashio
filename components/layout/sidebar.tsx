@@ -79,7 +79,7 @@ export default function Sidebar() {
       setIsAnimating(true);
     }, 10);
   };
-
+ 
 
 
   const handleLogout = async () => {

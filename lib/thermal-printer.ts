@@ -4,6 +4,8 @@
  */
 
 import EscPosEncoder from 'esc-pos-encoder';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 
 interface PrinterDevice {
   device: BluetoothDevice;
@@ -25,6 +27,20 @@ interface ReceiptData {
   totalAmount: number;
   notes?: string;
   customerName?: string;
+}
+
+interface DailyReportCustomer {
+  name: string;
+  transactionCount: number;
+  totalAmount: number;
+}
+
+interface DailyReportData {
+  date: string;
+  dateRange?: string; // For range display
+  customers: DailyReportCustomer[];
+  totalRevenue: number;
+  totalTransactions: number;
 }
 
 class ThermalPrinter {
@@ -510,6 +526,165 @@ class ThermalPrinter {
   }
 
   /**
+   * Print daily sales report to thermal printer
+   * Format: List of customers with their transaction count and revenue
+   */
+  async printDailyReport(reportData: DailyReportData): Promise<void> {
+    // Try to reconnect if not connected
+    if (!this.isConnected()) {
+      const wasConnected = localStorage.getItem('thermal_printer_connected');
+      if (wasConnected === 'true' && this.savedDevice) {
+        console.log('Printer disconnected, attempting to reconnect...');
+        const reconnected = await this.reconnectToDevice(this.savedDevice);
+        if (!reconnected) {
+          throw new Error('Printer terputus dan gagal reconnect. Silakan connect ulang.');
+        }
+      } else {
+        throw new Error('Printer belum terkoneksi. Silakan connect terlebih dahulu.');
+      }
+    }
+
+    try {
+      const encoder = new EscPosEncoder();
+      const PRINTER_WIDTH = 42; // 42 characters - lebar area cetak efektif
+      const LEFT_MARGIN = '  '; // 2 spasi kiri untuk centering
+
+      // Initialize printer
+      encoder.initialize();
+
+      // Store header - center aligned
+      encoder
+        .align('center')
+        .bold(true)
+        .size('large')
+        .line(LEFT_MARGIN + '3PACHINO')
+        .size('normal')
+        .bold(false)
+        .line(LEFT_MARGIN + 'Pasar Andir Basement Blok M 25-26')
+        .line(LEFT_MARGIN + 'Telp: 0813-9590-7612')
+        .newline();
+
+      // Report title
+      encoder
+        .align('center')
+        .bold(true)
+        .size('large')
+        .line(LEFT_MARGIN + 'LAPORAN PENDAPATAN')
+        .size('normal')
+        .bold(false);
+
+      // Date info
+      const dateDisplay = reportData.dateRange || reportData.date;
+      encoder
+        .line(LEFT_MARGIN + dateDisplay)
+        .newline();
+
+      // Separator
+      const separator = LEFT_MARGIN + '='.repeat(PRINTER_WIDTH);
+      encoder
+        .align('left')
+        .line(separator)
+        .newline();
+
+      // Customer list
+      encoder
+        .align('left')
+        .bold(true)
+        .line(LEFT_MARGIN + 'DETAIL PER CUSTOMER:')
+        .bold(false)
+        .newline();
+
+      // Sort customers by total amount descending
+      const sortedCustomers = [...reportData.customers].sort((a, b) => b.totalAmount - a.totalAmount);
+
+      for (const customer of sortedCustomers) {
+        // Customer name (BOLD)
+        const customerName = customer.name.length > PRINTER_WIDTH 
+          ? customer.name.substring(0, PRINTER_WIDTH - 3) + '...' 
+          : customer.name;
+        
+        encoder
+          .bold(true)
+          .line(LEFT_MARGIN + customerName)
+          .bold(false);
+
+        // Transaction count and amount
+        const transactionInfo = `${customer.transactionCount} transaksi`;
+        const amountFormatted = this.formatCurrency(customer.totalAmount);
+        const amountText = `Rp ${amountFormatted}`;
+        
+        const detailLine = this.createRow(transactionInfo, amountText, PRINTER_WIDTH);
+        
+        encoder
+          .line(LEFT_MARGIN + detailLine)
+          .newline();
+      }
+
+      // Separator
+      encoder
+        .align('left')
+        .line(separator)
+        .newline();
+
+      // Summary statistics
+      const totalTransactionsLine = this.createRow(
+        'Total Transaksi:',
+        `${reportData.totalTransactions} transaksi`,
+        PRINTER_WIDTH
+      );
+      
+      encoder
+        .align('left')
+        .line(LEFT_MARGIN + totalTransactionsLine)
+        .newline();
+
+      // Total revenue - BOLD dan BESAR
+      const totalLabel = 'TOTAL PENDAPATAN:';
+      const totalRevenueFormatted = this.formatCurrency(reportData.totalRevenue);
+      const totalRightPart = `Rp ${totalRevenueFormatted}`;
+      
+      const totalLine = this.createRow(totalLabel, totalRightPart, PRINTER_WIDTH);
+      
+      encoder
+        .align('left')
+        .bold(true)
+        .size('large')
+        .line(LEFT_MARGIN + totalLine)
+        .size('normal')
+        .bold(false)
+        .newline();
+
+      encoder
+        .line(separator);
+
+      // Footer
+      encoder
+        .align('center')
+        .newline()
+        .line(LEFT_MARGIN + 'Dicetak pada:')
+        .line(LEFT_MARGIN + format(new Date(), 'dd MMM yyyy HH:mm', { locale: id }))
+        .newline();
+
+      // Cut paper
+      encoder
+        .newline()
+        .newline()
+        .newline()
+        .cut('partial');
+
+      // Get encoded data
+      const data = encoder.encode();
+
+      // Send to printer
+      await this.sendData(data);
+
+    } catch (error) {
+      console.error('Error printing daily report:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Test print - simple test receipt
    */
   async testPrint(): Promise<void> {
@@ -552,10 +727,11 @@ export const connectThermalPrinter = () => thermalPrinter.connect();
 export const disconnectThermalPrinter = () => thermalPrinter.disconnect();
 export const initializeThermalPrinter = () => thermalPrinter.initializeConnection();
 export const printThermalReceipt = (data: ReceiptData) => thermalPrinter.printReceipt(data);
+export const printThermalDailyReport = (data: DailyReportData) => thermalPrinter.printDailyReport(data);
 export const testThermalPrint = () => thermalPrinter.testPrint();
 export const isThermalPrinterConnected = () => thermalPrinter.isConnected();
 export const isThermalPrinterReconnecting = () => thermalPrinter.isReconnectingNow();
 export const getSavedThermalPrinterDeviceId = () => thermalPrinter.getSavedPrinterDeviceId();
 export const isBluetoothSupported = () => thermalPrinter.isBluetoothSupported();
 
-export type { ReceiptData, ReceiptItem };
+export type { ReceiptData, ReceiptItem, DailyReportData, DailyReportCustomer };

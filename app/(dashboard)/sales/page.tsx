@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Eye, Calendar, TrendingUp, Package, Users, Receipt as ReceiptIcon, ShoppingCart, Trash2, ChevronDown } from 'lucide-react';
+import { Eye, Calendar, TrendingUp, Package, Users, Receipt as ReceiptIcon, ShoppingCart, Trash2, ChevronDown, Printer } from 'lucide-react';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -21,6 +21,12 @@ import Receipt from '@/components/receipt/Receipt';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DayPicker, DateRange } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
+import { 
+  printThermalDailyReport, 
+  isThermalPrinterConnected, 
+  connectThermalPrinter,
+  type DailyReportData 
+} from '@/lib/thermal-printer';
 
 interface TransactionItem {
   id: string;
@@ -98,6 +104,7 @@ export default function SalesPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPrintingReport, setIsPrintingReport] = useState(false);
 
   // Fetch sales data
   const fetchSales = async (page = 1) => {
@@ -109,8 +116,11 @@ export default function SalesPage() {
       });
 
       if (dateRange?.from && dateRange?.to) {
-        params.append('startDate', dateRange.from.toISOString());
-        params.append('endDate', dateRange.to.toISOString());
+        // Set to start of day (00:00:00) and end of day (23:59:59)
+        const startOfDayDate = startOfDay(dateRange.from);
+        const endOfDayDate = endOfDay(dateRange.to);
+        params.append('startDate', startOfDayDate.toISOString());
+        params.append('endDate', endOfDayDate.toISOString());
       }
 
       const response = await fetch(`/api/sales?${params}`);
@@ -193,6 +203,69 @@ export default function SalesPage() {
       toast.error('Gagal menghapus transaksi');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // Print daily report
+  const handlePrintDailyReport = async () => {
+    if (!dateRange?.from || !dateRange?.to) {
+      toast.error('Silakan pilih rentang tanggal terlebih dahulu');
+      return;
+    }
+
+    // Check if printer connected
+    if (!isThermalPrinterConnected()) {
+      toast.error('Printer thermal belum terkoneksi. Silakan connect printer terlebih dahulu di halaman Struk.');
+      return;
+    }
+
+    try {
+      setIsPrintingReport(true);
+
+      // Group sales by customer and calculate totals
+      const customerMap = new Map<string, { name: string; count: number; total: number }>();
+      
+      salesData?.sales.forEach((sale) => {
+        const customerName = sale.supplier?.name || 'Customer';
+        const existing = customerMap.get(customerName) || { name: customerName, count: 0, total: 0 };
+        customerMap.set(customerName, {
+          name: customerName,
+          count: existing.count + 1,
+          total: existing.total + Number(sale.totalAmount)
+        });
+      });
+
+      // Convert to array
+      const customers = Array.from(customerMap.values()).map(customer => ({
+        name: customer.name,
+        transactionCount: customer.count,
+        totalAmount: customer.total
+      }));
+
+      // Calculate totals
+      const totalRevenue = salesData?.sales.reduce((sum, sale) => sum + Number(sale.totalAmount), 0) || 0;
+      const totalTx = salesData?.sales.length || 0;
+
+      // Format date range
+      const dateRangeStr = dateRange.from && dateRange.to
+        ? `${format(dateRange.from, 'dd MMM yyyy', { locale: id })} - ${format(dateRange.to, 'dd MMM yyyy', { locale: id })}`
+        : format(new Date(), 'dd MMM yyyy', { locale: id });
+
+      const reportData: DailyReportData = {
+        date: format(dateRange.from, 'dd MMM yyyy', { locale: id }),
+        dateRange: dateRangeStr,
+        customers: customers,
+        totalRevenue: totalRevenue,
+        totalTransactions: totalTx
+      };
+
+      await printThermalDailyReport(reportData);
+      toast.success('Laporan harian berhasil dicetak!');
+    } catch (error) {
+      console.error('Error printing daily report:', error);
+      toast.error('Gagal mencetak laporan harian');
+    } finally {
+      setIsPrintingReport(false);
     }
   };
 
@@ -364,6 +437,17 @@ export default function SalesPage() {
                   />
                 </PopoverContent>
               </Popover>
+              
+              {/* Print Daily Report Button */}
+              <Button
+                onClick={handlePrintDailyReport}
+                disabled={isPrintingReport || !dateRange?.from || !dateRange?.to}
+                variant="default"
+                className="w-full sm:w-auto"
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                {isPrintingReport ? 'Mencetak...' : 'Print Laporan Harian'}
+              </Button>
             </div>
 
             {loading ? (
