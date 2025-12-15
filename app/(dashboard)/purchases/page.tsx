@@ -128,10 +128,10 @@ export default function PurchasesPage() {
 
   // Barcode scanner states
   const [isScannerActive, setIsScannerActive] = useState(false);
-  const [scannerBuffer, setScannerBuffer] = useState('');
   const [isQuantityDialogOpen, setIsQuantityDialogOpen] = useState(false);
   const [scannedVariant, setScannedVariant] = useState<ProductVariant | null>(null);
   const [scanQuantity, setScanQuantity] = useState('1');
+  const scannerBufferRef = useRef('');  // Use ref instead of state!
   const scannerTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Fetch data
@@ -197,7 +197,7 @@ export default function PurchasesPage() {
     fetchProducts();
   }, [currentPage]);
 
-  // Barcode scanner listener - sama seperti POS
+  // Barcode scanner listener - FIXED: Use ref untuk buffer agar tidak re-render
   useEffect(() => {
     if (!isScannerActive) return;
 
@@ -220,41 +220,38 @@ export default function PurchasesPage() {
       }
 
       // Jika Enter ditekan, process barcode
-      if (e.key === 'Enter' && scannerBuffer.length > 0) {
+      if (e.key === 'Enter' && scannerBufferRef.current.length > 0) {
         e.preventDefault();
-        console.log('Scanner: Enter pressed, buffer:', scannerBuffer);
-        handleBarcodeScanned(scannerBuffer.trim());
-        setScannerBuffer('');
+        console.log('Scanner: Enter pressed, buffer:', scannerBufferRef.current);
+        handleBarcodeScanned(scannerBufferRef.current.trim());
+        scannerBufferRef.current = '';  // Clear ref
         return;
       }
 
-      // Jika karakter biasa, tambahkan ke buffer
+      // Jika karakter biasa, tambahkan ke buffer ref (TIDAK trigger re-render)
       if (e.key.length === 1) {
-        setScannerBuffer(prev => {
-          const newBuffer = prev + e.key;
-          console.log('Scanner: Adding to buffer:', newBuffer);
-          return newBuffer;
-        });
+        scannerBufferRef.current += e.key;
+        console.log('Scanner: Adding to buffer:', scannerBufferRef.current);
         
         // Auto-reset buffer setelah 100ms (jika tidak ada input lagi)
         scannerTimeoutRef.current = setTimeout(() => {
           console.log('Scanner: Buffer timeout, clearing');
-          setScannerBuffer('');
+          scannerBufferRef.current = '';
         }, 100);
       }
     };
 
-    console.log('Scanner listener: Attached, active:', isScannerActive);
+    console.log('✅ Scanner listener: Attached, active:', isScannerActive);
     window.addEventListener('keydown', handleKeyDown);
     
     return () => {
-      console.log('Scanner listener: Detached');
+      console.log('🔴 Scanner listener: Detached');
       window.removeEventListener('keydown', handleKeyDown);
       if (scannerTimeoutRef.current) {
         clearTimeout(scannerTimeoutRef.current);
       }
     };
-  }, [isScannerActive, scannerBuffer, isQuantityDialogOpen]);
+  }, [isScannerActive, isQuantityDialogOpen]);  // REMOVED scannerBuffer dependency!
 
   // Handle barcode scan
   const handleBarcodeScanned = async (barcode: string) => {
