@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -132,6 +132,7 @@ export default function PurchasesPage() {
   const [isQuantityDialogOpen, setIsQuantityDialogOpen] = useState(false);
   const [scannedVariant, setScannedVariant] = useState<ProductVariant | null>(null);
   const [scanQuantity, setScanQuantity] = useState('1');
+  const scannerTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Fetch data
   const fetchPurchases = async (page = 1) => {
@@ -196,90 +197,103 @@ export default function PurchasesPage() {
     fetchProducts();
   }, [currentPage]);
 
-  // Barcode scanner listener
+  // Barcode scanner listener - sama seperti POS
   useEffect(() => {
     if (!isScannerActive) return;
 
-    let buffer = '';
-    let timeoutId: NodeJS.Timeout;
-
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Skip if typing in input/textarea or dialog is open
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip jika user sedang ketik di input field
       const target = e.target as HTMLElement;
-      if (
-        target.tagName === 'INPUT' || 
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable ||
-        isQuantityDialogOpen ||
-        isCreateOpen ||
-        isDetailOpen
-      ) {
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
         return;
       }
 
-      // Clear timeout if exists
-      if (timeoutId) clearTimeout(timeoutId);
+      // Skip jika ada dialog terbuka (kecuali dialog quantity yang kita inginkan)
+      const dialogs = document.querySelectorAll('[role="dialog"]');
+      if (dialogs.length > 0 && !isQuantityDialogOpen) {
+        return;
+      }
 
-      // Enter key means scan complete
-      if (e.key === 'Enter' && buffer.length > 0) {
+      // Clear timeout sebelumnya
+      if (scannerTimeoutRef.current) {
+        clearTimeout(scannerTimeoutRef.current);
+      }
+
+      // Jika Enter ditekan, process barcode
+      if (e.key === 'Enter' && scannerBuffer.length > 0) {
         e.preventDefault();
-        handleBarcodeScanned(buffer.trim());
-        buffer = '';
+        console.log('Scanner: Enter pressed, buffer:', scannerBuffer);
+        handleBarcodeScanned(scannerBuffer.trim());
+        setScannerBuffer('');
         return;
       }
 
-      // Ignore special keys
-      if (e.key.length > 1 && e.key !== 'Enter') {
-        return;
+      // Jika karakter biasa, tambahkan ke buffer
+      if (e.key.length === 1) {
+        setScannerBuffer(prev => {
+          const newBuffer = prev + e.key;
+          console.log('Scanner: Adding to buffer:', newBuffer);
+          return newBuffer;
+        });
+        
+        // Auto-reset buffer setelah 100ms (jika tidak ada input lagi)
+        scannerTimeoutRef.current = setTimeout(() => {
+          console.log('Scanner: Buffer timeout, clearing');
+          setScannerBuffer('');
+        }, 100);
       }
-
-      // Add character to buffer
-      buffer += e.key;
-
-      // Set timeout to clear buffer (100ms)
-      timeoutId = setTimeout(() => {
-        buffer = '';
-      }, 100);
     };
 
-    window.addEventListener('keypress', handleKeyPress);
-
+    console.log('Scanner listener: Attached, active:', isScannerActive);
+    window.addEventListener('keydown', handleKeyDown);
+    
     return () => {
-      window.removeEventListener('keypress', handleKeyPress);
-      if (timeoutId) clearTimeout(timeoutId);
+      console.log('Scanner listener: Detached');
+      window.removeEventListener('keydown', handleKeyDown);
+      if (scannerTimeoutRef.current) {
+        clearTimeout(scannerTimeoutRef.current);
+      }
     };
-  }, [isScannerActive, isQuantityDialogOpen, isCreateOpen, isDetailOpen]);
+  }, [isScannerActive, scannerBuffer, isQuantityDialogOpen]);
 
   // Handle barcode scan
   const handleBarcodeScanned = async (barcode: string) => {
-    console.log('Scanned barcode:', barcode);
+    console.log('🔍 handleBarcodeScanned called with:', barcode);
 
     try {
       // Search product by barcode (SKU)
+      console.log('📡 Fetching from API:', `/api/pos/search?search=${encodeURIComponent(barcode)}`);
       const response = await fetch(`/api/pos/search?search=${encodeURIComponent(barcode)}`);
       const data = await response.json();
 
+      console.log('📦 API Response:', data);
+
       if (!response.ok || !data.variants || data.variants.length === 0) {
+        console.log('❌ Product not found');
         toast.error(`Produk dengan barcode ${barcode} tidak ditemukan`);
         return;
       }
 
       // Get first variant (should be exact match)
       const variant = data.variants[0];
+      console.log('✅ Found variant:', variant);
 
       // Check if SKU matches exactly
       if (variant.product.sku.toLowerCase() !== barcode.toLowerCase()) {
+        console.log('⚠️ SKU mismatch');
         toast.error(`Barcode tidak cocok. Dicari: ${barcode}, Ditemukan: ${variant.product.sku}`);
         return;
       }
 
       // Set scanned variant and open quantity dialog
+      console.log('🎯 Opening quantity dialog for:', variant.product.name);
       setScannedVariant(variant);
       setScanQuantity('1');
       setIsQuantityDialogOpen(true);
+      console.log('✅ Quantity dialog should be open now');
 
     } catch (error) {
-      console.error('Error searching product:', error);
+      console.error('❌ Error searching product:', error);
       toast.error('Gagal mencari produk');
     }
   };
