@@ -133,6 +133,11 @@ export default function PurchasesPage() {
   const [scanQuantity, setScanQuantity] = useState('1');
   const scannerBufferRef = useRef('');  // Use ref instead of state!
   const scannerTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  // DEBUG: Track when isScannerActive changes
+  useEffect(() => {
+    console.log('🔔 isScannerActive CHANGED TO:', isScannerActive);
+  }, [isScannerActive]);
 
   // Fetch data
   const fetchPurchases = async (page = 1) => {
@@ -687,13 +692,30 @@ export default function PurchasesPage() {
               Kelola produksi dan manufacturing
             </p>
           </div>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button size="lg" className="w-full sm:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                <span className="sm:inline">Buat Production Order</span>
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            {/* Scanner Toggle Button - DI LUAR DIALOG */}
+            <Button
+              variant={isScannerActive ? "default" : "outline"}
+              size="lg"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🔵 SCANNER BUTTON CLICKED! Current:', isScannerActive, '→ New:', !isScannerActive);
+                setIsScannerActive(!isScannerActive);
+              }}
+              className="w-full sm:w-auto"
+            >
+              <Scan className={`h-4 w-4 mr-2 ${isScannerActive ? 'animate-pulse' : ''}`} />
+              {isScannerActive ? 'Scanner ON' : 'Scanner OFF'}
+            </Button>
+            
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" className="w-full sm:w-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span className="sm:inline">Buat Production Order</span>
+                </Button>
+              </DialogTrigger>
             <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-lg sm:text-xl">Buat Production Order Baru</DialogTitle>
@@ -720,30 +742,20 @@ export default function PurchasesPage() {
                 <Separator />
 
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center flex-wrap gap-2">
-                    <Label>Pilih Produk untuk Diproduksi</Label>
-                    <Button
-                      type="button"
-                      variant={isScannerActive ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setIsScannerActive(!isScannerActive)}
-                    >
-                      <Scan className="h-4 w-4 mr-2" />
-                      {isScannerActive ? 'Scanner Aktif' : 'Aktifkan Scanner'}
-                    </Button>
-                  </div>
-                  
+                  {/* Scanner Status Indicator ONLY - Button di header page */}
                   {isScannerActive && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                       <div className="flex items-center gap-2 text-sm text-blue-700">
                         <Scan className="h-4 w-4 animate-pulse" />
-                        <span className="font-medium">Scanner Barcode Aktif</span>
+                        <span className="font-medium">Scanner Barcode Aktif - Scan untuk tambah item</span>
                       </div>
                       <p className="text-xs text-blue-600 mt-1">
                         Scan barcode produk untuk menambahkan ke production order
                       </p>
                     </div>
                   )}
+                  
+                  <Label>Pilih Produk untuk Diproduksi</Label>
                   
                   {/* Cascade Dropdown - Quick Selection */}
                   <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
@@ -1044,6 +1056,7 @@ export default function PurchasesPage() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {/* Summary Cards */}
