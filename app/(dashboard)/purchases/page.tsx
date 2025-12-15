@@ -254,8 +254,8 @@ export default function PurchasesPage() {
     };
   }, [isScannerActive]);  // HANYA depend on isScannerActive!
 
-  // Handle barcode scan
-  const handleBarcodeScanned = async (barcode: string) => {
+  // Handle barcode scan - useCallback untuk prevent re-creation
+  const handleBarcodeScanned = useCallback(async (barcode: string) => {
     console.log('🔍 handleBarcodeScanned called with:', barcode);
 
     try {
@@ -294,7 +294,7 @@ export default function PurchasesPage() {
       console.error('❌ Error searching product:', error);
       toast.error('Gagal mencari produk');
     }
-  };
+  }, []);  // Empty dependency - function stabil
 
   // Handle add scanned item to purchase
   const handleAddScannedItem = () => {
