@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -28,7 +28,8 @@ import {
   Calendar,
   Minus,
   ShoppingCart,
-  Trash2
+  Trash2,
+  Scan
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -125,6 +126,13 @@ export default function PurchasesPage() {
   const [selectedSize, setSelectedSize] = useState<string>(''); // Size name
   const [selectedColor, setSelectedColor] = useState<string>(''); // Color name
 
+  // Barcode scanner states
+  const [isScannerActive, setIsScannerActive] = useState(false);
+  const [scannerBuffer, setScannerBuffer] = useState('');
+  const [isQuantityDialogOpen, setIsQuantityDialogOpen] = useState(false);
+  const [scannedVariant, setScannedVariant] = useState<ProductVariant | null>(null);
+  const [scanQuantity, setScanQuantity] = useState('1');
+
   // Fetch data
   const fetchPurchases = async (page = 1) => {
     try {
@@ -187,6 +195,133 @@ export default function PurchasesPage() {
     fetchSuppliers();
     fetchProducts();
   }, [currentPage]);
+
+  // Barcode scanner listener
+  useEffect(() => {
+    if (!isScannerActive) return;
+
+    let buffer = '';
+    let timeoutId: NodeJS.Timeout;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Skip if typing in input/textarea or dialog is open
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable ||
+        isQuantityDialogOpen ||
+        isCreateOpen ||
+        isDetailOpen
+      ) {
+        return;
+      }
+
+      // Clear timeout if exists
+      if (timeoutId) clearTimeout(timeoutId);
+
+      // Enter key means scan complete
+      if (e.key === 'Enter' && buffer.length > 0) {
+        e.preventDefault();
+        handleBarcodeScanned(buffer.trim());
+        buffer = '';
+        return;
+      }
+
+      // Ignore special keys
+      if (e.key.length > 1 && e.key !== 'Enter') {
+        return;
+      }
+
+      // Add character to buffer
+      buffer += e.key;
+
+      // Set timeout to clear buffer (100ms)
+      timeoutId = setTimeout(() => {
+        buffer = '';
+      }, 100);
+    };
+
+    window.addEventListener('keypress', handleKeyPress);
+
+    return () => {
+      window.removeEventListener('keypress', handleKeyPress);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isScannerActive, isQuantityDialogOpen, isCreateOpen, isDetailOpen]);
+
+  // Handle barcode scan
+  const handleBarcodeScanned = async (barcode: string) => {
+    console.log('Scanned barcode:', barcode);
+
+    try {
+      // Search product by barcode (SKU)
+      const response = await fetch(`/api/pos/search?search=${encodeURIComponent(barcode)}`);
+      const data = await response.json();
+
+      if (!response.ok || !data.variants || data.variants.length === 0) {
+        toast.error(`Produk dengan barcode ${barcode} tidak ditemukan`);
+        return;
+      }
+
+      // Get first variant (should be exact match)
+      const variant = data.variants[0];
+
+      // Check if SKU matches exactly
+      if (variant.product.sku.toLowerCase() !== barcode.toLowerCase()) {
+        toast.error(`Barcode tidak cocok. Dicari: ${barcode}, Ditemukan: ${variant.product.sku}`);
+        return;
+      }
+
+      // Set scanned variant and open quantity dialog
+      setScannedVariant(variant);
+      setScanQuantity('1');
+      setIsQuantityDialogOpen(true);
+
+    } catch (error) {
+      console.error('Error searching product:', error);
+      toast.error('Gagal mencari produk');
+    }
+  };
+
+  // Handle add scanned item to purchase
+  const handleAddScannedItem = () => {
+    if (!scannedVariant) return;
+
+    const quantity = parseInt(scanQuantity);
+    if (isNaN(quantity) || quantity <= 0) {
+      toast.error('Quantity harus lebih dari 0');
+      return;
+    }
+
+    // Check if item already exists
+    const existingItem = purchaseItems.find(item => item.variantId === scannedVariant.id);
+
+    if (existingItem) {
+      // Update quantity
+      setPurchaseItems(purchaseItems.map(item => 
+        item.variantId === scannedVariant.id 
+          ? { ...item, quantity: item.quantity + quantity }
+          : item
+      ));
+      toast.success(`${scannedVariant.product.name} quantity ditambah ${quantity} (Total: ${existingItem.quantity + quantity})`);
+    } else {
+      // Add new item
+      setPurchaseItems(prev => [...prev, {
+        variantId: scannedVariant.id,
+        productId: scannedVariant.product.id,
+        quantity: quantity,
+        unitPrice: Number(scannedVariant.product.costPrice),
+        variant: scannedVariant
+      }]);
+      toast.success(`${scannedVariant.product.name} (${quantity} pcs) ditambahkan ke production order`);
+    }
+
+    // Close dialog and reset
+    setIsQuantityDialogOpen(false);
+    setScannedVariant(null);
+    setScanQuantity('1');
+  };
 
   // Get available products (unique products only)
   const availableProducts = useMemo(() => {
@@ -576,9 +711,30 @@ export default function PurchasesPage() {
                 <Separator />
 
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center flex-wrap gap-2">
                     <Label>Pilih Produk untuk Diproduksi</Label>
+                    <Button
+                      type="button"
+                      variant={isScannerActive ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setIsScannerActive(!isScannerActive)}
+                    >
+                      <Scan className="h-4 w-4 mr-2" />
+                      {isScannerActive ? 'Scanner Aktif' : 'Aktifkan Scanner'}
+                    </Button>
                   </div>
+                  
+                  {isScannerActive && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-center gap-2 text-sm text-blue-700">
+                        <Scan className="h-4 w-4 animate-pulse" />
+                        <span className="font-medium">Scanner Barcode Aktif</span>
+                      </div>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Scan barcode produk untuk menambahkan ke production order
+                      </p>
+                    </div>
+                  )}
                   
                   {/* Cascade Dropdown - Quick Selection */}
                   <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
@@ -1317,6 +1473,91 @@ export default function PurchasesPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Quantity Input Dialog After Scan */}
+      <Dialog open={isQuantityDialogOpen} onOpenChange={setIsQuantityDialogOpen}>
+        <DialogContent className="w-[95vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Tambah ke Production Order</DialogTitle>
+          </DialogHeader>
+          
+          {scannedVariant && (
+            <div className="space-y-4">
+              {/* Product Info */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="font-medium text-base">
+                  {scannedVariant.product.name}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {scannedVariant.size.name} • {scannedVariant.color.name}
+                </div>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">SKU:</span>{' '}
+                  <span className="font-mono">{scannedVariant.product.sku}</span>
+                </div>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Harga Produksi:</span>{' '}
+                  <span className="font-semibold text-blue-600">
+                    Rp {Number(scannedVariant.product.costPrice).toLocaleString('id-ID')}
+                  </span>
+                </div>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Stok Saat Ini:</span>{' '}
+                  <Badge variant={scannedVariant.stock > 10 ? "default" : "destructive"}>
+                    {scannedVariant.stock} pcs
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Quantity Input */}
+              <div className="space-y-2">
+                <Label htmlFor="scan-quantity">Jumlah yang Ditambahkan</Label>
+                <Input
+                  id="scan-quantity"
+                  type="number"
+                  min="1"
+                  value={scanQuantity}
+                  onChange={(e) => setScanQuantity(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddScannedItem();
+                    }
+                  }}
+                  className="text-lg font-semibold text-center"
+                  placeholder="Masukkan jumlah..."
+                />
+                <p className="text-xs text-muted-foreground text-center">
+                  Tekan Enter atau klik OK untuk menambahkan
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsQuantityDialogOpen(false);
+                setScannedVariant(null);
+                setScanQuantity('1');
+              }}
+              className="w-full sm:w-auto"
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={handleAddScannedItem}
+              className="w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Tambahkan ke Production
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
