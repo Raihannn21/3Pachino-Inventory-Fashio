@@ -197,7 +197,7 @@ export default function PurchasesPage() {
     fetchProducts();
   }, [currentPage]);
 
-  // Barcode scanner listener - FIXED: Use ref untuk buffer agar tidak re-render
+  // Barcode scanner listener - FIXED: Minimal dependency untuk prevent re-attach
   useEffect(() => {
     if (!isScannerActive) return;
 
@@ -208,10 +208,13 @@ export default function PurchasesPage() {
         return;
       }
 
-      // Skip jika ada dialog terbuka (kecuali dialog quantity yang kita inginkan)
-      const dialogs = document.querySelectorAll('[role="dialog"]');
-      if (dialogs.length > 0 && !isQuantityDialogOpen) {
-        return;
+      // Skip jika dialog CREATE terbuka (tapi ALLOW dialog quantity)
+      if (document.querySelector('[role="dialog"]')) {
+        // Check apakah dialog quantity dengan cara cek isi dialog
+        const dialogTitle = document.querySelector('[role="dialog"] h2');
+        if (dialogTitle && !dialogTitle.textContent?.includes('Tambah ke Production')) {
+          return;  // Skip jika bukan dialog quantity
+        }
       }
 
       // Clear timeout sebelumnya
@@ -222,7 +225,7 @@ export default function PurchasesPage() {
       // Jika Enter ditekan, process barcode
       if (e.key === 'Enter' && scannerBufferRef.current.length > 0) {
         e.preventDefault();
-        console.log('Scanner: Enter pressed, buffer:', scannerBufferRef.current);
+        console.log('✅ Scanner: Enter pressed, buffer:', scannerBufferRef.current);
         handleBarcodeScanned(scannerBufferRef.current.trim());
         scannerBufferRef.current = '';  // Clear ref
         return;
@@ -231,27 +234,25 @@ export default function PurchasesPage() {
       // Jika karakter biasa, tambahkan ke buffer ref (TIDAK trigger re-render)
       if (e.key.length === 1) {
         scannerBufferRef.current += e.key;
-        console.log('Scanner: Adding to buffer:', scannerBufferRef.current);
         
         // Auto-reset buffer setelah 100ms (jika tidak ada input lagi)
         scannerTimeoutRef.current = setTimeout(() => {
-          console.log('Scanner: Buffer timeout, clearing');
           scannerBufferRef.current = '';
         }, 100);
       }
     };
 
-    console.log('✅ Scanner listener: Attached, active:', isScannerActive);
+    console.log('✅ Scanner listener: ONE TIME ATTACH');
     window.addEventListener('keydown', handleKeyDown);
     
     return () => {
-      console.log('🔴 Scanner listener: Detached');
+      console.log('🔴 Scanner listener: CLEANUP');
       window.removeEventListener('keydown', handleKeyDown);
       if (scannerTimeoutRef.current) {
         clearTimeout(scannerTimeoutRef.current);
       }
     };
-  }, [isScannerActive, isQuantityDialogOpen]);  // REMOVED scannerBuffer dependency!
+  }, [isScannerActive]);  // HANYA depend on isScannerActive!
 
   // Handle barcode scan
   const handleBarcodeScanned = async (barcode: string) => {
@@ -596,22 +597,19 @@ export default function PurchasesPage() {
     setProductSearch('');
   };
 
-  // Filter products for search
-  const filteredProducts = products && products.length > 0 
-    ? products.filter(variant =>
-        variant.product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-        variant.product.sku.toLowerCase().includes(productSearch.toLowerCase()) ||
-        variant.size.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-        variant.color.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-        variant.product.brand.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-        variant.product.category.name.toLowerCase().includes(productSearch.toLowerCase())
-      )
-    : [];
-
-  // Debug filtered products
-  console.log('Total products loaded:', products.length);
-  console.log('Search term:', productSearch);
-  console.log('Filtered products count:', filteredProducts.length);
+  // Filter products for search - GUNAKAN useMemo untuk prevent re-render
+  const filteredProducts = useMemo(() => {
+    if (!products || products.length === 0) return [];
+    
+    return products.filter(variant =>
+      variant.product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      variant.product.sku.toLowerCase().includes(productSearch.toLowerCase()) ||
+      variant.size.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      variant.color.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      variant.product.brand.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      variant.product.category.name.toLowerCase().includes(productSearch.toLowerCase())
+    );
+  }, [products, productSearch]);
 
   // Summary stats - tidak perlu menghitung lagi, sudah dari API
   // const totalPurchasesAmount = purchases.reduce((sum, p) => sum + Number(p.totalAmount), 0);
