@@ -1513,14 +1513,6 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                           </div>
                         )}
                       </>
-                    ) : !selectedProduct ? (
-                      <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed">
-                        <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                        <h3 className="text-sm font-medium text-gray-900 mb-1">Pilih Produk untuk Memulai</h3>
-                        <p className="text-xs text-gray-600">
-                          Gunakan dropdown di atas atau ketik untuk mencari produk
-                        </p>
-                      </div>
                     ) : null}
                   </>
                 )}
