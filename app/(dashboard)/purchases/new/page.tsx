@@ -76,7 +76,7 @@ export default function NewProductionOrderPage() {
   const router = useRouter();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [purchaseItems, setPurchaseItems] = useState<PurchaseItem[]>([]);
-  const [selectedSupplier, setSelectedSupplier] = useState('');
+  const [selectedSupplier, setSelectedSupplier] = useState('none');
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   
@@ -281,7 +281,7 @@ export default function NewProductionOrderPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          supplierId: selectedSupplier || undefined,
+          supplierId: (selectedSupplier && selectedSupplier !== 'none') ? selectedSupplier : undefined,
           items: purchaseItems.map(item => ({
             variantId: item.variantId,
             quantity: item.quantity,
@@ -383,7 +383,7 @@ export default function NewProductionOrderPage() {
                       <SelectValue placeholder="Pilih Supplier" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tanpa Supplier</SelectItem>
+                      <SelectItem value="none">Tanpa Supplier</SelectItem>
                       {suppliers.map((supplier) => (
                         <SelectItem key={supplier.id} value={supplier.id}>
                           {supplier.name}
