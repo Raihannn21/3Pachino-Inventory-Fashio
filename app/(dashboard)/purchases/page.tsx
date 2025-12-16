@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,6 +95,7 @@ interface Purchase {
 }
 
 export default function PurchasesPage() {
+  const router = useRouter();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<ProductVariant[]>([]);
@@ -313,33 +315,46 @@ export default function PurchasesPage() {
       return;
     }
 
-    // Check if item already exists
-    const existingItem = purchaseItems.find(item => item.variantId === scannedVariant.id);
+    // Get existing items from localStorage or use current state
+    let existingItems: PurchaseItem[] = [];
+    const savedItems = localStorage.getItem('production_order_items');
+    if (savedItems) {
+      try {
+        existingItems = JSON.parse(savedItems);
+      } catch (error) {
+        console.error('Error parsing saved items:', error);
+      }
+    }
 
-    if (existingItem) {
+    // Check if item already exists
+    const existingItemIndex = existingItems.findIndex(item => item.variantId === scannedVariant.id);
+
+    if (existingItemIndex >= 0) {
       // Update quantity
-      setPurchaseItems(purchaseItems.map(item => 
-        item.variantId === scannedVariant.id 
-          ? { ...item, quantity: item.quantity + quantity }
-          : item
-      ));
-      toast.success(`${scannedVariant.product.name} quantity ditambah ${quantity} (Total: ${existingItem.quantity + quantity})`);
+      existingItems[existingItemIndex].quantity += quantity;
+      toast.success(`${scannedVariant.product.name} quantity ditambah ${quantity}`);
     } else {
       // Add new item
-      setPurchaseItems(prev => [...prev, {
+      existingItems.push({
         variantId: scannedVariant.id,
         productId: scannedVariant.product.id,
         quantity: quantity,
         unitPrice: Number(scannedVariant.product.costPrice),
         variant: scannedVariant
-      }]);
-      toast.success(`${scannedVariant.product.name} (${quantity} pcs) ditambahkan ke production order`);
+      });
+      toast.success(`${scannedVariant.product.name} (${quantity} pcs) ditambahkan`);
     }
 
-    // Close dialog and reset
+    // Save to localStorage
+    localStorage.setItem('production_order_items', JSON.stringify(existingItems));
+
+    // Close dialog
     setIsQuantityDialogOpen(false);
     setScannedVariant(null);
     setScanQuantity('1');
+
+    // Redirect to new page
+    router.push('/purchases/new');
   };
 
   // Get available products (unique products only)
@@ -695,7 +710,7 @@ export default function PurchasesPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            {/* Scanner Toggle Button - DI LUAR DIALOG */}
+            {/* Scanner Toggle Button */}
             <Button
               variant={isScannerActive ? "default" : "outline"}
               size="lg"
@@ -711,12 +726,23 @@ export default function PurchasesPage() {
               {isScannerActive ? 'Scanner ON' : 'Scanner OFF'}
             </Button>
             
+            {/* Buat Production Order - Direct to new page */}
+            <Button 
+              size="lg" 
+              className="w-full sm:w-auto"
+              onClick={() => {
+                // Clear any existing items
+                localStorage.removeItem('production_order_items');
+                router.push('/purchases/new');
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="sm:inline">Buat Production Order</span>
+            </Button>
+            
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
               <DialogTrigger asChild>
-                <Button size="lg" className="w-full sm:w-auto">
-                  <Plus className="h-4 w-4 mr-2" />
-                  <span className="sm:inline">Buat Production Order</span>
-                </Button>
+                <div style={{display: 'none'}} />
               </DialogTrigger>
             <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
