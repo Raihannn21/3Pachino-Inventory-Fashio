@@ -414,6 +414,7 @@ export default function POSPage() {
         clearTimeout(scannerTimeoutRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isScannerActive, scannerBuffer]);
 
   // Handle Barcode Scanned
@@ -465,6 +466,7 @@ export default function POSPage() {
         duration: 2000,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allProducts, cart, getAvailableStock]);
 
   // Process barcode from URL query parameter (from other pages)
@@ -2071,7 +2073,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                                   
                                   {draft.notes && (
                                     <p className="text-xs text-muted-foreground italic">
-                                      "{draft.notes}"
+                                      &ldquo;{draft.notes}&rdquo;
                                     </p>
                                   )}
                                 </div>

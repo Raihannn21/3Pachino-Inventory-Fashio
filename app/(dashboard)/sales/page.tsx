@@ -140,6 +140,7 @@ export default function SalesPage() {
 
   useEffect(() => {
     fetchSales(currentPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, dateRange]);
 
   // Handle date range change

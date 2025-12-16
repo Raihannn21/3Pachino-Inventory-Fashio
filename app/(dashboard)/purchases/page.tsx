@@ -257,6 +257,7 @@ export default function PurchasesPage() {
         clearTimeout(scannerTimeoutRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isScannerActive]);  // HANYA depend on isScannerActive!
 
   // Handle barcode scan - useCallback untuk prevent re-creation
