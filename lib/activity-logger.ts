@@ -16,28 +16,83 @@ export interface ActivityLogData {
   metadata?: any;
 }
 
+// Simplified log data for API routes
+export interface SimpleLogData {
+  userId: string;
+  action: 'PAGE_VIEW' | 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT' | 'EXPORT' | 'IMPORT' | 'VOID' | 'REFUND';
+  resource: string;
+  resourceId?: string;
+  metadata?: any;
+}
+
 /**
  * Log user activity to database
  * Only Super Admin can view these logs
  */
-export async function logActivity(data: ActivityLogData) {
+export async function logActivity(data: ActivityLogData | SimpleLogData, request?: any) {
   try {
-    await prisma.activityLog.create({
-      data: {
+    // If simplified data, fetch user info and request details
+    if (!('userEmail' in data)) {
+      const user = await prisma.user.findUnique({
+        where: { id: data.userId },
+        select: { email: true, name: true, role: true }
+      });
+
+      if (!user) {
+        console.error('User not found for activity log');
+        return;
+      }
+
+      const fullData: ActivityLogData = {
         userId: data.userId,
-        userEmail: data.userEmail,
-        userName: data.userName || null,
-        userRole: data.userRole,
+        userEmail: user.email,
+        userName: user.name || undefined,
+        userRole: user.role,
         action: data.action,
         resource: data.resource,
-        resourceId: data.resourceId || null,
-        path: data.path,
-        method: data.method || null,
-        ipAddress: data.ipAddress || null,
-        userAgent: data.userAgent || null,
-        metadata: data.metadata || null,
-      },
-    });
+        resourceId: data.resourceId,
+        path: request?.url || request?.nextUrl?.pathname || `/${data.resource}`,
+        method: request?.method || 'POST',
+        ipAddress: getClientIp(request),
+        userAgent: request?.headers?.get?.('user-agent') || undefined,
+        metadata: data.metadata,
+      };
+
+      await prisma.activityLog.create({
+        data: {
+          userId: fullData.userId,
+          userEmail: fullData.userEmail,
+          userName: fullData.userName || null,
+          userRole: fullData.userRole,
+          action: fullData.action,
+          resource: fullData.resource,
+          resourceId: fullData.resourceId || null,
+          path: fullData.path,
+          method: fullData.method || null,
+          ipAddress: fullData.ipAddress || null,
+          userAgent: fullData.userAgent || null,
+          metadata: fullData.metadata || null,
+        },
+      });
+    } else {
+      // Full data provided
+      await prisma.activityLog.create({
+        data: {
+          userId: data.userId,
+          userEmail: data.userEmail,
+          userName: data.userName || null,
+          userRole: data.userRole,
+          action: data.action,
+          resource: data.resource,
+          resourceId: data.resourceId || null,
+          path: data.path,
+          method: data.method || null,
+          ipAddress: data.ipAddress || null,
+          userAgent: data.userAgent || null,
+          metadata: data.metadata || null,
+        },
+      });
+    }
   } catch (error) {
     // Silent fail - don't break app if logging fails
     console.error('Failed to log activity:', error);

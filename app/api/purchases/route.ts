@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity-logger';
 
 // GET - Ambil semua purchase orders
 export async function GET(request: NextRequest) {
@@ -208,6 +211,22 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    // Log activity
+    const session = await getServerSession(authOptions);
+    if (session?.user) {
+      await logActivity({
+        userId: session.user.id,
+        action: 'CREATE',
+        resource: 'purchases',
+        resourceId: result.id,
+        metadata: { 
+          invoiceNumber: result.invoiceNumber,
+          totalAmount: result.totalAmount,
+          status: 'PENDING'
+        }
+      }, request);
+    }
 
     return NextResponse.json({
       message: 'Production Order berhasil dibuat. Klik "Complete" untuk menambah stok.',

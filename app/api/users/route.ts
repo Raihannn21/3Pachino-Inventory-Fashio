@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity-logger';
 import bcrypt from 'bcryptjs';
 
 export async function GET() {
@@ -127,6 +128,17 @@ export async function POST(request: Request) {
         updatedAt: true
       }
     });
+
+    // Log activity
+    if (session?.user) {
+      await logActivity({
+        userId: session.user.id,
+        action: 'CREATE',
+        resource: 'users',
+        resourceId: newUser.id,
+        metadata: { userName: newUser.name, userRole: newUser.role }
+      }, {} as NextRequest);
+    }
 
     return NextResponse.json({
       message: 'User created successfully',

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity-logger';
 
 // PATCH - Complete purchase order (change status from PENDING to COMPLETED)
 export async function PATCH(
@@ -109,6 +112,22 @@ export async function PATCH(
 
       return updated;
     });
+
+    // Log activity
+    const session = await getServerSession(authOptions);
+    if (session?.user) {
+      await logActivity({
+        userId: session.user.id,
+        action: 'UPDATE',
+        resource: 'purchases',
+        resourceId: id,
+        metadata: { 
+          invoiceNumber: updatedPurchase.invoiceNumber,
+          status: 'COMPLETED',
+          action: 'complete_purchase_order'
+        }
+      }, request);
+    }
 
     return NextResponse.json({
       message: 'Production order berhasil diselesaikan dan stok telah ditambahkan',

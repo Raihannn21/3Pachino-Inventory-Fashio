@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity-logger';
 
 // GET - Ambil semua transaksi penjualan
 export async function GET(request: NextRequest) {
@@ -281,6 +282,19 @@ export async function POST(request: NextRequest) {
 
       return transaction;
     });
+
+    // Log activity
+    await logActivity({
+      userId: currentUser.id,
+      action: 'CREATE',
+      resource: 'sales',
+      resourceId: result.id,
+      metadata: { 
+        invoiceNumber: result.invoiceNumber,
+        totalAmount: result.totalAmount,
+        itemCount: items.length
+      }
+    }, request);
 
     return NextResponse.json({
       message: 'Transaksi penjualan berhasil dibuat',

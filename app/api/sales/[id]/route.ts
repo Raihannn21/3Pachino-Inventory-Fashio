@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity-logger';
 
 export async function GET(
   request: NextRequest,
@@ -145,6 +148,22 @@ export async function DELETE(
         where: { id: transaction.id }
       });
     });
+
+    // Log activity
+    const session = await getServerSession(authOptions);
+    if (session?.user) {
+      await logActivity({
+        userId: session.user.id,
+        action: 'DELETE',
+        resource: 'sales',
+        resourceId: transaction.id,
+        metadata: { 
+          invoiceNumber: transaction.invoiceNumber,
+          totalAmount: transaction.totalAmount,
+          itemCount: transaction.items.length
+        }
+      }, request);
+    }
 
     return NextResponse.json({
       message: 'Transaksi berhasil dihapus dan inventory telah dikembalikan',

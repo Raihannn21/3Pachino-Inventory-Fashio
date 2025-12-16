@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity-logger';
 
 export async function GET(
   request: NextRequest,
@@ -117,6 +120,18 @@ export async function PUT(
       },
     });
 
+    // Log activity
+    const session = await getServerSession(authOptions);
+    if (session?.user) {
+      await logActivity({
+        userId: session.user.id,
+        action: 'UPDATE',
+        resource: 'products',
+        resourceId: product.id,
+        metadata: { productName: product.name, changes: updateData }
+      }, request);
+    }
+
     return NextResponse.json(product);
   } catch (error) {
     console.error('Error updating product:', error);
@@ -226,6 +241,18 @@ export async function DELETE(
     });
 
     console.log('Product deleted successfully');
+
+    // Log activity
+    const session = await getServerSession(authOptions);
+    if (session?.user) {
+      await logActivity({
+        userId: session.user.id,
+        action: 'DELETE',
+        resource: 'products',
+        resourceId: id,
+        metadata: { productName: product.name, sku: product.sku }
+      }, request);
+    }
 
     return NextResponse.json({ message: 'Produk berhasil dihapus' });
   } catch (error) {

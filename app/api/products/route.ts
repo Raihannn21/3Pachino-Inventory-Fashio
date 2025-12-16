@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity-logger';
 
 export async function GET() {
   try {
@@ -31,6 +34,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
     const body = await request.json();
     const {
       name,
@@ -83,6 +87,17 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Log activity
+    if (session?.user) {
+      await logActivity({
+        userId: session.user.id,
+        action: 'CREATE',
+        resource: 'products',
+        resourceId: product.id,
+        metadata: { productName: product.name, sku: product.sku }
+      }, request);
+    }
 
     return NextResponse.json(product, { status: 201 });
   } catch (error) {

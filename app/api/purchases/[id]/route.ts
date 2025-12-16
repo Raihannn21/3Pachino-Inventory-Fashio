@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity-logger';
 
 export async function GET(
   request: NextRequest,
@@ -97,6 +100,18 @@ export async function DELETE(
       });
     });
 
+    // Log activity
+    const session = await getServerSession(authOptions);
+    if (session?.user) {
+      await logActivity({
+        userId: session.user.id,
+        action: 'DELETE',
+        resource: 'purchases',
+        resourceId: id,
+        metadata: { invoiceNumber: transaction.invoiceNumber }
+      }, request);
+    }
+
     return NextResponse.json({ 
       message: 'Purchase deleted successfully' 
     });
@@ -174,6 +189,21 @@ export async function PUT(
 
       return transaction;
     });
+
+    // Log activity
+    const session = await getServerSession(authOptions);
+    if (session?.user) {
+      await logActivity({
+        userId: session.user.id,
+        action: 'UPDATE',
+        resource: 'purchases',
+        resourceId: id,
+        metadata: { 
+          invoiceNumber: updatedTransaction.invoiceNumber,
+          status: updatedTransaction.status
+        }
+      }, request);
+    }
 
     return NextResponse.json(updatedTransaction);
 

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity-logger';
 
 // GET - Ambil semua customers
 export async function GET() {
@@ -40,6 +43,7 @@ export async function GET() {
 // POST - Buat customer baru
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
     const body = await request.json();
     const { name, contact, phone, address } = body;
 
@@ -60,6 +64,17 @@ export async function POST(request: NextRequest) {
         isActive: true
       }
     });
+
+    // Log activity
+    if (session?.user) {
+      await logActivity({
+        userId: session.user.id,
+        action: 'CREATE',
+        resource: 'customers',
+        resourceId: customer.id,
+        metadata: { customerName: customer.name }
+      }, request);
+    }
 
     return NextResponse.json({
       message: 'Customer berhasil ditambahkan',

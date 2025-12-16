@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity-logger';
 
 // GET - Ambil detail customer dan purchase history
 export async function GET(
@@ -181,6 +184,18 @@ export async function PUT(
       }
     });
 
+    // Log activity
+    const session = await getServerSession(authOptions);
+    if (session?.user) {
+      await logActivity({
+        userId: session.user.id,
+        action: 'UPDATE',
+        resource: 'customers',
+        resourceId: id,
+        metadata: { customerName: updatedCustomer.name }
+      }, request);
+    }
+
     return NextResponse.json({
       message: 'Customer berhasil diupdate',
       customer: updatedCustomer
@@ -231,6 +246,18 @@ export async function DELETE(
     await prisma.supplier.delete({
       where: { id }
     });
+
+    // Log activity
+    const session = await getServerSession(authOptions);
+    if (session?.user) {
+      await logActivity({
+        userId: session.user.id,
+        action: 'DELETE',
+        resource: 'customers',
+        resourceId: id,
+        metadata: { customerName: customerWithTransactions.name }
+      }, request);
+    }
 
     return NextResponse.json({
       message: 'Customer berhasil dihapus'
