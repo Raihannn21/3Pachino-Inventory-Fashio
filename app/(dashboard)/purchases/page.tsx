@@ -209,6 +209,11 @@ export default function PurchasesPage() {
   useEffect(() => {
     if (!isScannerActive) return;
 
+    // CRITICAL: Only activate scanner when on purchases page (not /purchases/new)
+    if (typeof window !== 'undefined' && !window.location.pathname.match(/^\/purchases\/?$/)) {
+      return;
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
       // Skip jika user sedang ketik di input field
       const target = e.target as HTMLElement;

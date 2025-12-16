@@ -129,6 +129,14 @@ export default function NewProductionOrderPage() {
   useEffect(() => {
     if (!isScannerActive) return;
 
+    // CRITICAL: Only activate scanner when on /purchases/new page
+    if (typeof window !== 'undefined' && !window.location.pathname.includes('/purchases/new')) {
+      console.log('❌ Scanner disabled - not on /purchases/new page');
+      return;
+    }
+
+    console.log('✅ Scanner activated for /purchases/new page');
+
     const handleKeyPress = (e: KeyboardEvent) => {
       // Ignore if typing in input/textarea
       const target = e.target as HTMLElement;
