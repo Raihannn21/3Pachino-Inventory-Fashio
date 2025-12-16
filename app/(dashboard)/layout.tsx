@@ -18,7 +18,7 @@ export default function DashboardLayout({
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       // Skip jika sudah di halaman POS atau PURCHASES (biar halaman tersebut yang handle)
-      if (pathname === '/pos' || pathname === '/purchases') return
+      if (pathname === '/pos' || pathname === '/purchases' || pathname?.includes('/purchases/new')) return
 
       // Skip jika user sedang mengetik di input field atau dialog
       const target = e.target as HTMLElement
