@@ -45,6 +45,7 @@ interface Supplier {
 
 interface ProductVariant {
   id: string;
+  barcode: string;
   stock: number;
   isActive: boolean;
   product: {
@@ -282,10 +283,10 @@ export default function PurchasesPage() {
       const variant = data.variants[0];
       console.log('✅ Found variant:', variant);
 
-      // Check if SKU matches exactly
-      if (variant.product.sku.toLowerCase() !== barcode.toLowerCase()) {
-        console.log('⚠️ SKU mismatch');
-        toast.error(`Barcode tidak cocok. Dicari: ${barcode}, Ditemukan: ${variant.product.sku}`);
+      // Check if barcode matches exactly
+      if (variant.barcode && variant.barcode.toLowerCase() !== barcode.toLowerCase()) {
+        console.log('⚠️ Barcode mismatch');
+        toast.error(`Barcode tidak cocok. Dicari: ${barcode}, Ditemukan: ${variant.barcode}`);
         return;
       }
 
