@@ -21,7 +21,8 @@ import {
   Shield,
   LogOut,
   User,
-  FileText
+  FileText,
+  Activity
 } from 'lucide-react';
 
 const navigation = [
@@ -34,6 +35,7 @@ const navigation = [
   { name: 'Pelanggan', href: '/suppliers', icon: Building2, permission: 'suppliers.view' },
   { name: 'Manajemen User', href: '/users', icon: Users, permission: 'users.view' },
   { name: 'Hak Akses', href: '/permissions', icon: Shield, permission: 'admin.permissions' },
+  { name: 'Activity Logs', href: '/activity-logs', icon: Activity, permission: 'superadmin', superAdminOnly: true },
 ];
 
 export default function Sidebar() {
@@ -147,6 +149,12 @@ export default function Sidebar() {
     // Filter navigation items based on permissions
     const filteredNavigation = navigation.filter((item) => {
       if (!item.permission) return true; // No permission required
+      
+      // Check if Super Admin only
+      if ((item as any).superAdminOnly) {
+        return session?.user?.role === 'SUPER_ADMIN';
+      }
+      
       return hasPermission(item.permission);
     });
 

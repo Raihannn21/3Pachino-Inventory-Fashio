@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -369,11 +369,6 @@ export default function POSPage() {
   // Barcode Scanner - Keyboard Listener
   useEffect(() => {
     if (!isScannerActive) return;
-
-    // CRITICAL: Only activate scanner when on POS page
-    if (typeof window !== 'undefined' && !window.location.pathname.includes('/pos')) {
-      return;
-    }
 
     const handleKeyPress = (e: KeyboardEvent) => {
       // Ignore jika user sedang ketik di input field

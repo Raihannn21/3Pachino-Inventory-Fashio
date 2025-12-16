@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Sidebar from '@/components/layout/sidebar'
 import ProtectedRoute from '@/components/ProtectedRoute'
 
@@ -12,8 +13,10 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const { data: session } = useSession()
   const scannerBufferRef = useRef('')
   const scannerTimeoutRef = useRef<NodeJS.Timeout>()
+  const lastPathRef = useRef('')
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -64,6 +67,34 @@ export default function DashboardLayout({
       clearTimeout(scannerTimeoutRef.current)
     }
   }, [router, pathname])
+
+  // Log page view activity
+  useEffect(() => {
+    if (!session?.user || !pathname) return;
+    
+    // Avoid logging the same page multiple times
+    if (lastPathRef.current === pathname) return;
+    lastPathRef.current = pathname;
+
+    // Log page view
+    const logPageView = async () => {
+      try {
+        await fetch('/api/activity-logs/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'PAGE_VIEW',
+            path: pathname,
+          }),
+        });
+      } catch (error) {
+        // Silent fail
+        console.error('Failed to log page view:', error);
+      }
+    };
+
+    logPageView();
+  }, [session, pathname]);
 
   return (
     <ProtectedRoute>

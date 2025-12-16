@@ -25,6 +25,7 @@ model User {
   transactions       Transaction[]
   stockAdjustments   StockAdjustment[]
   approvedAdjustments StockAdjustment[] @relation("AdjustmentApprover")
+  activityLogs       ActivityLog[]
 
   @@map("users")
 }
@@ -64,6 +65,33 @@ model RolePermission {
 
   @@unique([role, permissionId])
   @@map("role_permissions")
+}
+
+// Activity Log for tracking user actions (Super Admin only)
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String
+  userEmail   String   // Denormalized for easy display
+  userName    String?  // Denormalized for easy display
+  userRole    UserRole
+  action      String   // e.g., "PAGE_VIEW", "CREATE", "UPDATE", "DELETE", "LOGIN", "LOGOUT"
+  resource    String   // e.g., "dashboard", "products", "sales", "users"
+  resourceId  String?  // ID of the resource if applicable (e.g., product ID)
+  path        String   // Full URL path
+  method      String?  // HTTP method (GET, POST, PUT, DELETE)
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?    // Additional data (request body, changes, etc.)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+  @@map("activity_logs")
 }
 
 // Product Management
