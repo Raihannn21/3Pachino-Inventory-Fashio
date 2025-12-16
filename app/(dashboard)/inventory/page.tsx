@@ -121,6 +121,8 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedProduct, setSelectedProduct] = useState('all');
+  const [selectedColor, setSelectedColor] = useState('all');
   const [showAlertsOnly, setShowAlertsOnly] = useState(false);
   const [adjustmentDialog, setAdjustmentDialog] = useState({ open: false, item: null as InventoryItem | null });
   const [adjustmentAmount, setAdjustmentAmount] = useState('');
@@ -297,9 +299,15 @@ export default function InventoryPage() {
       item.product.sku.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = selectedStatus === 'all' || item.status === selectedStatus;
+    const matchesProduct = selectedProduct === 'all' || item.product.name === selectedProduct;
+    const matchesColor = selectedColor === 'all' || item.color.name === selectedColor;
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesProduct && matchesColor;
   });
+
+  // Get unique product names and colors for filter dropdowns
+  const uniqueProducts = Array.from(new Set(inventory.map(item => item.product.name))).sort();
+  const uniqueColors = Array.from(new Set(inventory.map(item => item.color.name))).sort();
 
   if (loading) {
     return (
@@ -468,7 +476,7 @@ export default function InventoryPage() {
                 />
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                   <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Semua Status" />
@@ -479,6 +487,34 @@ export default function InventoryPage() {
                     <SelectItem value="low_stock">Stok Rendah</SelectItem>
                     <SelectItem value="out_of_stock">Habis</SelectItem>
                     <SelectItem value="over_stock">Over Stock</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                  <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Semua Produk" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Produk</SelectItem>
+                    {uniqueProducts.map((product) => (
+                      <SelectItem key={product} value={product}>
+                        {product}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedColor} onValueChange={setSelectedColor}>
+                  <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Semua Warna" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Warna</SelectItem>
+                    {uniqueColors.map((color) => (
+                      <SelectItem key={color} value={color}>
+                        {color}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
