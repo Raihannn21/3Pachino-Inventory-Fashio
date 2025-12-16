@@ -75,6 +75,22 @@ interface GroupedProduct {
   isExpanded?: boolean;
 }
 
+interface DraftOrder {
+  id: string;
+  name: string;
+  cart: CartItem[];
+  customer?: {
+    id?: string;
+    name?: string;
+    phone?: string;
+    address?: string;
+  };
+  notes?: string;
+  discount: number;
+  timestamp: number;
+  total: number;
+}
+
 export default function POSPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -115,6 +131,21 @@ export default function POSPage() {
   const [selectedSize, setSelectedSize] = useState<string>(''); // Size name
   const [selectedColor, setSelectedColor] = useState<string>(''); // Color name
   const [customPrice, setCustomPrice] = useState<string>(''); // Custom price untuk nego
+
+  // Draft states
+    // Helper: calculate total belanja
+    function calculateTotal() {
+      return cart.reduce((sum, item) => {
+        const price = item.customPrice ?? item.variant.sellingPrice ?? item.variant.product.sellingPrice;
+        return sum + (price * item.quantity);
+      }, 0);
+    }
+  const [drafts, setDrafts] = useState<DraftOrder[]>([]);
+  const [isDraftsDialogOpen, setIsDraftsDialogOpen] = useState(false);
+  const [draftName, setDraftName] = useState('');
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  // Untuk auto-hapus draft setelah transaksi
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
 
   // Load all products on component mount
   const loadAllProducts = async () => {
@@ -695,6 +726,100 @@ export default function POSPage() {
     }
   };
 
+  // ========== DRAFT MANAGEMENT ==========
+  
+  // Load drafts from localStorage
+  useEffect(() => {
+    try {
+      const savedDrafts = localStorage.getItem('pos_drafts');
+      if (savedDrafts) {
+        setDrafts(JSON.parse(savedDrafts));
+      }
+    } catch (error) {
+      console.error('Error loading drafts:', error);
+    }
+  }, []);
+
+  // Save draft
+  const saveDraft = () => {
+    if (cart.length === 0) {
+      toast.error('Keranjang kosong, tidak bisa simpan draft');
+      return;
+    }
+
+    if (!draftName.trim()) {
+      toast.error('Masukkan nama draft terlebih dahulu');
+      return;
+    }
+
+    setIsSavingDraft(true);
+    try {
+      const newDraft: DraftOrder = {
+        id: Date.now().toString(),
+        name: draftName.trim(),
+        cart: [...cart],
+        customer: {
+          id: selectedCustomer || undefined,
+          name: customerName || undefined,
+          phone: customerPhone || undefined,
+          address: customerAddress || undefined,
+        },
+        notes: notes || undefined,
+        discount,
+        timestamp: Date.now(),
+        total: calculateTotal(),
+      };
+
+      const updatedDrafts = [...drafts, newDraft];
+      setDrafts(updatedDrafts);
+      localStorage.setItem('pos_drafts', JSON.stringify(updatedDrafts));
+
+      toast.success(`Draft "${draftName}" berhasil disimpan`);
+      setDraftName('');
+      setIsDraftsDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      toast.error('Gagal menyimpan draft');
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
+  // Load draft
+  const loadDraft = (draft: DraftOrder) => {
+    try {
+      setCart(draft.cart);
+      setSelectedCustomer(draft.customer?.id || '');
+      setCustomerName(draft.customer?.name || '');
+      setCustomerPhone(draft.customer?.phone || '');
+      setCustomerAddress(draft.customer?.address || '');
+      setNotes(draft.notes || '');
+      setDiscount(draft.discount);
+      setActiveDraftId(draft.id); // Simpan id draft yang sedang dimuat
+
+      toast.success(`Draft "${draft.name}" dimuat`);
+      setIsDraftsDialogOpen(false);
+    } catch (error) {
+      console.error('Error loading draft:', error);
+      toast.error('Gagal memuat draft');
+    }
+  };
+
+  // Delete draft
+  const deleteDraft = (draftId: string) => {
+    try {
+      const updatedDrafts = drafts.filter(d => d.id !== draftId);
+      setDrafts(updatedDrafts);
+      localStorage.setItem('pos_drafts', JSON.stringify(updatedDrafts));
+      toast.success('Draft dihapus');
+    } catch (error) {
+      console.error('Error deleting draft:', error);
+      toast.error('Gagal menghapus draft');
+    }
+  };
+
+  // ========== END DRAFT MANAGEMENT ==========
+
   // Handle customer selection
   const handleCustomerSelect = (customerId: string) => {
     setSelectedCustomer(customerId);
@@ -887,6 +1012,14 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
         // Send WhatsApp if enabled
         if (sendWhatsApp && customerPhone.trim()) {
           await handleSendWhatsApp(data.transaction);
+        }
+        
+        // Jika transaksi dari draft, hapus draft tersebut
+        if (activeDraftId) {
+          const updatedDrafts = drafts.filter(d => d.id !== activeDraftId);
+          setDrafts(updatedDrafts);
+          localStorage.setItem('pos_drafts', JSON.stringify(updatedDrafts));
+          setActiveDraftId(null);
         }
         
         clearCart();
@@ -1403,11 +1536,24 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                   <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
                   Keranjang ({cart.length})
                 </span>
-                {cart.length > 0 && (
-                  <Button variant="outline" size="sm" onClick={clearCart}>
-                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                <div className="flex gap-2">
+                  {/* Lihat Drafts Button */}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsDraftsDialogOpen(true)}
+                    className="text-xs sm:text-sm"
+                  >
+                    📋 Drafts {drafts.length > 0 && `(${drafts.length})`}
                   </Button>
-                )}
+                  
+                  {/* Clear Cart Button */}
+                  {cart.length > 0 && (
+                    <Button variant="outline" size="sm" onClick={clearCart}>
+                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                    </Button>
+                  )}
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
@@ -1662,6 +1808,20 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                             </div>
                           </div>
 
+                          {/* Simpan Draft Button */}
+                          <Button 
+                            className="w-full" 
+                            size="lg"
+                            variant="outline"
+                            onClick={() => {
+                              setIsCheckoutOpen(false);
+                              setIsDraftsDialogOpen(true);
+                            }}
+                          >
+                            💾 Simpan sebagai Draft
+                          </Button>
+
+                          {/* Proses Pembayaran Button */}
                           <Button 
                             className="w-full" 
                             size="lg"
@@ -1821,6 +1981,123 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                 >
                   Lewati Print
                 </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Drafts Dialog */}
+          <Dialog open={isDraftsDialogOpen} onOpenChange={setIsDraftsDialogOpen}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>📋 Draft Orders</DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                {/* Simpan Draft Baru Section */}
+                {cart.length > 0 && (
+                  <Card className="bg-blue-50 border-blue-200">
+                    <CardContent className="p-4 space-y-3">
+                      <h3 className="font-semibold text-sm">Simpan Keranjang Saat Ini</h3>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Nama draft (contoh: Pelanggan A, Order Pagi, dll)"
+                          value={draftName}
+                          onChange={(e) => setDraftName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && draftName.trim()) {
+                              saveDraft();
+                            }
+                          }}
+                        />
+                        <Button 
+                          onClick={saveDraft} 
+                          disabled={isSavingDraft || !draftName.trim()}
+                        >
+                          {isSavingDraft ? 'Menyimpan...' : '💾 Simpan'}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Total keranjang: Rp {calculateTotal().toLocaleString('id-ID')} • {cart.length} item
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Daftar Draft */}
+                <div>
+                  <h3 className="font-semibold mb-3">Draft Tersimpan ({drafts.length})</h3>
+                  
+                  {drafts.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>Belum ada draft tersimpan</p>
+                      <p className="text-sm mt-1">Simpan keranjang sebagai draft untuk melanjutkan nanti</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {drafts
+                        .sort((a, b) => b.timestamp - a.timestamp) // Sort by newest first
+                        .map((draft) => (
+                          <Card key={draft.id} className="border">
+                            <CardContent className="p-4">
+                              <div className="flex justify-between items-start gap-4">
+                                <div className="flex-1 space-y-2">
+                                  <div className="flex items-start justify-between">
+                                    <div>
+                                      <h4 className="font-semibold">{draft.name}</h4>
+                                      <p className="text-xs text-muted-foreground">
+                                        {new Date(draft.timestamp).toLocaleDateString('id-ID', {
+                                          day: 'numeric',
+                                          month: 'long',
+                                          year: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit'
+                                        })}
+                                      </p>
+                                    </div>
+                                    <Badge variant="secondary">
+                                      {draft.cart.length} item
+                                    </Badge>
+                                  </div>
+                                  
+                                  {draft.customer?.name && (
+                                    <p className="text-sm">
+                                      <span className="text-muted-foreground">Customer:</span> {draft.customer.name}
+                                    </p>
+                                  )}
+                                  
+                                  <p className="text-sm font-semibold text-blue-600">
+                                    Total: Rp {draft.total.toLocaleString('id-ID')}
+                                  </p>
+                                  
+                                  {draft.notes && (
+                                    <p className="text-xs text-muted-foreground italic">
+                                      "{draft.notes}"
+                                    </p>
+                                  )}
+                                </div>
+                                
+                                <div className="flex flex-col gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => loadDraft(draft)}
+                                  >
+                                    📂 Muat
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => deleteDraft(draft.id)}
+                                  >
+                                    🗑️ Hapus
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </DialogContent>
           </Dialog>
