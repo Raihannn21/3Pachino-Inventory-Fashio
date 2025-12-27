@@ -65,7 +65,6 @@ export function getPermissionFromRoute(pathname: string): string | null {
     '/inventory': 'inventory.view',
     '/purchases': 'purchases.view',
     '/customers': 'customers.view',
-    '/customers': 'customers.view',
     '/reports': 'reports.view',
     '/users': 'users.view',
     '/permissions': 'admin.permissions'
