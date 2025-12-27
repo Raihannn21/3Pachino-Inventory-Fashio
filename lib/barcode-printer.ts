@@ -207,7 +207,8 @@ class BarcodePrinter {
 
   /**
    * Print barcode label
-   * Optimized for 33x25mm thermal label
+   * Optimized for Xprinter 40x20mm label using TSPL commands
+   * TSPL (TSC Printer Language) for label printers
    */
   async printBarcodeLabel(variant: ProductVariant, quantity: number = 1): Promise<void> {
     if (!variant.barcode) {
@@ -223,54 +224,47 @@ class BarcodePrinter {
     }
 
     try {
+      const textEncoder = new TextEncoder();
+      
       for (let i = 0; i < quantity; i++) {
-        const encoder = new EscPosEncoder();
+        // Prepare label data
+        const productName = this.truncateText(variant.product.name, 24);
+        const sizeColor = `${variant.size.name} | ${variant.color.name}`;
         
-        // Create complete label in one encoder for proper alignment
-        const result = encoder
-          .initialize()
-          .align('center')
-          .newline()
-          .encode();
-
-        // Create barcode command
-        const barcodeCommand = this.createBarcodeCommand(variant.barcode);
-
-        // Create text content - all centered
-        const encoder2 = new EscPosEncoder();
-        const textContent = encoder2
-          .initialize()
-          .align('center')
-          .newline()
-          
-          // Product name (bold) - max 20 chars for 33mm width
-          .bold(true)
-          .line(this.truncateText(variant.product.name, 20))
-          .bold(false)
-          
-          // Variant info - compact format
-          .line(`${variant.size.name} | ${variant.color.name}`)
-          .newline()
-          
-          // Cut paper
-          .cut('partial')
-          .encode();
-
-        // Combine all parts
-        const combined = new Uint8Array(result.length + barcodeCommand.length + textContent.length);
-        combined.set(result, 0);
-        combined.set(barcodeCommand, result.length);
-        combined.set(textContent, result.length + barcodeCommand.length);
-
-        await this.sendData(combined);
+        // TSPL Commands for Xprinter label (40x20mm)
+        let tspl = '';
+        tspl += 'SIZE 40 mm, 20 mm\r\n';      // Set label size 40x20mm
+        tspl += 'GAP 2 mm, 0 mm\r\n';         // Gap between labels
+        tspl += 'DIRECTION 0\r\n';            // Print direction
+        tspl += 'CLS\r\n';                    // Clear buffer
+        
+        // Barcode at top (CODE128, height=50, human readable below)
+        tspl += `BARCODE 40,10,"128",50,1,0,2,2,"${variant.barcode}"\r\n`;
+        
+        // Product name below barcode
+        tspl += `TEXT 10,70,"3",0,1,1,"${productName}"\r\n`;
+        
+        // Size | Color at bottom
+        tspl += `TEXT 10,100,"2",0,1,1,"${sizeColor}"\r\n`;
+        
+        tspl += 'PRINT 1\r\n';                // Print 1 label
+        
+        // Convert to bytes and send
+        const bytes = textEncoder.encode(tspl);
+        await this.sendData(bytes);
+        
+        console.log(`✅ TSPL Label sent: "${productName}"`);
         
         // Delay between labels
         if (i < quantity - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 800));
         }
       }
+      
+      console.log(`✅ Printed ${quantity} label(s) with TSPL`);
+      
     } catch (error) {
-      console.error('Error printing barcode:', error);
+      console.error('Error printing label:', error);
       throw error;
     }
   }

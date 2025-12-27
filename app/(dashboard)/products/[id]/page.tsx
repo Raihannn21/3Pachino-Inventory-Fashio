@@ -13,8 +13,7 @@ import BarcodeDisplay from '@/components/ui/barcode-display';
 import { generateBarcodeLabels, generateFullPageLabels } from '@/lib/barcode-label-pdf';
 import { printBarcodeLabel, connectToPrinter, isPrinterConnected } from '@/lib/barcode-printer';
 import { exportBarcodesToExcel } from '@/lib/excel-export';
-import xprinterLabel, { formatLabelFromVariant, isXPrinterSupported } from '@/lib/xprinter-label';
-import { ArrowLeft, Plus, Edit, Package, Palette, Ruler, Trash2, Printer, FileSpreadsheet, Bluetooth, Usb } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Package, Palette, Ruler, Trash2, Printer, FileSpreadsheet, Bluetooth } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ProductVariant {
@@ -120,13 +119,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [isConnectingPrinter, setIsConnectingPrinter] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [variantToDelete, setVariantToDelete] = useState<ProductVariant | null>(null);
-  
-  // Xprinter Label States
-  const [printLabelDialogOpen, setPrintLabelDialogOpen] = useState(false);
-  const [labelQuantity, setLabelQuantity] = useState('1');
-  const [variantToPrintLabel, setVariantToPrintLabel] = useState<ProductVariant | null>(null);
-  const [isXprinterConnected, setIsXprinterConnected] = useState(false);
-  const [isConnectingXprinter, setIsConnectingXprinter] = useState(false);
 
   const [variantForm, setVariantForm] = useState({
     sizeId: '',
@@ -611,138 +603,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   // ========== XPRINTER LABEL FUNCTIONS ==========
   
-  /**
-   * Connect to Xprinter USB
-   */
-  const handleConnectXprinter = async () => {
-    if (!isXPrinterSupported()) {
-      toast.error('Browser tidak mendukung Web USB API. Gunakan Chrome atau Edge.');
-      return;
-    }
-
-    setIsConnectingXprinter(true);
-    
-    try {
-      // Call connect directly without any async delays
-      const connected = await xprinterLabel.connect();
-      if (connected) {
-        setIsXprinterConnected(true);
-        toast.success('✅ Xprinter Label berhasil terhubung via USB');
-      }
-    } catch (error: any) {
-      console.error('Error connecting Xprinter:', error);
-      
-      // More specific error handling
-      if (error.name === 'SecurityError' && error.message?.includes('user gesture')) {
-        toast.error('⚠️ Klik tombol lagi! (Browser memerlukan interaksi langsung)');
-      } else if (error.message?.includes('No device selected')) {
-        toast.info('Koneksi Xprinter dibatalkan');
-      } else if (error.message?.includes('Access denied')) {
-        toast.error('Printer sedang dipakai aplikasi lain. Tutup aplikasi printer Windows terlebih dahulu.');
-      } else {
-        toast.error('Gagal menghubungkan Xprinter: ' + (error.message || 'Unknown error'));
-      }
-      setIsXprinterConnected(false);
-    } finally {
-      setIsConnectingXprinter(false);
-    }
-  };
-
-  /**
-   * Disconnect from Xprinter
-   */
-  const handleDisconnectXprinter = async () => {
-    try {
-      await xprinterLabel.disconnect();
-      setIsXprinterConnected(false);
-      toast.success('Xprinter Label disconnected');
-    } catch (error) {
-      console.error('Error disconnecting Xprinter:', error);
-      toast.error('Gagal disconnect Xprinter');
-    }
-  };
-
-  /**
-   * Open print label dialog
-   */
-  const handlePrintLabelXprinter = (variant: ProductVariant) => {
-    if (!variant.barcode) {
-      toast.error('Variant tidak memiliki barcode');
-      return;
-    }
-
-    // Check if Xprinter is connected
-    if (!xprinterLabel.isConnected()) {
-      toast.error('Xprinter belum terhubung. Silakan hubungkan printer terlebih dahulu.');
-      return;
-    }
-
-    setVariantToPrintLabel(variant);
-    setLabelQuantity('1');
-    setPrintLabelDialogOpen(true);
-  };
-
-  /**
-   * Confirm and print label with Xprinter
-   */
-  const confirmPrintXprinterLabel = async () => {
-    if (!variantToPrintLabel || !product) return;
-
-    const quantity = parseInt(labelQuantity);
-    if (isNaN(quantity) || quantity < 1) {
-      toast.error('Jumlah harus minimal 1');
-      return;
-    }
-
-    const loadingToast = toast.loading(`🖨️ Mencetak ${quantity} label 40x20mm...`);
-
-    try {
-      // Format label data
-      const labelData = formatLabelFromVariant(
-        product.name,
-        variantToPrintLabel.size.name,
-        variantToPrintLabel.color.name,
-        product.sku,
-        variantToPrintLabel.barcode,
-        variantToPrintLabel.sellingPrice || product.sellingPrice
-      );
-
-      // Print labels
-      await xprinterLabel.printLabels([labelData], quantity);
-      
-      toast.dismiss(loadingToast);
-      toast.success(`✅ Berhasil cetak ${quantity} label barcode 40x20mm`);
-      setPrintLabelDialogOpen(false);
-      setVariantToPrintLabel(null);
-      setLabelQuantity('1');
-    } catch (error) {
-      console.error('Error printing Xprinter label:', error);
-      toast.dismiss(loadingToast);
-      toast.error(error instanceof Error ? error.message : 'Gagal cetak label');
-    }
-  };
-
-  /**
-   * Print test label
-   */
-  const handlePrintTestLabel = async () => {
-    if (!xprinterLabel.isConnected()) {
-      toast.error('Xprinter belum terhubung');
-      return;
-    }
-
-    const loadingToast = toast.loading('Mencetak test label...');
-    try {
-      await xprinterLabel.printTestLabel();
-      toast.dismiss(loadingToast);
-      toast.success('✅ Test label berhasil dicetak');
-    } catch (error) {
-      console.error('Error printing test label:', error);
-      toast.dismiss(loadingToast);
-      toast.error('Gagal cetak test label');
-    }
-  };
-
   const confirmDeleteProduct = async () => {
     try {
       const response = await fetch(`/api/products/${productId}`, {
@@ -923,32 +783,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <Bluetooth className="h-4 w-4 mr-2" />
             {isConnectingPrinter ? 'Menghubungkan...' : (isPrinterConnectedState ? 'Printer Terhubung' : 'Hubungkan Printer')}
           </Button>
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (isXprinterConnected) {
-                handleDisconnectXprinter();
-              } else {
-                handleConnectXprinter();
-              }
-            }}
-            className={isXprinterConnected ? "bg-green-600 hover:bg-green-700" : "bg-purple-600 hover:bg-purple-700"}
-            disabled={isConnectingXprinter}
-            type="button"
-          >
-            <Usb className="h-4 w-4 mr-2" />
-            {isConnectingXprinter ? 'Menghubungkan...' : (isXprinterConnected ? '✅ Xprinter USB' : 'Hubungkan Xprinter USB')}
-          </Button>
-          {isXprinterConnected && (
-            <Button
-              onClick={handlePrintTestLabel}
-              variant="outline"
-              className="border-purple-300 hover:bg-purple-50"
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              Test Label
-            </Button>
-          )}
           <Button
             onClick={handleDownloadAllBarcodes}
             className="bg-green-600 hover:bg-green-700 text-white"
@@ -1221,19 +1055,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                               size="sm"
                               onClick={() => handlePrintVariantLabels(variant)}
                               className="shrink-0"
-                              title="Print PDF Label (Bluetooth)"
+                              title="Print 1 Halaman Label"
                             >
-                              <Bluetooth className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handlePrintLabelXprinter(variant)}
-                              className="shrink-0 border-purple-300"
-                              title="Print Label Xprinter 40x20mm (USB)"
-                              disabled={!isXprinterConnected}
-                            >
-                              <Usb className="h-4 w-4 text-purple-600" />
+                              <Printer className="h-4 w-4" />
                             </Button>
                           </>
                         )}
@@ -1333,27 +1157,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         <td className="text-center py-4 px-4">
                           <div className="flex items-center justify-center gap-2">
                             {variant.barcode && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handlePrintVariantLabels(variant)}
-                                  className="hover:bg-green-100"
-                                  title="Print PDF Label (Bluetooth)"
-                                >
-                                  <Bluetooth className="h-4 w-4 text-green-600" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handlePrintLabelXprinter(variant)}
-                                  className="hover:bg-purple-100"
-                                  title="Print Label Xprinter 40x20mm (USB)"
-                                  disabled={!isXprinterConnected}
-                                >
-                                  <Usb className="h-4 w-4 text-purple-600" />
-                                </Button>
-                              </>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePrintVariantLabels(variant)}
+                                className="hover:bg-green-100"
+                                title="Print 1 Halaman Label"
+                              >
+                                <Printer className="h-4 w-4 text-green-600" />
+                              </Button>
                             )}
                             <Button
                               variant="ghost"
