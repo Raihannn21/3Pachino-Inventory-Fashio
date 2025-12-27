@@ -193,6 +193,7 @@ model ProductVariant {
   sizeId      String
   colorId     String
   barcode     String?  @unique
+  barcodeFormat String? @default("v2") // "v1" = 10 char (old format), "v2" = 7 char (new format)
   stock       Int      @default(0)
   minStock    Int      @default(5)
   costPrice   Float?   // Harga modal per variant, jika null maka gunakan harga produk

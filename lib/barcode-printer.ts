@@ -1,9 +1,7 @@
 /**
- * Barcode Printer menggunakan Thermal Printer Bluetooth
- * Menggunakan Web Bluetooth API dan ESC/POS commands
+ * Barcode Printer menggunakan Xprinter Label Printer (40x20mm)
+ * Menggunakan Web Bluetooth API dan TSPL (TSC Printer Language)
  */
-
-import EscPosEncoder from 'esc-pos-encoder';
 
 interface ProductVariant {
   id: string;
@@ -180,35 +178,45 @@ class BarcodePrinter {
   }
 
   /**
-   * Print barcode using raw ESC/POS commands
-   * Optimized for 33x25mm label size
+   * Calibrate printer via Bluetooth using TSPL GAPDETECT command
    */
-  private createBarcodeCommand(barcode: string): Uint8Array {
-    const barcodeBytes = new TextEncoder().encode(barcode);
-    const length = barcodeBytes.length;
-    
-    // ESC/POS barcode command for CODE128
-    // Adjusted for 33x25mm label
-    const commandHeader = new Uint8Array([
-      0x1D, 0x68, 0x50,        // Set barcode height to 80 dots (good for 25mm height)
-      0x1D, 0x77, 0x02,        // Set barcode width (2 = medium)
-      0x1D, 0x48, 0x00,        // NO HRI characters (no text below barcode)
-      0x1D, 0x6B, 0x49,        // Start CODE128 barcode
-      length,                   // Length of barcode data
-    ]);
-    
-    // Combine header with barcode data
-    const command = new Uint8Array(commandHeader.length + barcodeBytes.length);
-    command.set(commandHeader, 0);
-    command.set(barcodeBytes, commandHeader.length);
-    
-    return command;
+  async calibrateViaBluetooth(): Promise<void> {
+    if (!this.isConnected()) {
+      throw new Error('Printer belum terkoneksi. Silakan hubungkan printer terlebih dahulu.');
+    }
+
+    try {
+      const textEncoder = new TextEncoder();
+      const calibrateCommand = "GAPDETECT\r\n";
+      const bytes = textEncoder.encode(calibrateCommand);
+      await this.sendData(bytes);
+      console.log('✅ Calibration command sent via Bluetooth');
+    } catch (error) {
+      console.error('Error calibrating printer:', error);
+      throw error;
+    }
   }
 
   /**
-   * Print barcode label
-   * Optimized for Xprinter 40x20mm label using TSPL commands
-   * TSPL (TSC Printer Language) for label printers
+   * Helper: Calculate centered X position dynamically
+   */
+  private getCenteredX(contentWidth: number, areaWidth: number, areaStartX: number): number {
+    return Math.round(areaStartX + (areaWidth - contentWidth) / 2);
+  }
+
+  /**
+   * Helper: Truncate text to specified length
+   */
+  private truncateText(text: string, maxLength: number): string {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return text.substring(0, maxLength - 3) + '...';
+  }
+
+  /**
+   * Print barcode label using TSPL commands
+   * Layout: 87mm x 20mm paper with 2 labels (40x20mm each)
    */
   async printBarcodeLabel(variant: ProductVariant, quantity: number = 1): Promise<void> {
     if (!variant.barcode) {
@@ -225,58 +233,106 @@ class BarcodePrinter {
 
     try {
       const textEncoder = new TextEncoder();
-      
+
       for (let i = 0; i < quantity; i++) {
-        // Prepare label data
-        const productName = this.truncateText(variant.product.name, 24);
+        // === KONSTANTA LABEL (dalam DOTS @ 8 dots/mm = 203 DPI) ===
+        const PAPER_WIDTH_DOTS = 696; // 87mm * 8 dots/mm
+        const PAPER_HEIGHT_DOTS = 160; // 20mm * 8 dots/mm
+        const LEFT_MARGIN_DOTS = 16; // 2mm margin kiri
+        const LABEL_WIDTH_DOTS = 320; // 40mm per label
+        const GAP_BETWEEN_LABELS_DOTS = 32; // 4mm gap between labels
+        const RIGHT_LABEL_START_X = LEFT_MARGIN_DOTS + LABEL_WIDTH_DOTS + GAP_BETWEEN_LABELS_DOTS; // 368 dots
+
+        // Offset untuk fine-tuning alignment
+        const HORIZONTAL_OFFSET = -40; // Offset untuk centering sempurna
+        const VERTICAL_OFFSET = 45; // Geser untuk centering vertikal
+
+        // Parameter Barcode CODE128 - UKURAN LEBIH KECIL
+        const BARCODE_HEIGHT_DOTS = 32; // Tinggi barcode lebih kecil lagi
+        const BARCODE_READABLE = 0; // 0 = tidak tampilkan teks di bawah barcode
+        const BARCODE_ROTATION = 0; // 0 derajat (horizontal)
+        const BARCODE_NARROW = 1; // Narrow bar width = 1 (lebih kecil dari 2)
+        const BARCODE_WIDE = 1; // Wide bar width = 1 (lebih kecil dari 2)
+
+        // Product info - HANYA NAMA PRODUK, tidak include variant
+        const productName = this.truncateText(variant.product.name, 18);
         const sizeColor = `${variant.size.name} | ${variant.color.name}`;
-        
-        // TSPL Commands for Xprinter label (40x20mm)
-        let tspl = '';
-        tspl += 'SIZE 40 mm, 20 mm\r\n';      // Set label size 40x20mm
-        tspl += 'GAP 2 mm, 0 mm\r\n';         // Gap between labels
-        tspl += 'DIRECTION 0\r\n';            // Print direction
-        tspl += 'CLS\r\n';                    // Clear buffer
-        
-        // Barcode at top (CODE128, height=50, human readable below)
-        tspl += `BARCODE 40,10,"128",50,1,0,2,2,"${variant.barcode}"\r\n`;
-        
-        // Product name below barcode
-        tspl += `TEXT 10,70,"3",0,1,1,"${productName}"\r\n`;
-        
-        // Size | Color at bottom
-        tspl += `TEXT 10,100,"2",0,1,1,"${sizeColor}"\r\n`;
-        
-        tspl += 'PRINT 1\r\n';                // Print 1 label
-        
+
+        // Font "2" character dimensions: 12 dots wide × 20 dots high
+        const FONT_CHAR_WIDTH = 12;
+        const FONT_CHAR_HEIGHT = 20;
+
+        // Dynamic centering untuk text (berdasarkan panjang string)
+        const productNameWidth = productName.length * FONT_CHAR_WIDTH;
+        const sizeColorWidth = sizeColor.length * FONT_CHAR_WIDTH;
+
+        // Terapkan offset horizontal ke semua perhitungan X
+        const adjustedLeftMargin = LEFT_MARGIN_DOTS + HORIZONTAL_OFFSET;
+        const adjustedRightLabelStartX = RIGHT_LABEL_START_X + HORIZONTAL_OFFSET;
+
+        // --- Perkiraan Presisi untuk Barcode CODE128 (untuk 6 karakter format baru) ---
+        // Estimasi lebar barcode Code 128: panjang data * estimasi lebar per karakter barcode
+        // Untuk narrow=1, wide=1: menggunakan 7 dots per char (lebih kecil dari 10)
+        const estimatedBarcodeWidth = variant.barcode!.length * 7;
+        const leftBarcodeX = this.getCenteredX(
+          estimatedBarcodeWidth,
+          LABEL_WIDTH_DOTS,
+          adjustedLeftMargin
+        );
+        const rightBarcodeX = this.getCenteredX(
+          estimatedBarcodeWidth,
+          LABEL_WIDTH_DOTS,
+          adjustedRightLabelStartX
+        );
+
+        // Center text dynamically within each label area
+        const leftProductNameX = this.getCenteredX(productNameWidth, LABEL_WIDTH_DOTS, adjustedLeftMargin);
+        const rightProductNameX = this.getCenteredX(productNameWidth, LABEL_WIDTH_DOTS, adjustedRightLabelStartX);
+        const leftSizeColorX = this.getCenteredX(sizeColorWidth, LABEL_WIDTH_DOTS, adjustedLeftMargin);
+        const rightSizeColorX = this.getCenteredX(sizeColorWidth, LABEL_WIDTH_DOTS, adjustedRightLabelStartX);
+
+        // Y positions (dengan offset vertikal) - PRESISI SPACING
+        const qrCodeY = 30 + VERTICAL_OFFSET;       // Barcode posisi optimal
+        const productNameY = 70 + VERTICAL_OFFSET;  // Jarak dari barcode
+        const sizeColorY = 90 + VERTICAL_OFFSET;    // Jarak dari productName
+
+        let tspl = "";
+        // SIZE dan GAP tetap menggunakan MM fisik
+        tspl += "SIZE 87 mm, 20 mm\r\n";
+        tspl += "GAP 2 mm, 0 mm\r\n";
+        // GUNAKAN DIRECTION 1 UNTUK ORIENTASI YANG BENAR SETELAH UKURAN PAS
+        tspl += "DIRECTION 1\r\n";
+        tspl += "CLS\r\n";
+
+        // === LABEL KIRI ===
+        // Barcode CODE128
+        tspl += `BARCODE ${leftBarcodeX},${qrCodeY},"128",${BARCODE_HEIGHT_DOTS},${BARCODE_READABLE},${BARCODE_ROTATION},${BARCODE_NARROW},${BARCODE_WIDE},"${variant.barcode}"\r\n`;
+        tspl += `TEXT ${leftProductNameX},${productNameY},"2",0,1,1,"${productName}"\r\n`;
+        tspl += `TEXT ${leftSizeColorX},${sizeColorY},"2",0,1,1,"${sizeColor}"\r\n`;
+
+        // === LABEL KANAN ===
+        // Barcode CODE128
+        tspl += `BARCODE ${rightBarcodeX},${qrCodeY},"128",${BARCODE_HEIGHT_DOTS},${BARCODE_READABLE},${BARCODE_ROTATION},${BARCODE_NARROW},${BARCODE_WIDE},"${variant.barcode}"\r\n`;
+        tspl += `TEXT ${rightProductNameX},${productNameY},"2",0,1,1,"${productName}"\r\n`;
+        tspl += `TEXT ${rightSizeColorX},${sizeColorY},"2",0,1,1,"${sizeColor}"\r\n`;
+
+        tspl += "PRINT 1\r\n";
+
         // Convert to bytes and send
         const bytes = textEncoder.encode(tspl);
         await this.sendData(bytes);
-        
+
         console.log(`✅ TSPL Label sent: "${productName}"`);
-        
+
         // Delay between labels
         if (i < quantity - 1) {
-          await new Promise(resolve => setTimeout(resolve, 800));
+          await new Promise(resolve => setTimeout(resolve, 300));
         }
       }
-      
-      console.log(`✅ Printed ${quantity} label(s) with TSPL`);
-      
     } catch (error) {
-      console.error('Error printing label:', error);
+      console.error('Error printing barcode:', error);
       throw error;
     }
-  }
-
-  /**
-   * Truncate text to specified length
-   */
-  private truncateText(text: string, maxLength: number): string {
-    if (text.length <= maxLength) {
-      return text;
-    }
-    return text.substring(0, maxLength - 3) + '...';
   }
 }
 
