@@ -60,9 +60,12 @@ export async function GET(request: NextRequest) {
       const avgDailySales = 2; // Placeholder, nanti akan dihitung dari data transaksi
       const daysOfStock = availableStock > 0 ? Math.floor(availableStock / avgDailySales) : 0;
       
-      // Hitung inventory value - gunakan variant.sellingPrice jika ada
-      const price = variant.sellingPrice ?? Number(variant.product.sellingPrice);
-      const inventoryValue = currentStock * price;
+      // Hitung inventory value - gunakan costPrice untuk nilai inventory yang akurat
+      // Gunakan variant costPrice jika ada, jika tidak gunakan product costPrice
+      const costPrice = variant.costPrice 
+        ? Number(variant.costPrice) 
+        : Number(variant.product.costPrice);
+      const inventoryValue = currentStock * costPrice;
       
       return {
         id: variant.id,
