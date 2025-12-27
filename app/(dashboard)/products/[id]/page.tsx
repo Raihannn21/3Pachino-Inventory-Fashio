@@ -621,7 +621,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
 
     setIsConnectingXprinter(true);
+    
     try {
+      // Call connect directly without any async delays
       const connected = await xprinterLabel.connect();
       if (connected) {
         setIsXprinterConnected(true);
@@ -629,8 +631,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       }
     } catch (error: any) {
       console.error('Error connecting Xprinter:', error);
-      if (error.message?.includes('No device selected')) {
+      
+      // More specific error handling
+      if (error.name === 'SecurityError' && error.message?.includes('user gesture')) {
+        toast.error('⚠️ Klik tombol lagi! (Browser memerlukan interaksi langsung)');
+      } else if (error.message?.includes('No device selected')) {
         toast.info('Koneksi Xprinter dibatalkan');
+      } else if (error.message?.includes('Access denied')) {
+        toast.error('Printer sedang dipakai aplikasi lain. Tutup aplikasi printer Windows terlebih dahulu.');
       } else {
         toast.error('Gagal menghubungkan Xprinter: ' + (error.message || 'Unknown error'));
       }
@@ -916,9 +924,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {isConnectingPrinter ? 'Menghubungkan...' : (isPrinterConnectedState ? 'Printer Terhubung' : 'Hubungkan Printer')}
           </Button>
           <Button
-            onClick={isXprinterConnected ? handleDisconnectXprinter : handleConnectXprinter}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isXprinterConnected) {
+                handleDisconnectXprinter();
+              } else {
+                handleConnectXprinter();
+              }
+            }}
             className={isXprinterConnected ? "bg-green-600 hover:bg-green-700" : "bg-purple-600 hover:bg-purple-700"}
             disabled={isConnectingXprinter}
+            type="button"
           >
             <Usb className="h-4 w-4 mr-2" />
             {isConnectingXprinter ? 'Menghubungkan...' : (isXprinterConnected ? '✅ Xprinter USB' : 'Hubungkan Xprinter USB')}
