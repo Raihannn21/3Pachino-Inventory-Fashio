@@ -15,7 +15,6 @@ export default withAuth(
       '/inventory': 'inventory.view',
       '/purchases': 'purchases.view',
       '/customers': 'customers.view',
-      '/customers': 'customers.view',
       '/reports': 'reports.view',
       '/users': 'users.view',
       '/permissions': 'admin.permissions'
