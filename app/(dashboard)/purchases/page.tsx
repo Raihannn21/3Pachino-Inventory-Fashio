@@ -170,10 +170,10 @@ export default function PurchasesPage() {
 
   const fetchSuppliers = async () => {
     try {
-      const response = await fetch('/api/suppliers');
+      const response = await fetch('/api/customers');
       const data = await response.json();
       if (response.ok) {
-        setSuppliers(data.suppliers);
+        setSuppliers(data.customers);
       }
     } catch (error) {
       console.error('Error fetching suppliers:', error);

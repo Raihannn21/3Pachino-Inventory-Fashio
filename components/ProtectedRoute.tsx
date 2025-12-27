@@ -20,7 +20,7 @@ const ROUTE_PERMISSIONS: Record<string, string> = {
   '/products': 'products.view',
   '/inventory': 'inventory.view',
   '/purchases': 'purchases.view',
-  '/suppliers': 'suppliers.view',
+  '/customers': 'customers.view',
   '/customers': 'customers.view',
   '/reports': 'reports.view',
   '/users': 'users.view',

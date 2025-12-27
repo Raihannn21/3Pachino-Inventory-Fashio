@@ -223,10 +223,31 @@ export default function SalesPage() {
     try {
       setIsPrintingReport(true);
 
+      // Fetch ALL sales data without pagination for print
+      const params = new URLSearchParams({
+        page: '1',
+        limit: '999999' // Fetch all data
+      });
+
+      if (dateRange?.from && dateRange?.to) {
+        const startOfDayDate = startOfDay(dateRange.from);
+        const endOfDayDate = endOfDay(dateRange.to);
+        params.append('startDate', startOfDayDate.toISOString());
+        params.append('endDate', endOfDayDate.toISOString());
+      }
+
+      const response = await fetch(`/api/sales?${params}`);
+      const allSalesData = await response.json();
+
+      if (!response.ok || !allSalesData.sales) {
+        toast.error('Gagal mengambil data penjualan');
+        return;
+      }
+
       // Group sales by customer and calculate totals
       const customerMap = new Map<string, { name: string; count: number; total: number }>();
       
-      salesData?.sales.forEach((sale) => {
+      allSalesData.sales.forEach((sale: Transaction) => {
         const customerName = sale.supplier?.name || 'Customer';
         const existing = customerMap.get(customerName) || { name: customerName, count: 0, total: 0 };
         customerMap.set(customerName, {
@@ -243,9 +264,9 @@ export default function SalesPage() {
         totalAmount: customer.total
       }));
 
-      // Calculate totals
-      const totalRevenue = salesData?.sales.reduce((sum, sale) => sum + Number(sale.totalAmount), 0) || 0;
-      const totalTx = salesData?.sales.length || 0;
+      // Calculate totals from ALL data
+      const totalRevenue = allSalesData.sales.reduce((sum: number, sale: Transaction) => sum + Number(sale.totalAmount), 0);
+      const totalTx = allSalesData.sales.length;
 
       // Format date range
       const dateRangeStr = dateRange.from && dateRange.to
@@ -261,7 +282,7 @@ export default function SalesPage() {
       };
 
       await printThermalDailyReport(reportData);
-      toast.success('Laporan harian berhasil dicetak!');
+      toast.success(`Laporan harian berhasil dicetak! (${totalTx} transaksi)`);
     } catch (error) {
       console.error('Error printing daily report:', error);
       toast.error('Gagal mencetak laporan harian');

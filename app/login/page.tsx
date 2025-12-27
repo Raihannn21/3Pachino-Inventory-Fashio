@@ -75,7 +75,6 @@ export default function LoginPage() {
                             // If user has any permission, try to redirect to first available module
                             const permissionToRoute: Record<string, string> = {
                                 'purchases.view': '/purchases',
-                                'suppliers.view': '/suppliers',
                                 'customers.view': '/customers',
                                 'reports.view': '/reports',
                                 'users.view': '/users',

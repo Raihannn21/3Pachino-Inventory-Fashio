@@ -55,12 +55,6 @@ export async function POST() {
       { name: 'purchases.edit', description: 'Edit Pembelian', category: 'purchases' },
       { name: 'purchases.delete', description: 'Hapus Pembelian', category: 'purchases' },
       
-      // Suppliers
-      { name: 'suppliers.view', description: 'Lihat Supplier', category: 'suppliers' },
-      { name: 'suppliers.create', description: 'Tambah Supplier', category: 'suppliers' },
-      { name: 'suppliers.edit', description: 'Edit Supplier', category: 'suppliers' },
-      { name: 'suppliers.delete', description: 'Hapus Supplier', category: 'suppliers' },
-      
       // Customers
       { name: 'customers.view', description: 'Lihat Pelanggan', category: 'customers' },
       { name: 'customers.create', description: 'Tambah Pelanggan', category: 'customers' },

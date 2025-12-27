@@ -113,10 +113,10 @@ export default function NewProductionOrderPage() {
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const response = await fetch('/api/suppliers');
+        const response = await fetch('/api/customers');
         if (response.ok) {
           const data = await response.json();
-          setSuppliers(data.suppliers || []);
+          setSuppliers(data.customers || []);
         }
       } catch (error) {
         console.error('Error fetching suppliers:', error);

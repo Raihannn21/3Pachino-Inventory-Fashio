@@ -224,12 +224,6 @@ async function main() {
     { name: 'purchases.edit', description: 'Edit Pembelian', category: 'purchases' },
     { name: 'purchases.delete', description: 'Hapus Pembelian', category: 'purchases' },
     
-    // Suppliers
-    { name: 'suppliers.view', description: 'Lihat Supplier', category: 'suppliers' },
-    { name: 'suppliers.create', description: 'Tambah Supplier', category: 'suppliers' },
-    { name: 'suppliers.edit', description: 'Edit Supplier', category: 'suppliers' },
-    { name: 'suppliers.delete', description: 'Hapus Supplier', category: 'suppliers' },
-    
     // Customers
     { name: 'customers.view', description: 'Lihat Pelanggan', category: 'customers' },
     { name: 'customers.create', description: 'Tambah Pelanggan', category: 'customers' },
@@ -279,7 +273,6 @@ async function main() {
     p.name.includes('inventory.view') ||
     p.name.includes('inventory.adjust') ||
     p.name.includes('purchases.') ||
-    p.name.includes('suppliers.') ||
     p.name.includes('customers.') ||
     p.name.includes('reports.view')
   );

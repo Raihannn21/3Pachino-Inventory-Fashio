@@ -32,7 +32,7 @@ const navigation = [
   { name: 'Produk', href: '/products', icon: Package, permission: 'products.view' },
   { name: 'Gudang', href: '/inventory', icon: Store, permission: 'inventory.view' },
   { name: 'Produksi', href: '/purchases', icon: Truck, permission: 'purchases.view' },
-  { name: 'Pelanggan', href: '/suppliers', icon: Building2, permission: 'suppliers.view' },
+  { name: 'Pelanggan', href: '/customers', icon: Building2, permission: 'customers.view' },
   { name: 'Manajemen User', href: '/users', icon: Users, permission: 'users.view' },
   { name: 'Hak Akses', href: '/permissions', icon: Shield, permission: 'admin.permissions' },
   { name: 'Activity Logs', href: '/activity-logs', icon: Activity, permission: 'superadmin', superAdminOnly: true },
