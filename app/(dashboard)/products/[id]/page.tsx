@@ -11,8 +11,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import BarcodeDisplay from '@/components/ui/barcode-display';
 import { generateBarcodeLabels, generateFullPageLabels } from '@/lib/barcode-label-pdf';
+import { printBarcodeLabel, connectToPrinter, isPrinterConnected } from '@/lib/barcode-printer';
 import { exportBarcodesToExcel } from '@/lib/excel-export';
-import { ArrowLeft, Plus, Edit, Package, Palette, Ruler, Trash2, Printer, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Package, Palette, Ruler, Trash2, Printer, FileSpreadsheet, Bluetooth } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ProductVariant {
@@ -111,6 +112,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [editProductOpen, setEditProductOpen] = useState(false);
   const [deleteProductOpen, setDeleteProductOpen] = useState(false);
   const [lowStockDialogOpen, setLowStockDialogOpen] = useState(false);
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [printQuantity, setPrintQuantity] = useState('1');
+  const [variantToPrint, setVariantToPrint] = useState<ProductVariant | null>(null);
+  const [isPrinterConnectedState, setIsPrinterConnectedState] = useState(false);
+  const [isConnectingPrinter, setIsConnectingPrinter] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [variantToDelete, setVariantToDelete] = useState<ProductVariant | null>(null);
 
@@ -142,6 +148,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     };
     initParams();
   }, [params]);
+
+  useEffect(() => {
+    // Check printer connection status on mount
+    const checkPrinterStatus = () => {
+      setIsPrinterConnectedState(isPrinterConnected());
+    };
+    checkPrinterStatus();
+    
+    // Check periodically
+    const interval = setInterval(checkPrinterStatus, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchProduct = useCallback(async () => {
     try {
@@ -511,31 +529,75 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const handleConnectPrinter = async () => {
+    setIsConnectingPrinter(true);
+    try {
+      const connected = await connectToPrinter();
+      if (connected) {
+        setIsPrinterConnectedState(true);
+        toast.success('Printer berhasil terhubung');
+      }
+    } catch (error: any) {
+      console.error('Error connecting printer:', error);
+      if (error.message?.includes('cancelled')) {
+        toast.info('Koneksi printer dibatalkan');
+      } else {
+        toast.error('Gagal menghubungkan printer: ' + (error.message || 'Unknown error'));
+      }
+    } finally {
+      setIsConnectingPrinter(false);
+    }
+  };
+
   const handlePrintVariantLabels = async (variant: ProductVariant) => {
     if (!variant.barcode) {
       toast.error('Variant tidak memiliki barcode');
       return;
     }
 
+    // Check if printer is connected
+    if (!isPrinterConnected()) {
+      toast.error('Printer belum terhubung. Silakan hubungkan printer terlebih dahulu.');
+      return;
+    }
+
+    // Open dialog untuk pilih jumlah
+    setVariantToPrint(variant);
+    setPrintQuantity('1');
+    setPrintDialogOpen(true);
+  };
+
+  const confirmPrintLabels = async () => {
+    if (!variantToPrint) return;
+
+    const quantity = parseInt(printQuantity);
+    if (isNaN(quantity) || quantity < 1) {
+      toast.error('Jumlah harus minimal 1');
+      return;
+    }
+
+    const loadingToast = toast.loading(`Mengirim ${quantity} label ke printer...`);
+
     try {
-      toast.loading('Membuat PDF label...');
-      
       const variantData = {
-        ...variant,
+        ...variantToPrint,
         product: {
           name: product!.name,
           sku: product!.sku,
         },
       };
 
-      await generateFullPageLabels(variantData);
+      await printBarcodeLabel(variantData, quantity);
       
-      toast.dismiss();
-      toast.success('Berhasil download 1 halaman label (32 stiker)');
+      toast.dismiss(loadingToast);
+      toast.success(`Berhasil print ${quantity} label barcode`);
+      setPrintDialogOpen(false);
+      setVariantToPrint(null);
+      setPrintQuantity('1');
     } catch (error) {
-      console.error('Error generating variant labels:', error);
-      toast.dismiss();
-      toast.error('Gagal membuat PDF label');
+      console.error('Error printing barcode:', error);
+      toast.dismiss(loadingToast);
+      toast.error(error instanceof Error ? error.message : 'Gagal print barcode');
     }
   };
 
@@ -711,6 +773,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <Button
+            onClick={handleConnectPrinter}
+            className={isPrinterConnectedState ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}
+            disabled={isConnectingPrinter}
+          >
+            <Bluetooth className="h-4 w-4 mr-2" />
+            {isConnectingPrinter ? 'Menghubungkan...' : (isPrinterConnectedState ? 'Printer Terhubung' : 'Hubungkan Printer')}
+          </Button>
           <Button
             onClick={handleDownloadAllBarcodes}
             className="bg-green-600 hover:bg-green-700 text-white"
@@ -1803,6 +1873,85 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Print Barcode Dialog */}
+      <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
+        <DialogContent className="w-[95vw] max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Printer className="h-5 w-5" />
+              Print Label Barcode
+            </DialogTitle>
+            <p className="text-sm text-slate-600">
+              {variantToPrint && (
+                <>Print label untuk {variantToPrint.size.name} - {variantToPrint.color.name}</>
+              )}
+            </p>
+          </DialogHeader>
+          
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="printQuantity">Jumlah Label</Label>
+              <Input
+                id="printQuantity"
+                type="number"
+                min="1"
+                max="100"
+                value={printQuantity}
+                onChange={(e) => setPrintQuantity(e.target.value)}
+                className="text-center text-lg font-semibold"
+              />
+              <p className="text-xs text-slate-500">
+                Setiap label akan dicetak terpisah
+              </p>
+            </div>
+
+            {variantToPrint && (
+              <div className="bg-slate-50 p-3 rounded-lg space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Produk:</span>
+                  <span className="font-medium">{product?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Ukuran:</span>
+                  <span className="font-medium">{variantToPrint.size.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Warna:</span>
+                  <span className="font-medium">{variantToPrint.color.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Barcode:</span>
+                  <code className="text-xs bg-white px-2 py-1 rounded font-mono">
+                    {variantToPrint.barcode}
+                  </code>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setPrintDialogOpen(false);
+                  setVariantToPrint(null);
+                  setPrintQuantity('1');
+                }}
+                className="flex-1"
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={confirmPrintLabels}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Print
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
