@@ -98,6 +98,44 @@ export default function NewProductionOrderPage() {
     }
   }, [purchaseItems]);
 
+  // Define handleBarcodeScanned BEFORE the useEffect that uses it
+  const handleBarcodeScanned = useCallback(async (barcode: string) => {
+    console.log('🔍 handleBarcodeScanned called with:', barcode);
+
+    try {
+      console.log('📡 Fetching from API:', `/api/pos/search?search=${encodeURIComponent(barcode)}`);
+      const response = await fetch(`/api/pos/search?search=${encodeURIComponent(barcode)}`);
+      const data = await response.json();
+
+      console.log('📦 API Response:', data);
+
+      if (!response.ok || !data.variants || data.variants.length === 0) {
+        console.log('❌ Product not found');
+        toast.error(`Produk dengan barcode ${barcode} tidak ditemukan`);
+        return;
+      }
+
+      const variant = data.variants[0];
+      console.log('✅ Found variant:', variant);
+
+      if (variant.barcode && variant.barcode.toLowerCase() !== barcode.toLowerCase()) {
+        console.log('⚠️ Barcode mismatch');
+        toast.error(`Barcode tidak cocok. Dicari: ${barcode}, Ditemukan: ${variant.barcode}`);
+        return;
+      }
+
+      console.log('🎯 Opening quantity dialog for:', variant.product.name);
+      setScannedVariant(variant);
+      setScanQuantity('1');
+      setIsQuantityDialogOpen(true);
+      console.log('✅ Quantity dialog should be open now');
+
+    } catch (error) {
+      console.error('❌ Error searching product:', error);
+      toast.error('Gagal mencari produk');
+    }
+  }, []);
+
   // Barcode Scanner Logic
   useEffect(() => {
     if (!isScannerActive) return;
@@ -155,43 +193,6 @@ export default function NewProductionOrderPage() {
       }
     };
   }, [isScannerActive, handleBarcodeScanned]);
-
-  const handleBarcodeScanned = useCallback(async (barcode: string) => {
-    console.log('🔍 handleBarcodeScanned called with:', barcode);
-
-    try {
-      console.log('📡 Fetching from API:', `/api/pos/search?search=${encodeURIComponent(barcode)}`);
-      const response = await fetch(`/api/pos/search?search=${encodeURIComponent(barcode)}`);
-      const data = await response.json();
-
-      console.log('📦 API Response:', data);
-
-      if (!response.ok || !data.variants || data.variants.length === 0) {
-        console.log('❌ Product not found');
-        toast.error(`Produk dengan barcode ${barcode} tidak ditemukan`);
-        return;
-      }
-
-      const variant = data.variants[0];
-      console.log('✅ Found variant:', variant);
-
-      if (variant.barcode && variant.barcode.toLowerCase() !== barcode.toLowerCase()) {
-        console.log('⚠️ Barcode mismatch');
-        toast.error(`Barcode tidak cocok. Dicari: ${barcode}, Ditemukan: ${variant.barcode}`);
-        return;
-      }
-
-      console.log('🎯 Opening quantity dialog for:', variant.product.name);
-      setScannedVariant(variant);
-      setScanQuantity('1');
-      setIsQuantityDialogOpen(true);
-      console.log('✅ Quantity dialog should be open now');
-
-    } catch (error) {
-      console.error('❌ Error searching product:', error);
-      toast.error('Gagal mencari produk');
-    }
-  }, []);
 
   const handleAddScannedItem = () => {
     if (!scannedVariant) return;
