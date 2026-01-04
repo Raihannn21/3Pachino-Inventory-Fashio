@@ -759,60 +759,70 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 sm:mb-8">
-        <Button
-          variant="ghost"
-          onClick={() => router.push('/products')}
-          className="self-start sm:mr-4 hover:bg-blue-50"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Kembali
-        </Button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900 break-words">{product.name}</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2 break-words">
-            SKU: {product.sku} • {product.brand.name} • {product.category.name}
-          </p>
+      <div className="space-y-4 mb-6 sm:mb-8">
+        {/* Title Section */}
+        <div className="flex items-start gap-4">
+          <Button
+            variant="ghost"
+            onClick={() => router.push('/products')}
+            className="flex-shrink-0 hover:bg-blue-50"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Kembali
+          </Button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900 break-words">{product.name}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2 break-words">
+              SKU: {product.sku} • {product.brand.name} • {product.category.name}
+            </p>
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+
+        {/* Action Buttons - Grid Layout untuk responsivitas lebih baik */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           <Button
             onClick={handleConnectPrinter}
-            className={isPrinterConnectedState ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}
+            className={isPrinterConnectedState ? "bg-green-600 hover:bg-green-700 w-full" : "bg-blue-600 hover:bg-blue-700 w-full"}
             disabled={isConnectingPrinter}
+            size="sm"
           >
-            <Bluetooth className="h-4 w-4 mr-2" />
-            {isConnectingPrinter ? 'Menghubungkan...' : (isPrinterConnectedState ? 'Printer Terhubung' : 'Hubungkan Printer')}
+            <Bluetooth className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">{isConnectingPrinter ? 'Menghubungkan...' : (isPrinterConnectedState ? 'Printer Terhubung' : 'Hubungkan Printer')}</span>
           </Button>
           <Button
             onClick={handleDownloadAllBarcodes}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-green-600 hover:bg-green-700 text-white w-full"
             disabled={!product.variants.some(v => v.barcode)}
+            size="sm"
           >
-            <Printer className="h-4 w-4 mr-2" />
-            Download PDF Barcode
+            <Printer className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">Download PDF Barcode</span>
           </Button>
           <Button
             onClick={handleDownloadBarcodesExcel}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
             disabled={!product.variants.some(v => v.barcode)}
+            size="sm"
           >
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Download Excel
+            <FileSpreadsheet className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">Download Excel</span>
           </Button>
           <Button
             onClick={openEditProduct}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+            size="sm"
           >
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Produk
+            <Edit className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">Edit Produk</span>
           </Button>
           <Button
             onClick={handleDeleteProduct}
             variant="destructive"
-            className="bg-red-600 hover:bg-red-700 text-white"
+            className="bg-red-600 hover:bg-red-700 text-white w-full col-span-2 md:col-span-1"
+            size="sm"
           >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Hapus Produk
+            <Trash2 className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">Hapus Produk</span>
           </Button>
         </div>
       </div>
@@ -943,7 +953,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           ) : (
             <>
               {/* Mobile Card Layout */}
-              <div className="block lg:hidden space-y-4">
+              <div className="block md:hidden space-y-4">
                 {product.variants.map((variant) => (
                   <div key={variant.id} className="bg-white border border-slate-200 rounded-lg p-4 space-y-4">
                     <div className="flex items-center justify-between">
@@ -1067,64 +1077,64 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 ))}
               </div>
 
-              {/* Desktop Table Layout */}
-              <div className="hidden lg:block overflow-x-auto">
+              {/* Desktop/Tablet Table Layout */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-200">
-                      <th className="text-left py-4 px-4 font-semibold text-slate-700">Ukuran</th>
-                      <th className="text-left py-4 px-4 font-semibold text-slate-700">Warna</th>
-                      <th className="text-center py-4 px-4 font-semibold text-slate-700">Harga Jual</th>
-                      <th className="text-center py-4 px-4 font-semibold text-slate-700">Stok</th>
-                      <th className="text-center py-4 px-4 font-semibold text-slate-700">Min. Stok</th>
-                      <th className="text-left py-4 px-4 font-semibold text-slate-700">Barcode</th>
-                      <th className="text-center py-4 px-4 font-semibold text-slate-700">Status</th>
-                      <th className="text-center py-4 px-4 font-semibold text-slate-700">Aksi</th>
+                      <th className="text-left py-3 md:py-4 px-2 md:px-4 font-semibold text-slate-700 text-xs md:text-sm">Ukuran</th>
+                      <th className="text-left py-3 md:py-4 px-2 md:px-4 font-semibold text-slate-700 text-xs md:text-sm">Warna</th>
+                      <th className="text-center py-3 md:py-4 px-2 md:px-4 font-semibold text-slate-700 text-xs md:text-sm">Harga Jual</th>
+                      <th className="text-center py-3 md:py-4 px-2 md:px-4 font-semibold text-slate-700 text-xs md:text-sm">Stok</th>
+                      <th className="text-center py-3 md:py-4 px-2 md:px-4 font-semibold text-slate-700 text-xs md:text-sm">Min. Stok</th>
+                      <th className="text-left py-3 md:py-4 px-2 md:px-4 font-semibold text-slate-700 text-xs md:text-sm">Barcode</th>
+                      <th className="text-center py-3 md:py-4 px-2 md:px-4 font-semibold text-slate-700 text-xs md:text-sm">Status</th>
+                      <th className="text-center py-3 md:py-4 px-2 md:px-4 font-semibold text-slate-700 text-xs md:text-sm">Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
                     {product.variants.map((variant) => (
                       <tr key={variant.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td className="py-4 px-4">
+                        <td className="py-3 md:py-4 px-2 md:px-4">
                           <div className="flex items-center">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                              <Ruler className="h-4 w-4 text-blue-600" />
+                            <div className="w-6 h-6 md:w-8 md:h-8 bg-blue-100 rounded-full flex items-center justify-center mr-2 md:mr-3">
+                              <Ruler className="h-3 w-3 md:h-4 md:w-4 text-blue-600" />
                             </div>
-                            <span className="font-medium text-slate-700">{variant.size.name}</span>
+                            <span className="font-medium text-slate-700 text-xs md:text-sm">{variant.size.name}</span>
                           </div>
                         </td>
-                        <td className="py-4 px-4">
+                        <td className="py-3 md:py-4 px-2 md:px-4">
                           <div className="flex items-center">
                             {variant.color.hexCode && (
                               <div 
-                                className="w-5 h-5 rounded-full mr-3 border-2 border-white shadow-sm ring-1 ring-slate-200"
+                                className="w-4 h-4 md:w-5 md:h-5 rounded-full mr-2 md:mr-3 border-2 border-white shadow-sm ring-1 ring-slate-200"
                                 style={{ backgroundColor: variant.color.hexCode }}
                               />
                             )}
-                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                              <Palette className="h-4 w-4 text-purple-600" />
+                            <div className="w-6 h-6 md:w-8 md:h-8 bg-purple-100 rounded-full flex items-center justify-center mr-2 md:mr-3">
+                              <Palette className="h-3 w-3 md:h-4 md:w-4 text-purple-600" />
                             </div>
-                            <span className="font-medium text-slate-700">{variant.color.name}</span>
+                            <span className="font-medium text-slate-700 text-xs md:text-sm">{variant.color.name}</span>
                           </div>
                         </td>
-                        <td className="text-center py-4 px-4">
-                          <span className="text-green-600 font-bold">
+                        <td className="text-center py-3 md:py-4 px-2 md:px-4">
+                          <span className="text-green-600 font-bold text-xs md:text-sm">
                             Rp {formatNumber(variant.sellingPrice || product.sellingPrice)}
                           </span>
                         </td>
-                        <td className="text-center py-4 px-4">
-                          <span className={`font-bold text-lg ${
+                        <td className="text-center py-3 md:py-4 px-2 md:px-4">
+                          <span className={`font-bold text-base md:text-lg ${
                             variant.stock <= variant.minStock ? 'text-red-600' : 'text-emerald-600'
                           }`}>
                             {variant.stock}
                           </span>
                         </td>
-                        <td className="text-center py-4 px-4">
-                          <span className="text-slate-600 font-medium">{variant.minStock}</span>
+                        <td className="text-center py-3 md:py-4 px-2 md:px-4">
+                          <span className="text-slate-600 font-medium text-xs md:text-sm">{variant.minStock}</span>
                         </td>
-                        <td className="py-4 px-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            <code className="text-xs bg-slate-100 px-3 py-1.5 rounded-md font-mono text-slate-700">
+                        <td className="py-3 md:py-4 px-2 md:px-4 text-sm">
+                          <div className="flex items-center gap-1 md:gap-2">
+                            <code className="text-xs bg-slate-100 px-2 md:px-3 py-1 md:py-1.5 rounded-md font-mono text-slate-700 max-w-[80px] md:max-w-none truncate md:block">
                               {variant.barcode || 'Auto-generated'}
                             </code>
                             {variant.barcode && (
@@ -1141,49 +1151,50 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             )}
                           </div>
                         </td>
-                        <td className="text-center py-4 px-4">
+                        <td className="text-center py-3 md:py-4 px-2 md:px-4">
                           {variant.stock <= variant.minStock ? (
-                            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
-                              <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
-                              Stok Rendah
+                            <span className="inline-flex items-center px-2 md:px-3 py-1 md:py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+                              <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1 md:mr-2"></div>
+                              <span className="hidden lg:inline">Stok Rendah</span>
+                              <span className="lg:hidden">Rendah</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
-                              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></div>
+                            <span className="inline-flex items-center px-2 md:px-3 py-1 md:py-1.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
+                              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1 md:mr-2"></div>
                               Normal
                             </span>
                           )}
                         </td>
-                        <td className="text-center py-4 px-4">
-                          <div className="flex items-center justify-center gap-2">
+                        <td className="text-center py-3 md:py-4 px-2 md:px-4">
+                          <div className="flex items-center justify-center gap-1 md:gap-2">
                             {variant.barcode && (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handlePrintVariantLabels(variant)}
-                                className="hover:bg-green-100"
+                                className="hover:bg-green-100 p-1.5 md:p-2"
                                 title="Print 1 Halaman Label"
                               >
-                                <Printer className="h-4 w-4 text-green-600" />
+                                <Printer className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
                               </Button>
                             )}
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => openEditVariant(variant)}
-                              className="hover:bg-slate-100"
+                              className="hover:bg-slate-100 p-1.5 md:p-2"
                               title="Edit Varian"
                             >
-                              <Edit className="h-4 w-4 text-slate-600" />
+                              <Edit className="h-3 w-3 md:h-4 md:w-4 text-slate-600" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDeleteVariant(variant)}
-                              className="hover:bg-red-100"
+                              className="hover:bg-red-100 p-1.5 md:p-2"
                               title="Hapus Varian"
                             >
-                              <Trash2 className="h-4 w-4 text-red-600" />
+                              <Trash2 className="h-3 w-3 md:h-4 md:w-4 text-red-600" />
                             </Button>
                           </div>
                         </td>

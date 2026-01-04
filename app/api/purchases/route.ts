@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       message: 'Production Order berhasil dibuat. Klik "Complete" untuk menambah stok.',
-      production: result
+      purchase: result
     }, { status: 201 });
 
   } catch (error) {

@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { 
@@ -27,14 +26,6 @@ import {
   Package
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Supplier {
-  id: string;
-  name: string;
-  contact?: string;
-  phone?: string;
-  email?: string;
-}
 
 interface ProductVariant {
   id: string;
@@ -74,9 +65,7 @@ interface PurchaseItem {
 
 export default function NewProductionOrderPage() {
   const router = useRouter();
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [purchaseItems, setPurchaseItems] = useState<PurchaseItem[]>([]);
-  const [selectedSupplier, setSelectedSupplier] = useState('none');
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   
@@ -108,22 +97,6 @@ export default function NewProductionOrderPage() {
       localStorage.setItem('production_order_items', JSON.stringify(purchaseItems));
     }
   }, [purchaseItems]);
-
-  // Fetch suppliers
-  useEffect(() => {
-    const fetchSuppliers = async () => {
-      try {
-        const response = await fetch('/api/customers');
-        if (response.ok) {
-          const data = await response.json();
-          setSuppliers(data.customers || []);
-        }
-      } catch (error) {
-        console.error('Error fetching suppliers:', error);
-      }
-    };
-    fetchSuppliers();
-  }, []);
 
   // Barcode Scanner Logic
   useEffect(() => {
@@ -289,7 +262,6 @@ export default function NewProductionOrderPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          supplierId: (selectedSupplier && selectedSupplier !== 'none') ? selectedSupplier : undefined,
           items: purchaseItems.map(item => ({
             variantId: item.variantId,
             quantity: item.quantity,
@@ -384,23 +356,6 @@ export default function NewProductionOrderPage() {
                 <CardTitle>Informasi Production Order</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Supplier (Opsional)</Label>
-                  <Select value={selectedSupplier} onValueChange={setSelectedSupplier}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih Supplier" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Tanpa Supplier</SelectItem>
-                      {suppliers.map((supplier) => (
-                        <SelectItem key={supplier.id} value={supplier.id}>
-                          {supplier.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div className="space-y-2">
                   <Label>Catatan Produksi</Label>
                   <Textarea
