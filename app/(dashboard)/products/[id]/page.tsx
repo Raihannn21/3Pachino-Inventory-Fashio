@@ -13,7 +13,10 @@ import BarcodeDisplay from '@/components/ui/barcode-display';
 import { generateBarcodeLabels, generateFullPageLabels } from '@/lib/barcode-label-pdf';
 import { printBarcodeLabel, connectToPrinter, isPrinterConnected } from '@/lib/barcode-printer';
 import { exportBarcodesToExcel } from '@/lib/excel-export';
-import { ArrowLeft, Plus, Edit, Package, Palette, Ruler, Trash2, Printer, FileSpreadsheet, Bluetooth } from 'lucide-react';
+import { printThermalStockReport, isThermalPrinterConnected, connectThermalPrinter } from '@/lib/thermal-printer';
+import { format } from 'date-fns';
+import { id as localeId } from 'date-fns/locale';
+import { ArrowLeft, Plus, Edit, Package, Palette, Ruler, Trash2, Printer, FileSpreadsheet, Bluetooth, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ProductVariant {
@@ -150,13 +153,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }, [params]);
 
   useEffect(() => {
-    // Check printer connection status on mount
+    // Check thermal printer connection status on mount
     const checkPrinterStatus = () => {
-      setIsPrinterConnectedState(isPrinterConnected());
+      setIsPrinterConnectedState(isThermalPrinterConnected());
     };
     checkPrinterStatus();
     
-    // Check periodically
+    // Check periodically (every 2 seconds)
     const interval = setInterval(checkPrinterStatus, 2000);
     return () => clearInterval(interval);
   }, []);
@@ -532,10 +535,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const handleConnectPrinter = async () => {
     setIsConnectingPrinter(true);
     try {
-      const connected = await connectToPrinter();
+      // Connect to thermal printer (dapat digunakan untuk stock report dan barcode)
+      const connected = await connectThermalPrinter();
       if (connected) {
         setIsPrinterConnectedState(true);
-        toast.success('Printer berhasil terhubung');
+        toast.success('Thermal Printer berhasil terhubung');
       }
     } catch (error: any) {
       console.error('Error connecting printer:', error);
@@ -549,15 +553,58 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const handlePrintStockReport = async () => {
+    if (!product) {
+      toast.error('Data produk tidak tersedia');
+      return;
+    }
+
+    // Check if thermal printer is connected
+    if (!isThermalPrinterConnected()) {
+      toast.error('Thermal printer belum terhubung. Silakan hubungkan printer terlebih dahulu.');
+      return;
+    }
+
+    const loadingToast = toast.loading('Mengirim laporan stok ke printer...');
+
+    try {
+      // Prepare stock report data
+      const stockReportData = {
+        productName: product.name,
+        sku: product.sku,
+        brand: product.brand.name,
+        category: product.category.name,
+        variants: product.variants.map(v => ({
+          size: v.size.name,
+          color: v.color.name,
+          stock: v.stock,
+          minStock: v.minStock,
+          barcode: v.barcode
+        })),
+        totalStock: getTotalStock(),
+        printDate: format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeId })
+      };
+
+      await printThermalStockReport(stockReportData);
+      
+      toast.dismiss(loadingToast);
+      toast.success('Laporan stok berhasil dicetak!');
+    } catch (error) {
+      console.error('Error printing stock report:', error);
+      toast.dismiss(loadingToast);
+      toast.error(error instanceof Error ? error.message : 'Gagal mencetak laporan stok');
+    }
+  };
+
   const handlePrintVariantLabels = async (variant: ProductVariant) => {
     if (!variant.barcode) {
       toast.error('Variant tidak memiliki barcode');
       return;
     }
 
-    // Check if printer is connected
-    if (!isPrinterConnected()) {
-      toast.error('Printer belum terhubung. Silakan hubungkan printer terlebih dahulu.');
+    // Check if thermal printer is connected
+    if (!isThermalPrinterConnected()) {
+      toast.error('Thermal printer belum terhubung. Silakan hubungkan printer terlebih dahulu.');
       return;
     }
 
@@ -779,7 +826,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* Action Buttons - Grid Layout untuk responsivitas lebih baik */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
           <Button
             onClick={handleConnectPrinter}
             className={isPrinterConnectedState ? "bg-green-600 hover:bg-green-700 w-full" : "bg-blue-600 hover:bg-blue-700 w-full"}
@@ -788,6 +835,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           >
             <Bluetooth className="h-4 w-4 mr-1 sm:mr-2" />
             <span className="text-xs sm:text-sm">{isConnectingPrinter ? 'Menghubungkan...' : (isPrinterConnectedState ? 'Printer Terhubung' : 'Hubungkan Printer')}</span>
+          </Button>
+          <Button
+            onClick={handlePrintStockReport}
+            className="bg-purple-600 hover:bg-purple-700 text-white w-full"
+            disabled={!isThermalPrinterConnected()}
+            size="sm"
+            title="Print laporan sisa stok ke thermal printer"
+          >
+            <FileText className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">Print Laporan Stok</span>
           </Button>
           <Button
             onClick={handleDownloadAllBarcodes}

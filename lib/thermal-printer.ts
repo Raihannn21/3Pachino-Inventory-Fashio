@@ -43,6 +43,24 @@ interface DailyReportData {
   totalTransactions: number;
 }
 
+interface StockVariant {
+  size: string;
+  color: string;
+  stock: number;
+  minStock: number;
+  barcode?: string;
+}
+
+interface StockReportData {
+  productName: string;
+  sku: string;
+  brand: string;
+  category: string;
+  variants: StockVariant[];
+  totalStock: number;
+  printDate: string;
+}
+
 class ThermalPrinter {
   private printer: PrinterDevice | null = null;
   private readonly PRINTER_SERVICE_UUID = '000018f0-0000-1000-8000-00805f9b34fb';
@@ -685,6 +703,200 @@ class ThermalPrinter {
   }
 
   /**
+   * Print Stock Report - Laporan Sisa Stok Produk
+   * Format thermal printer 80mm dengan layout rapi
+   */
+  async printStockReport(reportData: StockReportData): Promise<void> {
+    // Try to reconnect if not connected
+    if (!this.isConnected()) {
+      const wasConnected = localStorage.getItem('thermal_printer_connected');
+      if (wasConnected === 'true' && this.savedDevice) {
+        console.log('Printer disconnected, attempting to reconnect...');
+        const reconnected = await this.reconnectToDevice(this.savedDevice);
+        if (!reconnected) {
+          throw new Error('Printer terputus dan gagal reconnect. Silakan connect ulang.');
+        }
+      } else {
+        throw new Error('Printer belum terkoneksi. Silakan connect terlebih dahulu.');
+      }
+    }
+
+    try {
+      const encoder = new EscPosEncoder();
+      const PRINTER_WIDTH = 42; // 42 characters - lebar area cetak efektif
+      const LEFT_MARGIN = '  '; // 2 spasi kiri untuk centering
+
+      // Initialize printer
+      encoder.initialize();
+
+      // Header - Laporan Stok
+      encoder
+        .align('center')
+        .bold(true)
+        .size('large')
+        .line(LEFT_MARGIN + '')
+        .line(LEFT_MARGIN + '3PACHINO')
+        .size('normal')
+        .bold(false)
+        .line(LEFT_MARGIN + 'LAPORAN SISA STOK')
+        .newline();
+
+      // Separator
+      const separator = LEFT_MARGIN + '='.repeat(PRINTER_WIDTH);
+      encoder
+        .align('left')
+        .line(separator);
+
+      // Product Info
+      encoder
+        .align('left')
+        .bold(true)
+        .line(LEFT_MARGIN + 'INFORMASI PRODUK:')
+        .bold(false)
+        .newline();
+
+      // Product name only (no SKU, Brand, Category)
+      const productName = reportData.productName.length > PRINTER_WIDTH 
+        ? reportData.productName.substring(0, PRINTER_WIDTH - 3) + '...' 
+        : reportData.productName;
+      
+      encoder
+        .bold(true)
+        .size('large')
+        .line(LEFT_MARGIN + productName)
+        .size('normal')
+        .bold(false)
+        .newline();
+
+      // Separator
+      encoder
+        .align('left')
+        .line(separator)
+        .newline();
+
+      // Stock Details Header - BOLD & LARGE
+      encoder
+        .align('left')
+        .bold(true)
+        .size('large')
+        .line(LEFT_MARGIN + 'DETAIL STOK:')
+        .size('normal')
+        .bold(false)
+        .newline();
+
+      // Variants - sorted by stock (low to high for visibility)
+      const sortedVariants = [...reportData.variants].sort((a, b) => a.stock - b.stock);
+      
+      for (const variant of sortedVariants) {
+        // Variant info: SIZE • COLOR (BOLD & LARGE)
+        const variantText = `${variant.size} • ${variant.color}`;
+        const safeVariant = variantText.length > PRINTER_WIDTH 
+          ? variantText.substring(0, PRINTER_WIDTH - 3) + '...' 
+          : variantText;
+        
+        encoder
+          .bold(true)
+          .size('large')
+          .line(LEFT_MARGIN + safeVariant)
+          .size('normal')
+          .bold(false);
+
+        // Stock info with status indicator (no ⚠ or ✓ symbols)
+        const stockStatus = variant.stock <= variant.minStock ? 'RENDAH' : 'Normal';
+        const stockLine = this.createRow(
+          `Stok: ${variant.stock} pcs`,
+          stockStatus,
+          PRINTER_WIDTH
+        );
+        
+        encoder.line(LEFT_MARGIN + stockLine);
+        encoder.newline();
+      }
+
+      // Separator
+      encoder
+        .align('left')
+        .line(separator)
+        .newline();
+
+      // Summary
+      const totalVariants = reportData.variants.length;
+      const lowStockCount = reportData.variants.filter(v => v.stock <= v.minStock).length;
+
+      encoder
+        .align('left')
+        .bold(true)
+        .line(LEFT_MARGIN + 'RINGKASAN:')
+        .bold(false);
+
+      const variantsLine = this.createRow(
+        'Total Varian:',
+        `${totalVariants} varian`,
+        PRINTER_WIDTH
+      );
+      
+      encoder.line(LEFT_MARGIN + variantsLine);
+
+      if (lowStockCount > 0) {
+        const lowStockLine = this.createRow(
+          'Stok Rendah:',
+          `${lowStockCount} varian`,
+          PRINTER_WIDTH
+        );
+        encoder
+          .bold(true)
+          .line(LEFT_MARGIN + lowStockLine)
+          .bold(false);
+      }
+
+      const totalStockLine = this.createRow(
+        'Total Stok:',
+        `${reportData.totalStock} pcs`,
+        PRINTER_WIDTH
+      );
+      
+      encoder
+        .newline()
+        .bold(true)
+        .size('large')
+        .line(LEFT_MARGIN + totalStockLine)
+        .size('normal')
+        .bold(false);
+
+      // Separator
+      encoder
+        .newline()
+        .align('left')
+        .line(separator);
+
+      // Footer - print date
+      encoder
+        .align('center')
+        .newline()
+        .line(LEFT_MARGIN + 'Dicetak pada:')
+        .line(LEFT_MARGIN + reportData.printDate)
+        .newline();
+
+      // Cut paper
+      encoder
+        .newline()
+        .newline()
+        .newline()
+        .cut('partial');
+
+      // Get encoded data
+      const data = encoder.encode();
+
+      // Send to printer
+      await this.sendData(data);
+
+    } catch (error) {
+      console.error('Error printing stock report:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Test print - simple test receipt
    */
   async testPrint(): Promise<void> {
@@ -728,10 +940,11 @@ export const disconnectThermalPrinter = () => thermalPrinter.disconnect();
 export const initializeThermalPrinter = () => thermalPrinter.initializeConnection();
 export const printThermalReceipt = (data: ReceiptData) => thermalPrinter.printReceipt(data);
 export const printThermalDailyReport = (data: DailyReportData) => thermalPrinter.printDailyReport(data);
+export const printThermalStockReport = (data: StockReportData) => thermalPrinter.printStockReport(data);
 export const testThermalPrint = () => thermalPrinter.testPrint();
 export const isThermalPrinterConnected = () => thermalPrinter.isConnected();
 export const isThermalPrinterReconnecting = () => thermalPrinter.isReconnectingNow();
 export const getSavedThermalPrinterDeviceId = () => thermalPrinter.getSavedPrinterDeviceId();
 export const isBluetoothSupported = () => thermalPrinter.isBluetoothSupported();
 
-export type { ReceiptData, ReceiptItem, DailyReportData, DailyReportCustomer };
+export type { ReceiptData, ReceiptItem, DailyReportData, DailyReportCustomer, StockReportData, StockVariant };
