@@ -751,20 +751,23 @@ class ThermalPrinter {
       encoder
         .align('left')
         .bold(true)
+        .size('large')
         .line(LEFT_MARGIN + 'INFORMASI PRODUK:')
+        .size('normal')
         .bold(false)
         .newline();
 
-      // Product name only (no SKU, Brand, Category)
+      // Product name - 2x WIDTH ONLY (tidak terlalu besar)
       const productName = reportData.productName.length > PRINTER_WIDTH 
         ? reportData.productName.substring(0, PRINTER_WIDTH - 3) + '...' 
         : reportData.productName;
       
       encoder
+        .align('left')
         .bold(true)
-        .size('large')
+        .raw([0x1D, 0x21, 0x10])  // GS ! n - 2x width only (bit 4=1, bit 0=0) = 0x10
         .line(LEFT_MARGIN + productName)
-        .size('normal')
+        .raw([0x1D, 0x21, 0x00])  // Reset to normal size
         .bold(false)
         .newline();
 
@@ -800,32 +803,33 @@ class ThermalPrinter {
 
       // Convert to array and prepare for 2-column layout
       const colorGroups = Array.from(variantsByColor.entries());
-      const COLUMN_WIDTH = 19; // Width for each column (19 chars each = 38 total + 2 margin = 40)
+      // Karena pakai 2x width font, column width harus lebih kecil
+      const COLUMN_WIDTH = 9; // 9 chars dengan 2x width = 18 actual chars, 2 kolom = 36 + margin
 
       // Process in pairs (2 columns side by side)
       for (let i = 0; i < colorGroups.length; i += 2) {
         const leftColor = colorGroups[i];
         const rightColor = colorGroups[i + 1] || null;
 
-        // Color names header (BOLD & LARGE)
+        // Color names header
         const leftColorName = leftColor[0].length > COLUMN_WIDTH 
-          ? leftColor[0].substring(0, COLUMN_WIDTH - 3) + '...' 
+          ? leftColor[0].substring(0, COLUMN_WIDTH - 1) + '' 
           : leftColor[0];
         
         const rightColorName = rightColor 
           ? (rightColor[0].length > COLUMN_WIDTH 
-              ? rightColor[0].substring(0, COLUMN_WIDTH - 3) + '...' 
+              ? rightColor[0].substring(0, COLUMN_WIDTH - 1) + '' 
               : rightColor[0])
           : '';
 
-        // Print color names (uppercase for visibility)
-        const colorHeader = leftColorName.toUpperCase().padEnd(COLUMN_WIDTH) + '  ' + rightColorName.toUpperCase();
+        // Print color names - 2x WIDTH ONLY
+        const colorHeader = leftColorName.toUpperCase().padEnd(COLUMN_WIDTH + 2) + rightColorName.toUpperCase();
         
         encoder
           .bold(true)
-          .size('large')
+          .raw([0x1D, 0x21, 0x10])  // 2x width only
           .line(LEFT_MARGIN + colorHeader)
-          .size('normal')
+          .raw([0x1D, 0x21, 0x00])  // Reset
           .bold(false);
 
         // Get max rows needed
@@ -848,12 +852,14 @@ class ThermalPrinter {
             ? `${rightVariant.size} = ${rightVariant.stock}` 
             : '';
 
-          // Combine both columns
-          const rowText = leftText.padEnd(COLUMN_WIDTH) + '  ' + rightText;
+          // Combine both columns - 2x WIDTH ONLY
+          const rowText = leftText.padEnd(COLUMN_WIDTH + 2) + rightText;
           
           encoder
             .bold(true)
+            .raw([0x1D, 0x21, 0x10])  // 2x width only
             .line(LEFT_MARGIN + rowText)
+            .raw([0x1D, 0x21, 0x00])  // Reset
             .bold(false);
         }
 

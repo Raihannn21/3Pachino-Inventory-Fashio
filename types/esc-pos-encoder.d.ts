@@ -8,6 +8,7 @@ declare module 'esc-pos-encoder' {
     line(text: string): this;
     newline(): this;
     cut(type: 'full' | 'partial'): this;
+    raw(data: number[] | Uint8Array): this;
     encode(): Uint8Array;
   }
 }
