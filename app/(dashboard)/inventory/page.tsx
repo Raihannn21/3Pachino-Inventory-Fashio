@@ -987,7 +987,7 @@ export default function InventoryPage() {
                               </div>
                               {history.notes && (
                                 <div className="text-xs text-slate-500 mt-1 italic bg-white px-2 py-1 rounded border border-slate-100">
-                                  "{history.notes}"
+                                  &quot;{history.notes}&quot;
                                 </div>
                               )}
                             </div>

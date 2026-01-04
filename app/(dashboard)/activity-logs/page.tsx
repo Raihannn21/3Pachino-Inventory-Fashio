@@ -128,7 +128,7 @@ export default function ActivityLogsPage() {
       fetchLogs();
       fetchStats();
     }
-  }, [session, currentPage, selectedAction, selectedResource]);
+  }, [session, currentPage, selectedAction, selectedResource, fetchLogs, fetchStats]);
 
   const getActionBadge = (action: string) => {
     const colors: Record<string, string> = {

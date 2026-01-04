@@ -154,7 +154,7 @@ export default function NewProductionOrderPage() {
         clearTimeout(scannerTimeoutRef.current);
       }
     };
-  }, [isScannerActive]);
+  }, [isScannerActive, handleBarcodeScanned]);
 
   const handleBarcodeScanned = useCallback(async (barcode: string) => {
     console.log('🔍 handleBarcodeScanned called with:', barcode);
