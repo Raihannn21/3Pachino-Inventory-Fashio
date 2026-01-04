@@ -784,32 +784,80 @@ class ThermalPrinter {
         .bold(false)
         .newline();
 
-      // Variants - sorted by stock (low to high for visibility)
-      const sortedVariants = [...reportData.variants].sort((a, b) => a.stock - b.stock);
+      // Group variants by color
+      const variantsByColor = new Map<string, Array<{size: string, stock: number, minStock: number}>>();
       
-      for (const variant of sortedVariants) {
-        // Variant info: SIZE • COLOR (BOLD & LARGE)
-        const variantText = `${variant.size} • ${variant.color}`;
-        const safeVariant = variantText.length > PRINTER_WIDTH 
-          ? variantText.substring(0, PRINTER_WIDTH - 3) + '...' 
-          : variantText;
+      for (const variant of reportData.variants) {
+        if (!variantsByColor.has(variant.color)) {
+          variantsByColor.set(variant.color, []);
+        }
+        variantsByColor.get(variant.color)!.push({
+          size: variant.size,
+          stock: variant.stock,
+          minStock: variant.minStock
+        });
+      }
+
+      // Convert to array and prepare for 2-column layout
+      const colorGroups = Array.from(variantsByColor.entries());
+      const COLUMN_WIDTH = 19; // Width for each column (19 chars each = 38 total + 2 margin = 40)
+
+      // Process in pairs (2 columns side by side)
+      for (let i = 0; i < colorGroups.length; i += 2) {
+        const leftColor = colorGroups[i];
+        const rightColor = colorGroups[i + 1] || null;
+
+        // Color names header (BOLD & LARGE)
+        const leftColorName = leftColor[0].length > COLUMN_WIDTH 
+          ? leftColor[0].substring(0, COLUMN_WIDTH - 3) + '...' 
+          : leftColor[0];
+        
+        const rightColorName = rightColor 
+          ? (rightColor[0].length > COLUMN_WIDTH 
+              ? rightColor[0].substring(0, COLUMN_WIDTH - 3) + '...' 
+              : rightColor[0])
+          : '';
+
+        // Print color names (uppercase for visibility)
+        const colorHeader = leftColorName.toUpperCase().padEnd(COLUMN_WIDTH) + '  ' + rightColorName.toUpperCase();
         
         encoder
           .bold(true)
           .size('large')
-          .line(LEFT_MARGIN + safeVariant)
+          .line(LEFT_MARGIN + colorHeader)
           .size('normal')
           .bold(false);
 
-        // Stock info with status indicator (no ⚠ or ✓ symbols)
-        const stockStatus = variant.stock <= variant.minStock ? 'RENDAH' : 'Normal';
-        const stockLine = this.createRow(
-          `Stok: ${variant.stock} pcs`,
-          stockStatus,
-          PRINTER_WIDTH
-        );
-        
-        encoder.line(LEFT_MARGIN + stockLine);
+        // Get max rows needed
+        const leftVariants = leftColor[1];
+        const rightVariants = rightColor ? rightColor[1] : [];
+        const maxRows = Math.max(leftVariants.length, rightVariants.length);
+
+        // Print size + stock rows side by side
+        for (let row = 0; row < maxRows; row++) {
+          const leftVariant = leftVariants[row];
+          const rightVariant = rightVariants[row];
+
+          // Left column
+          const leftText = leftVariant 
+            ? `${leftVariant.size} = ${leftVariant.stock}` 
+            : '';
+          
+          // Right column
+          const rightText = rightVariant 
+            ? `${rightVariant.size} = ${rightVariant.stock}` 
+            : '';
+
+          // Combine both columns
+          const rowText = leftText.padEnd(COLUMN_WIDTH) + '  ' + rightText;
+          
+          encoder
+            .bold(true)
+            .line(LEFT_MARGIN + rowText)
+            .bold(false);
+        }
+
+        // Add spacing between color groups
         encoder.newline();
       }
 
