@@ -839,7 +839,7 @@ export default function POSPage() {
     const price = item.customPrice ?? item.variant.sellingPrice ?? item.variant.product.sellingPrice;
     return sum + (price * item.quantity);
   }, 0);
-  const discountAmount = (subtotal * discount) / 100;
+  const discountAmount = discount; // Discount adalah nominal langsung
   const total = subtotal - discountAmount;
 
   // Handle WhatsApp send
@@ -872,7 +872,7 @@ ${cart.map(item => {
 }).join('\n')}
 
 💰 Subtotal: Rp ${subtotal.toLocaleString('id-ID')}
-${discount > 0 ? `🏷️ Diskon: ${discount}% (-Rp ${discountAmount.toLocaleString('id-ID')})` : ''}
+${discount > 0 ? `🏷️ Diskon: Rp ${discount.toLocaleString('id-ID')}` : ''}
 💰 Total: Rp ${total.toLocaleString('id-ID')}
 
 🧾 Lihat struk lengkap: ${receiptUrl}
@@ -1664,8 +1664,8 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                       </div>
                       {discount > 0 && (
                         <div className="flex justify-between text-xs sm:text-sm text-red-600">
-                          <span>Diskon ({discount}%):</span>
-                          <span>-Rp {discountAmount.toLocaleString('id-ID')}</span>
+                          <span>Diskon:</span>
+                          <span>-Rp {discount.toLocaleString('id-ID')}</span>
                         </div>
                       )}
                       <Separator />
@@ -1760,12 +1760,11 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                             )}
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="discount" className="text-sm">Diskon (%)</Label>
+                            <Label htmlFor="discount" className="text-sm">Diskon (Rp)</Label>
                             <Input
                               id="discount"
                               type="number"
                               min="0"
-                              max="100"
                               placeholder="0"
                               value={discount || ''}
                               onChange={(e) => setDiscount(Number(e.target.value) || 0)}
@@ -1792,8 +1791,8 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                             </div>
                             {discount > 0 && (
                               <div className="flex justify-between text-xs sm:text-sm text-red-600">
-                                <span>Diskon ({discount}%):</span>
-                                <span>-Rp {discountAmount.toLocaleString('id-ID')}</span>
+                                <span>Diskon:</span>
+                                <span>-Rp {discount.toLocaleString('id-ID')}</span>
                               </div>
                             )}
                             <div className="flex justify-between font-bold text-sm sm:text-lg">

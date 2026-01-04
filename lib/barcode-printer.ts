@@ -34,7 +34,7 @@ class BarcodePrinter {
   }
 
   /**
-   * Initialize and check if thermal printer is already connected
+   * Initialize and check if barcode printer is already connected
    */
   async initializeConnection(): Promise<boolean> {
     if (this.isConnected()) {
@@ -42,11 +42,11 @@ class BarcodePrinter {
     }
 
     try {
-      const wasConnected = localStorage.getItem('thermal_printer_connected');
+      const wasConnected = localStorage.getItem('barcode_printer_connected');
       if (wasConnected === 'true') {
-        const deviceId = localStorage.getItem('thermal_printer_device_id');
+        const deviceId = localStorage.getItem('barcode_printer_device_id');
         if (deviceId) {
-          // Reuse existing thermal printer connection
+          // Reuse existing barcode printer connection
           const devices = await navigator.bluetooth.getDevices();
           const device = devices.find(d => d.id === deviceId);
           if (device) {
@@ -55,7 +55,7 @@ class BarcodePrinter {
         }
       }
     } catch (error) {
-      console.log('No existing printer connection:', error);
+      console.log('No existing barcode printer connection:', error);
     }
     
     return false;
@@ -74,11 +74,15 @@ class BarcodePrinter {
   private async reconnectToDevice(device: BluetoothDevice): Promise<boolean> {
     try {
       if (!device.gatt) {
+        console.error('GATT not available on device');
         throw new Error('GATT tidak tersedia pada device');
       }
 
+      console.log('Attempting to connect to barcode printer GATT...');
       const server = await device.gatt.connect();
+      console.log('GATT connected, getting services...');
       const services = await server.getPrimaryServices();
+      console.log(`Found ${services.length} services`);
       
       let characteristic: BluetoothRemoteGATTCharacteristic | null = null;
       
@@ -88,16 +92,19 @@ class BarcodePrinter {
           for (const char of characteristics) {
             if (char.properties.write || char.properties.writeWithoutResponse) {
               characteristic = char;
+              console.log('Found writable characteristic:', char.uuid);
               break;
             }
           }
           if (characteristic) break;
         } catch (err) {
+          console.log('Error reading service characteristics:', err);
           continue;
         }
       }
       
       if (!characteristic) {
+        console.error('No writable characteristic found');
         throw new Error('Tidak dapat menemukan characteristic untuk menulis ke printer.');
       }
 
@@ -108,9 +115,25 @@ class BarcodePrinter {
 
       this.savedDevice = device;
       
+      // Save connection state and device ID to localStorage
+      localStorage.setItem('barcode_printer_connected', 'true');
+      localStorage.setItem('barcode_printer_device_id', device.id);
+      
+      // Add disconnect listener to clean up
+      device.addEventListener('gattserverdisconnected', () => {
+        console.log('Barcode printer disconnected');
+        this.printer = null;
+        localStorage.removeItem('barcode_printer_connected');
+        localStorage.removeItem('barcode_printer_device_id');
+      });
+      
+      console.log('✅ Barcode printer reconnected successfully');
       return true;
     } catch (error) {
-      console.error('Error reconnecting to printer:', error);
+      console.error('Error reconnecting to barcode printer:', error);
+      // Clean up localStorage on failed reconnect
+      localStorage.removeItem('barcode_printer_connected');
+      localStorage.removeItem('barcode_printer_device_id');
       return false;
     }
   }
@@ -151,7 +174,15 @@ class BarcodePrinter {
    * Check if printer is connected
    */
   isConnected(): boolean {
-    return this.printer?.device?.gatt?.connected ?? false;
+    const connected = this.printer?.device?.gatt?.connected ?? false;
+    console.log('Barcode printer connection check:', {
+      hasPrinter: !!this.printer,
+      hasDevice: !!this.printer?.device,
+      hasGatt: !!this.printer?.device?.gatt,
+      isConnected: connected,
+      hasCharacteristic: !!this.printer?.characteristic
+    });
+    return connected;
   }
 
   /**
@@ -223,12 +254,23 @@ class BarcodePrinter {
       throw new Error('Variant tidak memiliki barcode');
     }
 
-    // Try to connect if not connected
+    // Check if printer is connected first
     if (!this.isConnected()) {
+      // Try to initialize/reconnect
+      console.log('Barcode printer not connected, attempting to reconnect...');
       const connected = await this.initializeConnection();
       if (!connected) {
-        throw new Error('Printer belum terkoneksi. Silakan hubungkan printer terlebih dahulu dari halaman POS.');
+        // Still not connected after trying to reconnect
+        console.error('Barcode printer connection failed');
+        throw new Error('Printer barcode belum terkoneksi. Silakan klik tombol "Connect Printer Barcode" terlebih dahulu untuk menghubungkan printer.');
       }
+      console.log('Barcode printer reconnected successfully');
+    }
+
+    // Double check connection before proceeding
+    if (!this.printer?.characteristic) {
+      console.error('Printer object or characteristic is null');
+      throw new Error('Printer barcode belum siap. Silakan reconnect printer barcode terlebih dahulu.');
     }
 
     try {

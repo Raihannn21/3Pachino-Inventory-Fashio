@@ -118,8 +118,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
   const [printQuantity, setPrintQuantity] = useState('1');
   const [variantToPrint, setVariantToPrint] = useState<ProductVariant | null>(null);
-  const [isPrinterConnectedState, setIsPrinterConnectedState] = useState(false);
-  const [isConnectingPrinter, setIsConnectingPrinter] = useState(false);
+  const [isThermalPrinterConnectedState, setIsThermalPrinterConnectedState] = useState(false);
+  const [isBarcodePrinterConnectedState, setIsBarcodePrinterConnectedState] = useState(false);
+  const [isConnectingThermalPrinter, setIsConnectingThermalPrinter] = useState(false);
+  const [isConnectingBarcodePrinter, setIsConnectingBarcodePrinter] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [variantToDelete, setVariantToDelete] = useState<ProductVariant | null>(null);
 
@@ -153,9 +155,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }, [params]);
 
   useEffect(() => {
-    // Check thermal printer connection status on mount
+    // Check both printer connection status on mount
     const checkPrinterStatus = () => {
-      setIsPrinterConnectedState(isThermalPrinterConnected());
+      setIsThermalPrinterConnectedState(isThermalPrinterConnected());
+      setIsBarcodePrinterConnectedState(isPrinterConnected());
     };
     checkPrinterStatus();
     
@@ -532,24 +535,43 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  const handleConnectPrinter = async () => {
-    setIsConnectingPrinter(true);
+  const handleConnectThermalPrinter = async () => {
+    setIsConnectingThermalPrinter(true);
     try {
-      // Connect to thermal printer (dapat digunakan untuk stock report dan barcode)
       const connected = await connectThermalPrinter();
       if (connected) {
-        setIsPrinterConnectedState(true);
-        toast.success('Thermal Printer berhasil terhubung');
+        setIsThermalPrinterConnectedState(true);
+        toast.success('Thermal Printer berhasil terhubung (untuk Print Laporan Stok)');
       }
     } catch (error: any) {
-      console.error('Error connecting printer:', error);
+      console.error('Error connecting thermal printer:', error);
       if (error.message?.includes('cancelled')) {
-        toast.info('Koneksi printer dibatalkan');
+        toast.info('Koneksi thermal printer dibatalkan');
       } else {
-        toast.error('Gagal menghubungkan printer: ' + (error.message || 'Unknown error'));
+        toast.error('Gagal menghubungkan thermal printer: ' + (error.message || 'Unknown error'));
       }
     } finally {
-      setIsConnectingPrinter(false);
+      setIsConnectingThermalPrinter(false);
+    }
+  };
+
+  const handleConnectBarcodePrinter = async () => {
+    setIsConnectingBarcodePrinter(true);
+    try {
+      const connected = await connectToPrinter();
+      if (connected) {
+        setIsBarcodePrinterConnectedState(true);
+        toast.success('Barcode Printer berhasil terhubung (untuk Print Barcode Label)');
+      }
+    } catch (error: any) {
+      console.error('Error connecting barcode printer:', error);
+      if (error.message?.includes('cancelled')) {
+        toast.info('Koneksi barcode printer dibatalkan');
+      } else {
+        toast.error('Gagal menghubungkan barcode printer: ' + (error.message || 'Unknown error'));
+      }
+    } finally {
+      setIsConnectingBarcodePrinter(false);
     }
   };
 
@@ -602,9 +624,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       return;
     }
 
-    // Check if thermal printer is connected
-    if (!isThermalPrinterConnected()) {
-      toast.error('Thermal printer belum terhubung. Silakan hubungkan printer terlebih dahulu.');
+    // Check if barcode printer is connected
+    if (!isPrinterConnected()) {
+      toast.error('Barcode printer belum terhubung. Silakan klik tombol "Connect Barcode" terlebih dahulu.');
       return;
     }
 
@@ -828,13 +850,24 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         {/* Action Buttons - Grid Layout untuk responsivitas lebih baik */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
           <Button
-            onClick={handleConnectPrinter}
-            className={isPrinterConnectedState ? "bg-green-600 hover:bg-green-700 w-full" : "bg-blue-600 hover:bg-blue-700 w-full"}
-            disabled={isConnectingPrinter}
+            onClick={handleConnectThermalPrinter}
+            className={isThermalPrinterConnectedState ? "bg-green-600 hover:bg-green-700 w-full" : "bg-blue-600 hover:bg-blue-700 w-full"}
+            disabled={isConnectingThermalPrinter}
             size="sm"
+            title="Connect printer thermal untuk print laporan stok"
           >
             <Bluetooth className="h-4 w-4 mr-1 sm:mr-2" />
-            <span className="text-xs sm:text-sm">{isConnectingPrinter ? 'Menghubungkan...' : (isPrinterConnectedState ? 'Printer Terhubung' : 'Hubungkan Printer')}</span>
+            <span className="text-xs sm:text-sm">{isConnectingThermalPrinter ? 'Menghubungkan...' : (isThermalPrinterConnectedState ? 'Thermal ✓' : 'Connect Thermal')}</span>
+          </Button>
+          <Button
+            onClick={handleConnectBarcodePrinter}
+            className={isBarcodePrinterConnectedState ? "bg-green-600 hover:bg-green-700 w-full" : "bg-orange-600 hover:bg-orange-700 w-full"}
+            disabled={isConnectingBarcodePrinter}
+            size="sm"
+            title="Connect printer barcode untuk print label barcode"
+          >
+            <Bluetooth className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">{isConnectingBarcodePrinter ? 'Menghubungkan...' : (isBarcodePrinterConnectedState ? 'Barcode ✓' : 'Connect Barcode')}</span>
           </Button>
           <Button
             onClick={handlePrintStockReport}

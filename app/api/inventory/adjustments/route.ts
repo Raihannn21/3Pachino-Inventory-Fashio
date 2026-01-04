@@ -159,22 +159,29 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const variantId = searchParams.get('variantId');
 
-    if (!variantId) {
-      return NextResponse.json(
-        { error: 'Variant ID is required' },
-        { status: 400 }
-      );
-    }
-
+    // Support fetching all adjustments or adjustments for a specific variant
     const adjustments = await prisma.stockAdjustment.findMany({
-      where: { variantId },
+      where: variantId ? { variantId } : {},
       include: {
         user: {
           select: { name: true }
+        },
+        variant: {
+          include: {
+            product: {
+              select: { name: true }
+            },
+            size: {
+              select: { name: true }
+            },
+            color: {
+              select: { name: true }
+            }
+          }
         }
       },
       orderBy: { createdAt: 'desc' },
-      take: 50 // Limit to last 50 adjustments
+      take: variantId ? 50 : 200 // More results when fetching all
     });
 
     return NextResponse.json({ adjustments });

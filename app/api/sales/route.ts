@@ -180,7 +180,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const discountAmount = (subtotal * discount) / 100;
+    // Discount sekarang dalam bentuk nominal (Rp), bukan persen
+    const discountAmount = discount; // discount sudah dalam bentuk rupiah
     const taxAmount = ((subtotal - discountAmount) * tax) / 100;
     const total = subtotal - discountAmount + taxAmount;
 

@@ -485,7 +485,7 @@ export default function SalesPage() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-start">
                           <div>
-                            <div className="font-medium text-sm">{sale.invoiceNumber}</div>
+                            <div className="font-medium text-sm">{sale.supplier?.name || 'Walk-in Customer'}</div>
                             <div className="text-xs text-muted-foreground">
                               {format(new Date(sale.transactionDate), 'dd MMM yyyy HH:mm', { locale: id })}
                             </div>
@@ -543,7 +543,7 @@ export default function SalesPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>No. Invoice</TableHead>
+                        <TableHead>Nama Customer</TableHead>
                         <TableHead>Tanggal</TableHead>
                         <TableHead>Total</TableHead>
                         <TableHead>Items</TableHead>
@@ -555,7 +555,7 @@ export default function SalesPage() {
                       {salesData?.sales.map((sale) => (
                         <TableRow key={sale.id}>
                           <TableCell className="font-medium">
-                            {sale.invoiceNumber}
+                            {sale.supplier?.name || 'Walk-in Customer'}
                           </TableCell>
                           <TableCell>
                             {format(new Date(sale.transactionDate), 'dd MMM yyyy HH:mm', { locale: id })}

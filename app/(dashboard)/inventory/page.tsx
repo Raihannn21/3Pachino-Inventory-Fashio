@@ -93,6 +93,18 @@ interface AdjustmentHistoryItem {
   user: {
     name: string;
   };
+  variant: {
+    id: string;
+    product: {
+      name: string;
+    };
+    size: {
+      name: string;
+    };
+    color: {
+      name: string;
+    };
+  };
 }
 
 // Adjustment Categories - Sesuai dengan AdjustmentReason enum di schema
@@ -130,7 +142,7 @@ export default function InventoryPage() {
   const [adjustmentNotes, setAdjustmentNotes] = useState('');
   const [adjustmentType, setAdjustmentType] = useState<'INCREASE' | 'DECREASE' | ''>('');
   const [isProcessingAdjustment, setIsProcessingAdjustment] = useState(false);
-  const [historyDialog, setHistoryDialog] = useState({ open: false, item: null as InventoryItem | null });
+  const [allHistoryDialogOpen, setAllHistoryDialogOpen] = useState(false);
   const [adjustmentHistory, setAdjustmentHistory] = useState<AdjustmentHistoryItem[]>([]);
 
   const fetchInventoryData = useCallback(async () => {
@@ -271,14 +283,47 @@ export default function InventoryPage() {
     }
   };
 
-  const openHistoryDialog = (item: InventoryItem) => {
-    setHistoryDialog({ open: true, item });
-    fetchAdjustmentHistory(item.id);
+  const fetchAllAdjustmentHistory = async () => {
+    try {
+      const response = await fetch('/api/inventory/adjustments');
+      if (response.ok) {
+        const data = await response.json();
+        setAdjustmentHistory(data.adjustments || []);
+      }
+    } catch (error) {
+      console.error('Error fetching all adjustment history:', error);
+      toast.error('Gagal memuat riwayat adjustment');
+    }
   };
 
-  const closeHistoryDialog = () => {
-    setHistoryDialog({ open: false, item: null });
+  const openAllHistoryDialog = () => {
+    setAllHistoryDialogOpen(true);
+    fetchAllAdjustmentHistory();
+  };
+
+  const closeAllHistoryDialog = () => {
+    setAllHistoryDialogOpen(false);
     setAdjustmentHistory([]);
+  };
+
+  // Group history by date
+  const groupHistoryByDate = (history: AdjustmentHistoryItem[]) => {
+    const grouped: { [key: string]: AdjustmentHistoryItem[] } = {};
+    
+    history.forEach(item => {
+      const date = new Date(item.createdAt).toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+      
+      if (!grouped[date]) {
+        grouped[date] = [];
+      }
+      grouped[date].push(item);
+    });
+    
+    return grouped;
   };
 
   const getStatusBadge = (status: string) => {
@@ -378,10 +423,16 @@ export default function InventoryPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Gudang</h1>
             <p className="text-slate-600 mt-1 sm:mt-2 text-sm sm:text-base">Kelola dan pantau stok produk Anda secara real-time</p>
           </div>
-          <Button onClick={fetchInventoryData} variant="outline" className="hover:bg-slate-50 w-full sm:w-auto">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={openAllHistoryDialog} variant="outline" className="hover:bg-green-50 hover:border-green-300 w-full sm:w-auto">
+              <History className="h-4 w-4 mr-2" />
+              Lihat Semua History
+            </Button>
+            <Button onClick={fetchInventoryData} variant="outline" className="hover:bg-slate-50 w-full sm:w-auto">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Summary Cards */}
@@ -624,19 +675,10 @@ export default function InventoryPage() {
                           variant="outline" 
                           size="sm" 
                           onClick={() => openAdjustmentDialog(item)}
-                          className="hover:bg-blue-50 hover:border-blue-300 flex-1"
+                          className="hover:bg-blue-50 hover:border-blue-300 w-full"
                         >
                           <ArrowUpDown className="h-4 w-4 mr-1" />
-                          Adjust
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => openHistoryDialog(item)}
-                          className="hover:bg-green-50 hover:border-green-300 flex-1"
-                        >
-                          <History className="h-4 w-4 mr-1" />
-                          History
+                          Adjust Stock
                         </Button>
                       </div>
                     </div>
@@ -724,16 +766,7 @@ export default function InventoryPage() {
                                 className="hover:bg-blue-50 hover:border-blue-300"
                               >
                                 <ArrowUpDown className="h-4 w-4 mr-1" />
-                                Adjust
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => openHistoryDialog(item)}
-                                className="hover:bg-green-50 hover:border-green-300 ml-2"
-                              >
-                                <History className="h-4 w-4 mr-1" />
-                                History
+                                Adjust Stock
                               </Button>
                         </TableCell>
                       </TableRow>
@@ -876,127 +909,102 @@ export default function InventoryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Adjustment History Dialog */}
-      <Dialog open={historyDialog.open} onOpenChange={closeHistoryDialog}>
-        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
+      {/* All Adjustment History Dialog */}
+      <Dialog open={allHistoryDialogOpen} onOpenChange={closeAllHistoryDialog}>
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <History className="h-5 w-5" />
-              Riwayat Adjustment
+            <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <History className="h-5 w-5 sm:h-6 sm:w-6" />
+              Semua Riwayat Adjustment Stock
             </DialogTitle>
             <DialogDescription className="text-sm">
-              {historyDialog.item && (
-                <>Riwayat adjustment untuk {historyDialog.item.product.name} - {historyDialog.item.size.name} {historyDialog.item.color.name}</>
-              )}
+              Riwayat semua adjustment stock dari seluruh produk, dikelompokkan berdasarkan tanggal
             </DialogDescription>
           </DialogHeader>
           
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-[60vh] overflow-y-auto space-y-4">
             {adjustmentHistory.length === 0 ? (
-              <div className="text-center py-6 sm:py-8 text-muted-foreground">
-                Belum ada riwayat adjustment untuk variant ini
+              <div className="text-center py-8 sm:py-12 text-muted-foreground">
+                <Package className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 text-slate-300" />
+                <p className="text-sm sm:text-base">Belum ada riwayat adjustment</p>
               </div>
             ) : (
               <>
-                {/* Mobile Card Layout */}
-                <div className="block md:hidden space-y-3">
-                  {adjustmentHistory.map((history) => (
-                    <div key={history.id} className="bg-slate-50 rounded-lg p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium">
-                          {new Date(history.createdAt).toLocaleDateString('id-ID', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </div>
-                        <Badge variant={history.adjustmentType === 'INCREASE' ? 'default' : 'secondary'}>
-                          {history.adjustmentType === 'INCREASE' ? (
-                            <><Plus className="h-3 w-3 mr-1" /> Tambah</>
-                          ) : (
-                            <><Minus className="h-3 w-3 mr-1" /> Kurang</>
-                          )}
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-slate-500">Jumlah</p>
-                          <p className="font-medium">
-                            {history.adjustmentType === 'INCREASE' ? '+' : '-'}{history.quantity}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-slate-500">User</p>
-                          <p className="text-sm">{history.user.name}</p>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-500">Alasan</p>
-                        <p className="text-sm">
-                          {ADJUSTMENT_CATEGORIES[history.adjustmentType].find(cat => cat.value === history.reason)?.label || history.reason}
-                        </p>
-                        {history.notes && (
-                          <p className="text-xs text-muted-foreground mt-1">{history.notes}</p>
-                        )}
+                {Object.entries(groupHistoryByDate(adjustmentHistory)).map(([date, histories]) => (
+                  <div key={date} className="space-y-3">
+                    {/* Date Header */}
+                    <div className="sticky top-0 bg-white z-10 py-2 border-b-2 border-slate-200">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-blue-600" />
+                        <h3 className="font-semibold text-slate-700">{date}</h3>
+                        <Badge variant="outline" className="ml-auto">{histories.length} adjustment</Badge>
                       </div>
                     </div>
-                  ))}
-                </div>
 
-                {/* Desktop Table Layout */}
-                <div className="hidden md:block">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Tanggal</TableHead>
-                        <TableHead>Tipe</TableHead>
-                        <TableHead>Jumlah</TableHead>
-                        <TableHead>Alasan</TableHead>
-                        <TableHead>User</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {adjustmentHistory.map((history) => (
-                        <TableRow key={history.id}>
-                          <TableCell className="text-sm">
-                            {new Date(history.createdAt).toLocaleDateString('id-ID', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={history.adjustmentType === 'INCREASE' ? 'default' : 'secondary'}>
-                              {history.adjustmentType === 'INCREASE' ? (
-                                <><Plus className="h-3 w-3 mr-1" /> Tambah</>
-                              ) : (
-                                <><Minus className="h-3 w-3 mr-1" /> Kurang</>
-                              )}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {history.adjustmentType === 'INCREASE' ? '+' : '-'}{history.quantity}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            <div>
-                              {ADJUSTMENT_CATEGORIES[history.adjustmentType].find(cat => cat.value === history.reason)?.label || history.reason}
+                    {/* History Items */}
+                    <div className="space-y-2 pl-2">
+                      {histories.map((history) => (
+                        <div key={history.id} className="bg-slate-50 rounded-lg p-3 sm:p-4 hover:bg-slate-100 transition-colors">
+                          <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                            {/* Time & Type Badge */}
+                            <div className="flex items-center gap-2 sm:w-40">
+                              <div className="text-xs sm:text-sm text-slate-500 font-medium">
+                                {new Date(history.createdAt).toLocaleTimeString('id-ID', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                              <Badge variant={history.adjustmentType === 'INCREASE' ? 'default' : 'secondary'} className="text-xs">
+                                {history.adjustmentType === 'INCREASE' ? (
+                                  <><Plus className="h-3 w-3 mr-1" /> Tambah</>
+                                ) : (
+                                  <><Minus className="h-3 w-3 mr-1" /> Kurang</>
+                                )}
+                              </Badge>
                             </div>
-                            {history.notes && (
-                              <div className="text-xs text-muted-foreground mt-1">{history.notes}</div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm">{history.user.name}</TableCell>
-                        </TableRow>
+
+                            {/* Product Info */}
+                            <div className="flex-1 space-y-1">
+                              <div className="font-semibold text-slate-800 text-sm sm:text-base">
+                                {history.variant.product.name}
+                              </div>
+                              <div className="text-xs sm:text-sm text-slate-600">
+                                {history.variant.size.name} • {history.variant.color.name}
+                              </div>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                <div className="text-xs bg-white px-2 py-1 rounded border border-slate-200">
+                                  <span className="text-slate-500">Jumlah:</span>{' '}
+                                  <span className="font-semibold">{history.adjustmentType === 'INCREASE' ? '+' : '-'}{history.quantity}</span>
+                                </div>
+                                <div className="text-xs bg-white px-2 py-1 rounded border border-slate-200">
+                                  <span className="text-slate-500">User:</span>{' '}
+                                  <span className="font-medium">{history.user.name}</span>
+                                </div>
+                              </div>
+                              <div className="text-xs sm:text-sm text-slate-600 mt-2">
+                                <span className="text-slate-500">Alasan:</span>{' '}
+                                {ADJUSTMENT_CATEGORIES[history.adjustmentType].find(cat => cat.value === history.reason)?.label || history.reason}
+                              </div>
+                              {history.notes && (
+                                <div className="text-xs text-slate-500 mt-1 italic bg-white px-2 py-1 rounded border border-slate-100">
+                                  "{history.notes}"
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                    </div>
+                  </div>
+                ))}
               </>
             )}
+          </div>
+
+          <div className="pt-4 border-t">
+            <Button onClick={closeAllHistoryDialog} className="w-full">
+              Tutup
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
