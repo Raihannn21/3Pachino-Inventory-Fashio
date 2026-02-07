@@ -41,6 +41,8 @@ interface DailyReportData {
   customers: DailyReportCustomer[];
   totalRevenue: number;
   totalTransactions: number;
+  totalCash?: number; // Total pembayaran cash
+  totalTransfer?: number; // Total pembayaran transfer
 }
 
 interface StockVariant {
@@ -655,6 +657,30 @@ class ThermalPrinter {
         .align('left')
         .line(LEFT_MARGIN + totalTransactionsLine)
         .newline();
+
+      // BREAKDOWN PAYMENT METHOD
+      encoder
+        .align('left')
+        .bold(true)
+        .line(LEFT_MARGIN + 'RINCIAN PEMBAYARAN:')
+        .bold(false)
+        .newline();
+
+      // Total Cash
+      if (reportData.totalCash !== undefined) {
+        const cashFormatted = this.formatCurrency(reportData.totalCash);
+        const cashLine = this.createRow('Cash:', `Rp ${cashFormatted}`, PRINTER_WIDTH);
+        encoder.line(LEFT_MARGIN + cashLine);
+      }
+
+      // Total Transfer
+      if (reportData.totalTransfer !== undefined) {
+        const transferFormatted = this.formatCurrency(reportData.totalTransfer);
+        const transferLine = this.createRow('Transfer:', `Rp ${transferFormatted}`, PRINTER_WIDTH);
+        encoder.line(LEFT_MARGIN + transferLine);
+      }
+
+      encoder.newline();
 
       // Total revenue - BOLD dan BESAR
       const totalLabel = 'TOTAL PENDAPATAN:';

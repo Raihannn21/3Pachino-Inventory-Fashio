@@ -268,6 +268,22 @@ export default function SalesPage() {
       const totalRevenue = allSalesData.sales.reduce((sum: number, sale: Transaction) => sum + Number(sale.totalAmount), 0);
       const totalTx = allSalesData.sales.length;
 
+      // Calculate Cash vs Transfer totals
+      let totalCash = 0;
+      let totalTransfer = 0;
+      
+      allSalesData.sales.forEach((sale: Transaction) => {
+        const amount = Number(sale.totalAmount);
+        const notes = sale.notes || '';
+        
+        if (notes.toLowerCase().includes('cash')) {
+          totalCash += amount;
+        } else if (notes.toLowerCase().includes('transfer')) {
+          totalTransfer += amount;
+        }
+        // Jika tidak ada keterangan atau format lain, tidak dihitung di breakdown
+      });
+
       // Format date range
       const dateRangeStr = dateRange.from && dateRange.to
         ? `${format(dateRange.from, 'dd MMM yyyy', { locale: id })} - ${format(dateRange.to, 'dd MMM yyyy', { locale: id })}`
@@ -278,7 +294,9 @@ export default function SalesPage() {
         dateRange: dateRangeStr,
         customers: customers,
         totalRevenue: totalRevenue,
-        totalTransactions: totalTx
+        totalTransactions: totalTx,
+        totalCash: totalCash,
+        totalTransfer: totalTransfer
       };
 
       await printThermalDailyReport(reportData);

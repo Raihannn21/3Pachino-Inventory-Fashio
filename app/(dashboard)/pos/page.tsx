@@ -85,7 +85,6 @@ interface DraftOrder {
     phone?: string;
     address?: string;
   };
-  notes?: string;
   discount: number;
   timestamp: number;
   total: number;
@@ -106,7 +105,7 @@ export default function POSPage() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
-  const [notes, setNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [discount, setDiscount] = useState(0);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -312,7 +311,7 @@ export default function POSPage() {
         setCustomerName(customerData.customerName || '');
         setCustomerPhone(customerData.customerPhone || '');
         setCustomerAddress(customerData.customerAddress || '');
-        setNotes(customerData.notes || '');
+        setPaymentMethod(customerData.paymentMethod || 'cash');
         setDiscount(customerData.discount || 0);
       }
     } catch (error) {
@@ -341,11 +340,11 @@ export default function POSPage() {
         customerName,
         customerPhone,
         customerAddress,
-        notes,
+        paymentMethod,
         discount
       };
       
-      if (customerName || customerPhone || notes || discount > 0) {
+      if (customerName || customerPhone || paymentMethod || discount > 0) {
         localStorage.setItem('pos_customer', JSON.stringify(customerData));
       } else {
         localStorage.removeItem('pos_customer');
@@ -353,7 +352,7 @@ export default function POSPage() {
     } catch (error) {
       console.error('Error saving customer data to localStorage:', error);
     }
-  }, [selectedCustomer, customerName, customerPhone, customerAddress, notes, discount]);
+  }, [selectedCustomer, customerName, customerPhone, customerAddress, paymentMethod, discount]);
 
   // Debounced search
   useEffect(() => {
@@ -715,7 +714,7 @@ export default function POSPage() {
     setCustomerName('');
     setCustomerPhone('');
     setCustomerAddress('');
-    setNotes('');
+    setPaymentMethod('cash');
     setDiscount(0);
     setSendWhatsApp(false);
     
@@ -766,7 +765,6 @@ export default function POSPage() {
           phone: customerPhone || undefined,
           address: customerAddress || undefined,
         },
-        notes: notes || undefined,
         discount,
         timestamp: Date.now(),
         total: calculateTotal(),
@@ -795,7 +793,7 @@ export default function POSPage() {
       setCustomerName(draft.customer?.name || '');
       setCustomerPhone(draft.customer?.phone || '');
       setCustomerAddress(draft.customer?.address || '');
-      setNotes(draft.notes || '');
+      setPaymentMethod('cash'); // Reset to default cash
       setDiscount(draft.discount);
       setActiveDraftId(draft.id); // Simpan id draft yang sedang dimuat
 
@@ -981,15 +979,18 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
 
     setIsProcessingPayment(true);
     try {
+      // Prepare notes based on payment method
+      const paymentNotes = paymentMethod === 'cash' ? 'Pembayaran: Cash' : 'Pembayaran: Transfer';
+      
       const response = await fetch('/api/sales', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          customerId: selectedCustomer, // Send customer ID
-          customerName,
-          customerPhone,
+          customerId: selectedCustomer || null, // Send customer ID or null
+          customerName: customerName || null,
+          customerPhone: customerPhone || null,
           items: cart.map(item => ({
             variantId: item.variant.id,
             quantity: item.quantity,
@@ -999,7 +1000,7 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
             substituteFromVariantId: item.substituteFromVariantId
           })),
           discount,
-          notes
+          notes: paymentNotes
         }),
       });
 
@@ -1772,14 +1773,16 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="notes" className="text-sm">Catatan</Label>
-                            <Textarea
-                              id="notes"
-                              placeholder="Catatan tambahan..."
-                              value={notes}
-                              onChange={(e) => setNotes(e.target.value)}
-                              className="text-sm min-h-[60px] sm:min-h-[80px]"
-                            />
+                            <Label htmlFor="payment-method" className="text-sm">Metode Pembayaran</Label>
+                            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                              <SelectTrigger id="payment-method" className="text-sm">
+                                <SelectValue placeholder="Pilih metode pembayaran" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="cash">💵 Cash</SelectItem>
+                                <SelectItem value="transfer">🏦 Transfer</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
 
                           <Separator />
@@ -2061,12 +2064,6 @@ Terima kasih telah berbelanja di 3PACHINO! 🙏`;
                                   <p className="text-sm font-semibold text-blue-600">
                                     Total: Rp {draft.total.toLocaleString('id-ID')}
                                   </p>
-                                  
-                                  {draft.notes && (
-                                    <p className="text-xs text-muted-foreground italic">
-                                      &ldquo;{draft.notes}&rdquo;
-                                    </p>
-                                  )}
                                 </div>
                                 
                                 <div className="flex flex-col gap-2">

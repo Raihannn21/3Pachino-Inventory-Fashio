@@ -97,7 +97,6 @@ export async function POST(request: NextRequest) {
       customerName, 
       customerPhone, 
       items, 
-      paymentMethod, 
       notes,
       discount = 0,
       tax = 0
