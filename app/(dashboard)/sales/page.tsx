@@ -105,6 +105,11 @@ export default function SalesPage() {
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPrintingReport, setIsPrintingReport] = useState(false);
+  const [summaryStats, setSummaryStats] = useState({
+    totalRevenue: 0,
+    totalTransactions: 0,
+    averageTransaction: 0
+  });
 
   // Fetch sales data
   const fetchSales = async (page = 1) => {
@@ -128,6 +133,34 @@ export default function SalesPage() {
 
       if (response.ok) {
         setSalesData(data);
+        
+        // Fetch ALL data for correct summary statistics (without pagination)
+        const allParams = new URLSearchParams({
+          page: '1',
+          limit: '999999' // Get all records
+        });
+        
+        if (dateRange?.from && dateRange?.to) {
+          const startOfDayDate = startOfDay(dateRange.from);
+          const endOfDayDate = endOfDay(dateRange.to);
+          allParams.append('startDate', startOfDayDate.toISOString());
+          allParams.append('endDate', endOfDayDate.toISOString());
+        }
+        
+        const allResponse = await fetch(`/api/sales?${allParams}`);
+        const allData = await allResponse.json();
+        
+        if (allResponse.ok && allData.sales) {
+          const totalRevenue = allData.sales.reduce((sum: number, sale: any) => sum + Number(sale.totalAmount), 0);
+          const totalTx = allData.sales.length;
+          const avgTx = totalTx > 0 ? totalRevenue / totalTx : 0;
+          
+          setSummaryStats({
+            totalRevenue: totalRevenue,
+            totalTransactions: totalTx,
+            averageTransaction: avgTx
+          });
+        }
       } else {
         console.error('Failed to fetch sales:', data.error);
       }
@@ -309,11 +342,6 @@ export default function SalesPage() {
     }
   };
 
-  // Calculate summary statistics
-  const totalSales = salesData?.sales.reduce((sum, sale) => sum + Number(sale.totalAmount), 0) || 0;
-  const totalTransactions = salesData?.pagination.total || 0;
-  const averageTransaction = totalTransactions > 0 ? totalSales / totalTransactions : 0;
-
   // Loading state
   if (loading) {
     return (
@@ -392,9 +420,9 @@ export default function SalesPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg sm:text-2xl font-bold">Rp {totalSales.toLocaleString('id-ID')}</div>
+              <div className="text-lg sm:text-2xl font-bold">Rp {summaryStats.totalRevenue.toLocaleString('id-ID')}</div>
               <p className="text-xs text-muted-foreground">
-                Dari {totalTransactions} transaksi
+                Dari {summaryStats.totalTransactions} transaksi
               </p>
             </CardContent>
           </Card>
@@ -404,7 +432,7 @@ export default function SalesPage() {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg sm:text-2xl font-bold">{totalTransactions}</div>
+              <div className="text-lg sm:text-2xl font-bold">{summaryStats.totalTransactions}</div>
               <p className="text-xs text-muted-foreground">
                 Transaksi berhasil
               </p>
@@ -416,7 +444,7 @@ export default function SalesPage() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg sm:text-2xl font-bold">Rp {averageTransaction.toLocaleString('id-ID')}</div>
+              <div className="text-lg sm:text-2xl font-bold">Rp {summaryStats.averageTransaction.toLocaleString('id-ID')}</div>
               <p className="text-xs text-muted-foreground">
                 Per transaksi
               </p>
